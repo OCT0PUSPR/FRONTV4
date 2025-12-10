@@ -1,0 +1,412 @@
+/* Dynamic Record Page Styles - Premium & Modern */
+
+/* -- Animations -- */
+@keyframes premiumFadeSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes premiumFadeSlideRight {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+    filter: blur(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes premiumScaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+    filter: blur(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes shine {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* -- Utilities -- */
+.animate-enter {
+  animation: premiumFadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-enter-side {
+  animation: premiumFadeSlideRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-scale {
+  animation: premiumScaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Staggered delays will be applied via inline styles in React, but we can set some defaults */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+
+/* -- Layout -- */
+.dynamic-record-page {
+  height: 100%;
+  max-height: calc(100vh - 64px); /* Account for header navbar height */
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+}
+
+/* Glassmorphism Sidebar */
+.premium-sidebar {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 5px 0 30px rgba(0, 0, 0, 0.03);
+  z-index: 20;
+  transition: all 0.3s ease;
+}
+
+.dark .premium-sidebar {
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Main Content Area */
+.premium-content-area {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  perspective: 1000px;
+  scroll-behavior: smooth;
+}
+
+.premium-content-area::-webkit-scrollbar {
+  width: 6px;
+}
+.premium-content-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+.premium-content-area::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.3);
+  border-radius: 20px;
+}
+.premium-content-area::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.5);
+}
+
+/* -- Components -- */
+
+/* Header */
+.premium-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 1.5rem 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+}
+.dark .premium-header {
+  background: rgba(20, 20, 25, 0.7);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.header-title-large {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, currentColor 0%, rgba(100,100,100,0.5) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  /* color: transparent is handled in inline style to respect theme color, but we can override */
+}
+
+/* Form Container */
+.premium-form-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem 3rem; /* Reduced padding */
+}
+
+/* Cards / Sections */
+.premium-card {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 20px; /* Slightly smaller radius */
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    0 4px 20px -5px rgba(0,0,0,0.05),
+    0 0 0 1px rgba(255,255,255,0.1);
+  padding: 1.5rem; /* Reduced padding from 2.5rem */
+  margin-bottom: 1.5rem; /* Reduced margin */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: visible !important;
+}
+
+.premium-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 8px 30px -10px rgba(0,0,0,0.08),
+    0 0 0 1px rgba(255,255,255,0.2);
+}
+
+/* Fields Grid */
+.fields-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1rem; /* Consistent gap */
+  align-items: start;
+  position: relative;
+}
+
+/* Ensure field wrappers allow dropdowns to overflow */
+.premium-field-wrapper {
+  position: relative;
+  transition: all 0.3s ease;
+  overflow: visible !important;
+}
+
+.dark .premium-card {
+  background: rgba(30, 30, 35, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.3);
+}
+
+/* Fields - overflow visible to allow dropdowns */
+.premium-field-wrapper {
+  position: relative;
+  transition: all 0.3s ease;
+  overflow: visible !important;
+}
+
+.premium-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.premium-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.03);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.dark .premium-input {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.premium-input:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+.dark .premium-input:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.premium-input:focus {
+  outline: none;
+  background: #fff;
+  border-color: currentColor; /* Will inherit from inline style or parent */
+  box-shadow: 
+    0 0 0 4px rgba(96, 165, 250, 0.1),
+    0 4px 12px rgba(0,0,0,0.05);
+  transform: translateY(-1px);
+}
+
+.dark .premium-input:focus {
+  background: rgba(40, 40, 45, 1);
+  box-shadow: 
+    0 0 0 4px rgba(96, 165, 250, 0.15),
+    0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Generic Input Targeting to ensure consistency */
+.premium-field-wrapper input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.premium-field-wrapper textarea,
+.premium-field-wrapper select {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.03);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  outline: none;
+}
+
+.dark .premium-field-wrapper input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.dark .premium-field-wrapper textarea,
+.dark .premium-field-wrapper select {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.premium-field-wrapper input:hover,
+.premium-field-wrapper textarea:hover,
+.premium-field-wrapper select:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+.dark .premium-field-wrapper input:hover,
+.dark .premium-field-wrapper textarea:hover,
+.dark .premium-field-wrapper select:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.premium-field-wrapper input:focus,
+.premium-field-wrapper textarea:focus,
+.premium-field-wrapper select:focus {
+  background: #fff;
+  border-color: #60a5fa;
+  box-shadow: 
+    0 0 0 4px rgba(96, 165, 250, 0.1),
+    0 4px 12px rgba(0,0,0,0.05);
+  transform: translateY(-1px);
+}
+
+.dark .premium-field-wrapper input:focus,
+.dark .premium-field-wrapper textarea:focus,
+.dark .premium-field-wrapper select:focus {
+  background: rgba(40, 40, 45, 1);
+  border-color: #60a5fa;
+  box-shadow: 
+    0 0 0 4px rgba(96, 165, 250, 0.15),
+    0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Error state */
+.premium-field-wrapper.has-error input,
+.premium-field-wrapper.has-error textarea,
+.premium-field-wrapper.has-error select {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+}
+
+/* Buttons */
+.premium-button {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 0.3s ease;
+  padding: 0.75rem 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.premium-button:active {
+  transform: scale(0.96);
+}
+
+.premium-button.primary {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.premium-button.primary:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Tab Navigation */
+.premium-tab-btn {
+  position: relative;
+  border-radius: 12px;
+  margin-bottom: 0.25rem;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.premium-tab-btn:hover {
+  transform: translateX(4px);
+}
+
+.premium-tab-active-indicator {
+  box-shadow: 0 0 15px currentColor;
+}
+
+/* Detail Items (Readonly) */
+.premium-detail-item {
+  padding: 1rem;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: all 0.2s ease;
+}
+.dark .premium-detail-item {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.04);
+}
+.premium-detail-item:hover {
+  background: rgba(0,0,0,0.04);
+}
+.dark .premium-detail-item:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+/* Image Upload Area */
+.premium-image-upload {
+  border: 2px dashed rgba(0,0,0,0.1);
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+.premium-image-upload:hover {
+  border-color: currentColor;
+  background: rgba(96, 165, 250, 0.03);
+}
+
+/* Loading */
+.premium-loader {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(0,0,0,0.1);
+  border-radius: 50%;
+  border-top-color: currentColor;
+  animation: spin 0.8s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 3D tilt effect on hover for cards (optional, keep subtle) */
+.tilt-card {
+  transform-style: preserve-3d;
+}

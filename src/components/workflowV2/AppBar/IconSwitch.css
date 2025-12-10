@@ -1,0 +1,66 @@
+.icon-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.icon-switch-track {
+  position: relative;
+  width: 2.75rem;
+  height: 1.5rem;
+  background: var(--wf-border, #e5e7eb);
+  border: none;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  padding: 0.125rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.icon-switch:hover .icon-switch-track {
+  background: var(--wf-text-secondary, #d1d5db);
+}
+
+.icon-switch.checked .icon-switch-track {
+  background: #3b82f6;
+}
+
+.icon-switch.secondary.checked .icon-switch-track {
+  background: var(--wf-text-secondary, #6b7280);
+}
+
+.icon-switch-thumb {
+  position: relative;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: var(--wf-card, white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wf-text-secondary, #6b7280);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  transform: translateX(0);
+}
+
+.icon-switch.checked .icon-switch-thumb {
+  transform: translateX(1.25rem);
+  color: #3b82f6;
+}
+
+.icon-switch.secondary.checked .icon-switch-thumb {
+  color: var(--wf-text-secondary, #6b7280);
+}
+
+.icon-switch-thumb svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+

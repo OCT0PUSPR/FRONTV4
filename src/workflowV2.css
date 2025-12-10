@@ -1,0 +1,230 @@
+* {
+  box-sizing: border-box;
+}
+
+/* Removed global html/body styles to avoid conflicts with App.tsx layout */
+
+.workflow-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  background: var(--wf-bg, #f1f5f9);
+  min-height: 0;
+}
+
+.workflow-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  padding: 1rem;
+  z-index: 10;
+  gap: 1rem;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.workflow-content {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+.workflow-panel {
+  height: 100%;
+  display: flex;
+  z-index: 5;
+  pointer-events: none;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.workflow-right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-end;
+  justify-content: flex-start;
+  position: relative;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.workflow-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* React Flow specific styles */
+.react-flow {
+  background: var(--wf-bg, #ffffff);
+  width: 100%;
+  height: 100%;
+}
+
+.react-flow__viewport {
+  width: 100%;
+  height: 100%;
+}
+
+.react-flow__node {
+  cursor: grab;
+}
+
+.react-flow__node:active {
+  cursor: grabbing;
+}
+
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--wf-border, #9ca3af);
+  background: var(--wf-card, white);
+}
+
+.react-flow__handle-connecting {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+
+.react-flow__handle-valid {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+}
+
+.react-flow__controls {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--wf-border, #e5e7eb);
+}
+
+.react-flow__controls-button {
+  border: none;
+  border-bottom: 1px solid var(--wf-border, #f3f4f6);
+  background: var(--wf-card, white);
+  color: var(--wf-text-primary, #1e293b);
+  transition: all 0.15s ease;
+  width: 32px;
+  height: 32px;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--wf-muted-bg, #f9fafb);
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none;
+}
+
+.react-flow__minimap {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--wf-border, #e5e7eb);
+}
+
+/* Selection box styling */
+.react-flow__selection {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid #60a5fa;
+}
+
+/* Connection line styling */
+.react-flow__connectionline {
+  stroke: #60a5fa;
+  stroke-width: 1.5;
+}
+
+/* Edge styling */
+.react-flow__edge-path {
+  stroke-width: 1.5;
+  stroke: var(--wf-border, #d1d5db);
+}
+
+.react-flow__edge.animated path {
+  stroke-dasharray: 5;
+  animation: dashdraw 0.5s linear infinite;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: #9ca3af;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #3b82f6 !important;
+}
+
+@keyframes dashdraw {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--wf-border, #cbd5e1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--wf-text-secondary, #94a3b8);
+}
+
+/* Ensure proper z-index layering */
+.react-flow__renderer {
+  z-index: 1;
+}
+
+.react-flow__minimap,
+.react-flow__controls {
+  z-index: 2;
+}
+
+/* Loading state */
+.workflow-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 18px;
+  color: var(--wf-text-secondary, #64748b);
+}
+

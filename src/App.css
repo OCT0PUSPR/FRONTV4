@@ -1,0 +1,252 @@
+.app-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 2rem;
+}
+
+/* Themed input styles */
+.themed-input {
+  width: 40%;
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #EDECF3; /* light border */
+  border-radius: 1rem;
+  background: #FFFFFF; /* always white */
+  color: #0A0A0A;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.themed-input:focus {
+  border-color: #D9D7E3; /* slightly darker than #EDECF3 */
+}
+
+.dark .themed-input {
+  border-color: #27272a; /* dark mode border - zinc-800 */
+  background: #18181b; /* dark mode card background - zinc-900 */
+  color: #f4f4f5; /* light text - zinc-100 */
+}
+
+.dark .themed-input:focus {
+  border-color: #5268ED; /* action color for focus */
+}
+
+/* Global header color styles */
+h1, h2, h3, h4, h5, h6 {
+  color: #000000 !important; /* light mode: black */
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: #FFFFFF !important; /* dark mode: zinc-100 - light text for headers on black background */
+}
+
+/* Themed card styles */
+.themed-card {
+  background: #FFFFFF; /* light mode card bg */
+  color: #242424;      /* light mode text/icons */
+}
+
+.dark .themed-card {
+  background: #18181b; /* dark mode card bg - zinc-900 */
+  color: #f4f4f5;      /* dark mode text/icons - zinc-100 */
+}
+
+/* Icons inside themed cards use currentColor without forcing text color */
+.themed-card svg {
+  color: inherit;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  max-width: 500px;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  min-height: 500px;
+  max-height: 850px;
+}
+
+
+
+/* Form Section */
+.form-section {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: #ffffff;
+}
+
+.form-container {
+  width: 100%;
+}
+
+.login-title {
+  font-size: 80px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 2.5rem 0;
+  text-align: center;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333333;
+  text-align: left;
+}
+
+.input-field {
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #1a1a1a;
+  transition: all 0.3s ease;
+  outline: none;
+  font-family: inherit;
+}
+
+.input-field:focus {
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(58, 58, 58, 0.1);
+}
+
+.input-field::placeholder {
+  color: #999999;
+}
+
+.signin-button {
+  margin-top: 1rem;
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: #1e5e81;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  cursor: pointer;
+}
+
+.signin-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.signin-button:active {
+  transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .login-card {
+    max-width: 500px;
+  }
+
+  .form-section {
+    padding: 2rem 1.5rem;
+  }
+
+  .login-title {
+    font-size: 3rem;
+    text-align: center;
+  }
+
+  .app-container {
+    padding: 1rem;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .login-card {
+    background: #1a1a1a;
+  }
+
+  .form-section {
+    background: #1a1a1a;
+  }
+
+  .login-title {
+    color: #ffffff;
+  }
+
+  .input-label {
+    color: #e0e0e0;
+  }
+
+  .input-field {
+    background: #2a2a2a;
+    border-color: #3a3a3a;
+    color: #ffffff;
+  }
+
+  .input-field:focus {
+    border-color: #000000;
+    background: #2a2a2a;
+  }
+
+  .input-field::placeholder {
+    color: #666666;
+  }
+
+  .inventory-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    padding: 2rem;
+  }
+  .inventory-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 900px;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    min-height: 500px;
+    max-height: 750px;
+  }
+
+  .refresh-button {
+    background: #ffffff;
+    color: #000000;
+    display:flex;
+    align-items: center;
+    gap: 5px;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  
+
+  
+}

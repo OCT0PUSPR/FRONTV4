@@ -1,0 +1,1321 @@
+{
+  "Search": "Search",
+  "Navigation": "Navigation",
+  "Settings": "Settings",
+  "Sign Out": "Sign Out",
+  "Loading...": "Loading...",
+  "My Workspace": "My Workspace",
+  "Swedish Tech": "Swedish Tech",
+  "Overview": "Overview",
+  "Warehouse View": "Warehouse View",
+  "Operations": "Operations",
+  "Transfers": "Transfers",
+  "Receipts": "Receipts",
+  "Deliveries": "Deliveries",
+  "Internal": "Internal",
+  "Manufacturing": "Manufacturing",
+  "Dropships": "Dropships",
+  "Jobs": "Jobs",
+  "Batch transfers": "Batch transfers",
+  "Wave transfers": "Wave transfers",
+  "Adjustments": "Adjustments",
+  "Physical Inventory": "Physical Inventory",
+  "Scrap": "Scrap",
+  "Landing costs": "Landing costs",
+  "Procurement": "Procurement",
+  "Replenishment": "Replenishment",
+  "Products": "Products",
+  "Product Variants": "Product Variants",
+  "Lots/Serial Numbers": "Lots/Serial Numbers",
+  "Packages": "Packages",
+  "Reporting": "Reporting",
+  "Stocks": "Stocks",
+  "Locations": "Locations",
+  "Moves History": "Moves History",
+  "Move Analysis": "Move Analysis",
+  "Valuation": "Valuation",
+  "Configuration": "Configuration",
+  "Warehouse Management": "Warehouse Management",
+  "Warehouses": "Warehouses",
+  "Operation types": "Operation types",
+  "Routes": "Routes",
+  "Rules": "Rules",
+  "Storage categories": "Storage categories",
+  "Putaway Rules": "Putaway Rules",
+  "Product categories": "Product categories",
+  "Product Packagings": "Product Packagings",
+  "Attributes": "Attributes",
+  "Units of Measure": "Units of Measure",
+  "UoM Categories": "UoM Categories",
+  "Delivery": "Delivery",
+  "Delivery Methods": "Delivery Methods",
+  "Package types": "Package types",
+  "Search Something here...": "Search Something here...",
+  "Warehouse Inventory Dashboard": "Warehouse Inventory Dashboard",
+  "Real-time overview of your warehouse operations and inventory": "Real-time overview of your warehouse operations and inventory",
+  "This Month": "This Month",
+  "This Week": "This Week",
+  "This Quarter": "This Quarter",
+  "Export": "Export",
+  "Total Orders": "Total Orders",
+  "+2% from last quarter": "+2% from last quarter",
+  "Pending Orders": "Pending Orders",
+  "-7.12% vs last month": "-7.12% vs last month",
+  "Cancelled Orders": "Cancelled Orders",
+  "Returned Items": "Returned Items",
+  "-4.20% vs last month": "-4.20% vs last month",
+  "Revenue Performance": "Revenue Performance",
+  "Income": "Income",
+  "Expend": "Expend",
+  "Monthly": "Monthly",
+  "Daily": "Daily",
+  "Weekly": "Weekly",
+  "Warehouse Capacity": "Warehouse Capacity",
+  "Used": "Used",
+  "Available": "Available",
+  "Inventory Distribution": "Inventory Distribution",
+  "Order Fulfillment Rate": "Order Fulfillment Rate",
+  "Previous": "Previous",
+  "Forecast": "Forecast",
+  "Current": "Current",
+  "Recent Activities": "Recent Activities",
+  "Find inventory, orders or reports": "Find inventory, orders or reports",
+  "Warehouses ({{count}})": "Warehouses ({{count}})",
+  "Sort by": "Sort by",
+  "Filter by (4)": "Filter by (4)",
+  "Low stock": "Low stock",
+  "Out of stock": "Out of stock",
+  "About to expire": "About to expire",
+  "New updated": "New updated"
+  ,"Stock Received": "Stock Received"
+  ,"Order Shipped": "Order Shipped"
+  ,"Stock Adjusted": "Stock Adjusted"
+  ,"Return Processed": "Return Processed"
+  ,"2 hours ago": "2 hours ago"
+  ,"3 hours ago": "3 hours ago"
+  ,"5 hours ago": "5 hours ago"
+  ,"6 hours ago": "6 hours ago"
+  ,"units": "units"
+  ,"Low Stock Alerts": "Low Stock Alerts"
+  ,"SKU:": "SKU:"
+  ,"Top Inventory Items": "Top Inventory Items"
+  ,"See all": "See all"
+  ,"Supplier Info": "Supplier Info"
+  ,"Filter": "Filter"
+  ,"Supplier Name": "Supplier Name"
+  ,"Next Shipment": "Next Shipment"
+  ,"Contact": "Contact"
+  ,"Rating": "Rating"
+  ,"Shipping Status": "Shipping Status"
+  ,"Delivered": "Delivered"
+  ,"Orders completed today": "Orders completed today"
+  ,"In Transit": "In Transit"
+  ,"Orders on the way": "Orders on the way"
+  ,"Pending": "Pending"
+  ,"Awaiting shipment": "Awaiting shipment"
+  ,"Transfer Receipts": "Transfer Receipts"
+  ,"Manage incoming transfers and receipts": "Manage incoming transfers and receipts"
+  ,"New Receipt": "New Receipt"
+  ,"Total Receipts": "Total Receipts"
+  ,"Draft Receipts": "Draft Receipts"
+  ,"Scheduled Today": "Scheduled Today"
+  ,"Completed": "Completed"
+  ,"Search receipts...": "Search receipts..."
+  ,"Status": "Status"
+  ,"All Statuses": "All Statuses"
+  ,"To": "To"
+  ,"All Destinations": "All Destinations"
+  ,"From": "From"
+  ,"All Sources": "All Sources"
+  ,"Scheduled Date": "Scheduled Date"
+  ,"Today": "Today"
+  ,"Source Document": "Source Document"
+  ,"Operation": "Operation"
+  ,"No receipts found": "No receipts found"
+  ,"Try adjusting your search criteria": "Try adjusting your search criteria"
+  ,"Wave Transfers": "Wave Transfers"
+  ,"Launch picking orders by aisle or area and regroup at packing zone": "Launch picking orders by aisle or area and regroup at packing zone"
+  ,"Prepare Wave": "Prepare Wave"
+  ,"New Wave": "New Wave"
+  ,"Total Waves": "Total Waves"
+  ,"Draft Waves": "Draft Waves"
+  ,"Search waves...": "Search waves..."
+  ,"No wave transfers found": "No wave transfers found"
+  ,"Wave Transfer Details": "Wave Transfer Details"
+  ,"Edit Wave": "Edit Wave"
+  ,"Wave Information": "Wave Information"
+  ,"Physical Inventory": "Physical Inventory"
+  ,"Track and manage your inventory counts": "Track and manage your inventory counts"
+  ,"Total Items": "Total Items"
+  ,"Total Value": "Total Value"
+  ,"Search products, lot numbers...": "Search products, lot numbers..."
+  ,"Lot/Serial": "Lot/Serial"
+  ,"On Hand": "On Hand"
+  ,"Counted": "Counted"
+  ,"Difference": "Difference"
+  ,"Scheduled": "Scheduled"
+  ,"User": "User"
+  ,"Loading inventory data...": "Loading inventory data..."
+  ,"No inventory data found": "No inventory data found"
+  ,"No products available for inventory tracking.": "No products available for inventory tracking."
+  ,"Refresh Data": "Refresh Data"
+  ,"Rows per page:": "Rows per page:"
+  ,"Page": "Page"
+  ,"of": "of"
+
+  ,"Surplus": "Surplus"
+  ,"Shortage": "Shortage"
+  ,"Exact Match": "Exact Match"
+  ,"Location": "Location"
+  ,"All Locations": "All Locations"
+  ,"Owner": "Owner"
+  ,"All Owners": "All Owners"
+  ,"Refresh": "Refresh"
+
+  ,"Scrap Orders": "Scrap Orders"
+  ,"Manage scrapped products and track inventory removals": "Manage scrapped products and track inventory removals"
+  ,"New Scrap Order": "New Scrap Order"
+  ,"Total Scrap Orders": "Total Scrap Orders"
+  ,"Draft Orders": "Draft Orders"
+  ,"Completed Today": "Completed Today"
+  ,"Items Scrapped": "Items Scrapped"
+  ,"Search scraps...": "Search scraps..."
+  ,"Scrap Reasons Distribution": "Scrap Reasons Distribution"
+  ,"Source Location": "Source Location"
+  ,"Scrap Location": "Scrap Location"
+  ,"No scrap orders found": "No scrap orders found"
+  ,"Scrap Order Details": "Scrap Order Details"
+  ,"Edit Scrap Order": "Edit Scrap Order"
+  ,"Scrap Information": "Scrap Information"
+  ,"Scrap Reason": "Scrap Reason"
+  ,"Select scrap reason": "Select scrap reason"
+  ,"Scrap order created successfully": "Scrap order created successfully"
+  ,"Scrap order updated successfully": "Scrap order updated successfully"
+  ,"Failed to create scrap order": "Failed to create scrap order"
+  ,"Failed to update scrap order": "Failed to update scrap order"
+  ,"Product Type": "Product Type"
+  ,"All Products": "All Products"
+  ,"Clothing": "Clothing"
+  ,"Furniture": "Furniture"
+  ,"Electronics": "Electronics"
+
+  ,"Landing Costs": "Landing Costs"
+  ,"Landed Costs": "Landed Costs"
+  ,"Manage additional costs for inventory valuation": "Manage additional costs for inventory valuation"
+  ,"Manage additional costs for receipts and transfers": "Manage additional costs for receipts and transfers"
+  ,"New Landing Cost": "New Landing Cost"
+  ,"New Landed Cost": "New Landed Cost"
+  ,"Total Landing Costs": "Total Landing Costs"
+  ,"Total Costs": "Total Costs"
+  ,"Posted This Month": "Posted This Month"
+  ,"Total Amount": "Total Amount"
+  ,"Draft Costs": "Draft Costs"
+  ,"Allocated": "Allocated"
+  ,"Allocation": "Allocation"
+  ,"Not Allocated": "Not Allocated"
+  ,"Search landing costs...": "Search landing costs..."
+  ,"Search by name, vendor bill...": "Search by name, vendor bill..."
+  ,"Apply On": "Apply On"
+  ,"Vendor Bill": "Vendor Bill"
+  ,"No landing costs found": "No landing costs found"
+  ,"Try adjusting your filters or search term": "Try adjusting your filters or search term"
+  ,"Landing Cost Details": "Landing Cost Details"
+  ,"Landed Cost Details": "Landed Cost Details"
+  ,"Edit Landing Cost": "Edit Landing Cost"
+  ,"Edit Landed Cost": "Edit Landed Cost"
+  ,"Landing Cost Information": "Landing Cost Information"
+  ,"Journal": "Journal"
+  ,"Select journal": "Select journal"
+  ,"Select vendor bill": "Select vendor bill"
+  ,"Select picking": "Select picking"
+  ,"Picking": "Picking"
+  ,"Additional Costs": "Additional Costs"
+  ,"Split method": "Split method"
+  ,"Equal": "Equal"
+  ,"By quantity": "By quantity"
+  ,"By Current Cost": "By Current Cost"
+  ,"By weight": "By weight"
+  ,"By volume": "By volume"
+  ,"Select account": "Select account"
+  ,"Account": "Account"
+  ,"Saving...": "Saving..."
+  ,"Cost": "Cost"
+  ,"Cost Type": "Cost Type"
+  ,"Transfer Dropships": "Transfer Dropships"
+  ,"Manage dropship operations and vendor-to-customer deliveries": "Manage dropship operations and vendor-to-customer deliveries"
+  ,"New Dropship": "New Dropship"
+  ,"Total Dropships": "Total Dropships"
+  ,"Draft Dropships": "Draft Dropships"
+  ,"Search dropships...": "Search dropships..."
+  ,"Vendor": "Vendor"
+  ,"No dropships found": "No dropships found"
+  ,"Try adjusting your search criteria or create a new dropship": "Try adjusting your search criteria or create a new dropship"
+  ,"Transfer Deliveries": "Transfer Deliveries"
+  ,"Manage and track outbound transfer deliveries": "Manage and track outbound transfer deliveries"
+  ,"New Delivery": "New Delivery"
+  ,"Total Deliveries": "Total Deliveries"
+  ,"Draft Deliveries": "Draft Deliveries"
+  ,"Search deliveries...": "Search deliveries..."
+  ,"Customer": "Customer"
+  ,"No deliveries found": "No deliveries found"
+  ,"Try adjusting your search criteria or create a new delivery": "Try adjusting your search criteria or create a new delivery"
+  ,"Internal Transfers": "Internal Transfers"
+  ,"Manage internal warehouse transfers and movements": "Manage internal warehouse transfers and movements"
+  ,"New Transfer": "New Transfer"
+  ,"Total Transfers": "Total Transfers"
+  ,"Draft Transfers": "Draft Transfers"
+  ,"Search transfers...": "Search transfers..."
+  ,"No transfers found": "No transfers found"
+  ,"Try adjusting your search criteria": "Try adjusting your search criteria",
+  "Manufacturing Orders": "Manufacturing Orders",
+  "Manage production orders and manufacturing processes": "Manage production orders and manufacturing processes",
+  "New Order": "New Order",
+  "Total Orders": "Total Orders",
+  "Draft Orders": "Draft Orders",
+  "In Progress": "In Progress",
+  "Completed": "Completed",
+  "Search orders...": "Search orders...",
+  "Status": "Status",
+  "All Status": "All Status",
+  "Draft": "Draft",
+  "Confirmed": "Confirmed",
+  "Done": "Done",
+  "Cancelled": "Cancelled",
+  "Product": "Product",
+  "All Products": "All Products",
+  "Mens Products": "Mens Products",
+  "Electronics": "Electronics",
+  "Luggage": "Luggage",
+  "Responsible": "Responsible",
+  "All Responsible": "All Responsible",
+  "Quantity": "Quantity",
+  "Scheduled Date": "Scheduled Date",
+  "Source": "Source",
+  "Next Activity": "Next Activity",
+  "Component": "Component",
+  "Components": "Components",
+  "No manufacturing orders found": "No manufacturing orders found",
+  "Try adjusting your search criteria": "Try adjusting your search criteria",
+  "Manufacturing Order Details": "Manufacturing Order Details",
+  "Edit Order": "Edit Order",
+  "Order Information": "Order Information",
+  "Bill of Material": "Bill of Material",
+  "To Consume": "To Consume",
+  "UoM": "UoM",
+  "Today": "Today",
+
+  "Batch Transfers": "Batch Transfers",
+  "Manage wave, batch, and cluster transfer operations": "Manage wave, batch, and cluster transfer operations",
+  "New Batch": "New Batch",
+  "Total Batches": "Total Batches",
+  "Draft Batches": "Draft Batches",
+  "Search batches...": "Search batches...",
+  "All Statuses": "All Statuses",
+  "Dock Location": "Dock Location",
+  "All Docks": "All Docks",
+  "Vehicle": "Vehicle",
+  "Transfer": "Transfer",
+  "Transfers": "Transfers",
+  "No batch transfers found": "No batch transfers found",
+  "Batch Transfer Details": "Batch Transfer Details",
+  "Edit Batch": "Edit Batch",
+  "Batch Information": "Batch Information",
+  "Description": "Description",
+  "Operation Type": "Operation Type",
+  "Transfers ({{count}})": "Transfers ({{count}})",
+  "Reference": "Reference",
+  "To": "To",
+  "Contact": "Contact",
+  "Source Doc": "Source Doc",
+  
+  "Product Catalog": "Product Catalog",
+  "Manage your product inventory and details": "Manage your product inventory and details",
+  "Total Products": "Total Products",
+  "In Stock": "In Stock",
+  "For Sale": "For Sale",
+  "Search products...": "Search products...",
+  "Category": "Category",
+  "All Categories": "All Categories",
+  "Price Range": "Price Range",
+  "All Prices": "All Prices",
+  "No code": "No code",
+  "Price": "Price",
+  "No products found": "No products found",
+  "Try adjusting your search or filters": "Try adjusting your search or filters",
+  
+  "Return": "Return",
+  "Product Details": "Product Details",
+  "General Information": "General Information",
+  "Attributes & Variants": "Attributes & Variants",
+  "Sales": "Sales",
+  "Purchase": "Purchase",
+  "No Image": "No Image",
+  "Product Type": "Product Type",
+  "Select product type": "Select product type",
+  "Invoicing Policy": "Invoicing Policy",
+  "Enter invoicing policy": "Enter invoicing policy",
+  "Track Inventory": "Track Inventory",
+  "Create Repair": "Create Repair",
+  "Sales Price": "Sales Price",
+  "Sales Tax": "Sales Tax",
+  "Select tax rate": "Select tax rate",
+  "Purchase Tax": "Purchase Tax",
+  "Item ID": "Item ID",
+  "Barcode": "Barcode",
+  "Enter barcode": "Enter barcode",
+  "Cancel": "Cancel",
+  "Save Changes": "Save Changes",
+  "Add Attribute": "Add Attribute",
+  "Enter attribute name": "Enter attribute name",
+  "Upsell & Cross-Sell": "Upsell & Cross-Sell",
+  "Optional Products": "Optional Products",
+  "Accessory Products": "Accessory Products",
+  "Alternative Products": "Alternative Products",
+  "Ecommerce Shop": "Ecommerce Shop",
+  "Tags": "Tags",
+  "Select tags": "Select tags",
+  "Website": "Website",
+  "Select website": "Select website",
+  "Categories": "Categories",
+  "Select categories": "Select categories",
+  "Out of Stock Message": "Out of Stock Message",
+  "Enter out of stock message": "Enter out of stock message",
+  "Is Published": "Is Published",
+  "Show Available Quantity": "Show Available Quantity",
+  "Ecommerce Media": "Ecommerce Media",
+  "Add Media": "Add Media",
+  "Quotation Description": "Quotation Description",
+  "Enter quotation description": "Enter quotation description",
+  "Ecommerce Description": "Ecommerce Description",
+  "Enter ecommerce description": "Enter ecommerce description",
+  "Warning Message": "Warning Message",
+  "Select warning message": "Select warning message",
+  "Add Record": "Add Record",
+  "Vendor": "Vendor",
+  "Enter vendor": "Enter vendor",
+  "Currency": "Currency",
+  "Select currency": "Select currency",
+  "Delivery": "Delivery",
+  "Manage product variants, pricing, and inventory levels": "Manage product variants, pricing, and inventory levels",
+  "New Product Variant": "New Product Variant",
+  "Total Variants": "Total Variants",
+  "Inventory Value": "Inventory Value",
+  "Avg Sales Price": "Avg Sales Price",
+  "Low Stock Items": "Low Stock Items",
+  "Average Price by Category": "Average Price by Category",
+  "Inventory Status": "Inventory Status",
+  "Price Range Distribution": "Price Range Distribution",
+  "Search by name, reference, or category...": "Search by name, reference, or category...",
+  "Margin:": "Margin:",
+  "Forecasted": "Forecasted",
+  "Unit": "Unit"
+  ,"Lots / Serial Numbers": "Lots / Serial Numbers"
+  ,"Track and manage product lots and serial numbers": "Track and manage product lots and serial numbers"
+  ,"Add Lot/Serial Number": "Add Lot/Serial Number"
+  ,"Total Lots": "Total Lots"
+  ,"Tracked items": "Tracked items"
+  ,"Active Lots": "Active Lots"
+  ,"Currently in stock": "Currently in stock"
+  ,"Expiring Soon": "Expiring Soon"
+  ,"Within 90 days": "Within 90 days"
+  ,"Lots by Category": "Lots by Category"
+  ,"Status Distribution": "Status Distribution"
+  ,"Value Distribution": "Value Distribution"
+  ,"Search by lot number, product, reference, or location...": "Search by lot number, product, reference, or location..."
+  ,"On Hand": "On Hand"
+  ,"Created:": "Created:"
+  ,"Expires:": "Expires:"
+  ,"Avg Cost": "Avg Cost"
+  ,"View Details": "View Details"
+  ,"No lots found": "No lots found"
+  ,"Lot/Serial Number": "Lot/Serial Number"
+  ,"Internal Reference": "Internal Reference"
+  ,"On Hand Quantity": "On Hand Quantity"
+  ,"Average Cost": "Average Cost"
+  ,"Created On": "Created On"
+  ,"Expiry Date": "Expiry Date"
+  ,"Traceability History": "Traceability History"
+  ,"Qty:": "Qty:"
+  ,"Edit Details": "Edit Details"
+  ,"View Full Traceability": "View Full Traceability"
+  ,"Packages": "Packages"
+  ,"Manage and track your package references": "Manage and track your package references"
+  ,"New Package": "New Package"
+  ,"Total Packages": "Total Packages"
+  ,"Active package references": "Active package references"
+  ,"Packed Packages": "Packed Packages"
+  ,"Ready for shipment": "Ready for shipment"
+  ,"Total Weight": "Total Weight"
+  ,"kg across all packages": "kg across all packages"
+  ,"Currently being shipped": "Currently being shipped"
+  ,"Packages by Type": "Packages by Type"
+  ,"Search packages by reference, type, location, or owner...": "Search packages by reference, type, location, or owner..."
+  ,"Filters": "Filters"
+  ,"In internal locations": "In internal locations"
+  ,"Add Custom Filter": "Add Custom Filter"
+  ,"Group By": "Group By"
+  ,"Package Type": "Package Type"
+  ,"Add Custom Group": "Add Custom Group"
+  ,"Favorites": "Favorites"
+  ,"Save current search": "Save current search"
+  ,"Contents:": "Contents:"
+  ,"more items": "more items"
+  ,"Owner:": "Owner:"
+  ,"No packages found": "No packages found"
+  ,"No packages match your search criteria. Try adjusting your filters or search terms.": "No packages match your search criteria. Try adjusting your filters or search terms."
+  ,"Package Details": "Package Details"
+  ,"Package Transfers": "Package Transfers"
+  ,"Unpack": "Unpack"
+  ,"Package Reference": "Package Reference"
+  ,"Pack Date": "Pack Date"
+  ,"Shipping Weight": "Shipping Weight"
+  ,"Package Contents": "Package Contents"
+  ,"kg": "kg"
+  ,"computed:": "computed:"
+  ,"Packed": "Packed"
+  ,"Stocks": "Stocks"
+  ,"Monitor and manage your product inventory": "Monitor and manage your product inventory"
+  ,"from last quarter": "from last quarter"
+  ,"Total Units": "Total Units"
+  ,"Across all categories": "Across all categories"
+  ,"vs last month": "vs last month"
+  ,"Low Stock": "Low Stock"
+  ,"Unit Cost": "Unit Cost"
+  ,"Available": "Available"
+  ,"Incoming": "Incoming"
+  ,"Outgoing": "Outgoing"
+  ,"Replenish": "Replenish"
+  ,"Showing {{count}} products": "Showing {{count}} products"
+  ,"Total inventory value:": "Total inventory value:"
+  ,"Export Report": "Export Report"
+  ,"Warehouse Locations": "Warehouse Locations"
+  ,"Monitor inventory across all warehouse locations": "Monitor inventory across all warehouse locations"
+  ,"Total Locations": "Total Locations"
+  ,"Total Items": "Total Items"
+  ,"Avg Capacity": "Avg Capacity"
+  ,"Warehouse Map": "Warehouse Map"
+  ,"Warehouse Details": "Warehouse Details"
+  ,"Items": "Items"
+  ,"Value": "Value"
+  ,"Capacity": "Capacity"
+  ,"Items by Location": "Items by Location"
+  ,"Products": "Products"
+  ,"at": "at"
+  ,"Show All Locations": "Show All Locations"
+  ,"Reserved": "Reserved"
+  ,"No products found matching your search.": "No products found matching your search."
+  ,"Set your Google Maps API key in VITE_GOOGLE_MAPS_API_KEY to view the map.": "Set your Google Maps API key in VITE_GOOGLE_MAPS_API_KEY to view the map."
+  ,"Inventory Moves Analysis": "Inventory Moves Analysis"
+  ,"Track and analyze all inventory movements across warehouse locations": "Track and analyze all inventory movements across warehouse locations"
+  ,"Total Moves": "Total Moves"
+  ,"Completed": "Completed"
+  ,"In Progress": "In Progress"
+  ,"Total Quantity": "Total Quantity"
+  ,"Moves by Type": "Moves by Type"
+  ,"Moves by Status": "Moves by Status"
+  ,"Moves Over Time": "Moves Over Time"
+  ,"Search moves by reference, product, location, or type...": "Search moves by reference, product, location, or type..."
+  ,"From": "From"
+  ,"To": "To"
+  ,"Quantity": "Quantity"
+  ,"units": "units"
+  ,"Date": "Date"
+  ,"Responsible": "Responsible"
+  ,"Status": "Status"
+  ,"Priority": "Priority"
+  ,"Movement Flow": "Movement Flow"
+  ,"From Location": "From Location"
+  ,"To Location": "To Location"
+  ,"Move Type": "Move Type"
+  ,"Notes": "Notes"
+  ,"Warehouse Moves History": "Warehouse Moves History"
+  ,"Real-time inventory movement tracking and analytics": "Real-time inventory movement tracking and analytics"
+  ,"from last month": "from last month"
+  ,"Avg per Move": "Avg per Move"
+  ,"Success Rate": "Success Rate"
+  ,"all completed": "all completed"
+  ,"Movement Timeline": "Movement Timeline"
+  ,"Category Distribution": "Category Distribution"
+  ,"Weekly Movements": "Weekly Movements"
+  ,"Recent Movements": "Recent Movements"
+  ,"Reference": "Reference"
+  ,"Product": "Product"
+  ,"Inventory Valuation": "Inventory Valuation"
+  ,"Comprehensive overview of your warehouse inventory value and analytics": "Comprehensive overview of your warehouse inventory value and analytics"
+  ,"Total Inventory Value": "Total Inventory Value"
+  ,"categories": "categories"
+  ,"Average Value": "Average Value"
+  ,"per item": "per item"
+  ,"Highest Value Item": "Highest Value Item"
+  ,"N/A": "N/A"
+  ,"No data": "No data"
+  ,"Valuation Timeline": "Valuation Timeline"
+  ,"Weekly Valuation": "Weekly Valuation"
+  ,"Unit Value": "Unit Value"
+  ,"Try adjusting your search or filter criteria": "Try adjusting your search or filter criteria"
+  ,"Warehouses": "Warehouses"
+  ,"Manage your warehouse locations and facilities": "Manage your warehouse locations and facilities"
+  ,"Add Warehouse": "Add Warehouse"
+  ,"Total Warehouses": "Total Warehouses"
+  ,"Total Capacity": "Total Capacity"
+  ,"Avg Utilization": "Avg Utilization"
+  ,"Search warehouses by name, code, or city...": "Search warehouses by name, code, or city..."
+  ,"Capacity Utilization": "Capacity Utilization"
+  ,"Manager:": "Manager:"
+  ,"View Details": "View Details"
+  ,"Edit": "Edit"
+  ,"No warehouses found": "No warehouses found"
+  ,"Try adjusting your search criteria": "Try adjusting your search criteria"
+  ,"Add New Warehouse": "Add New Warehouse"
+  ,"This feature is coming soon. You'll be able to add new warehouse locations with all the necessary details.": "This feature is coming soon. You'll be able to add new warehouse locations with all the necessary details."
+  ,"Close": "Close"
+  ,"Operation Types": "Operation Types"
+  ,"Manage and configure your warehouse operation types": "Manage and configure your warehouse operation types"
+  ,"Add Operation Type": "Add Operation Type"
+  ,"Total Operations": "Total Operations"
+  ,"Active Types": "Active Types"
+  ,"Most Used": "Most Used"
+  ,"operations": "operations"
+  ,"Search operation types...": "Search operation types..."
+  ,"Warehouse": "Warehouse"
+  ,"Prefix": "Prefix"
+  ,"Operations": "Operations"
+  ,"Last Used": "Last Used"
+  ,"Configure operation type settings": "Configure operation type settings"
+  ,"General": "General"
+  ,"Hardware": "Hardware"
+  ,"Basic Information": "Basic Information"
+  ,"Type of Operation": "Type of Operation"
+  ,"Sequence Prefix": "Sequence Prefix"
+  ,"Returns Type": "Returns Type"
+  ,"Status": "Status"
+  ,"Owner": "Owner"
+  ,"All Statuses": "All Statuses"
+  ,"All Types": "All Types"
+  ,"All Owners": "All Owners"
+  ,"Standard Box": "Standard Box"
+  ,"Small Box": "Small Box"
+  ,"Large Box": "Large Box"
+  ,"Pallet": "Pallet"
+  ,"Main Warehouse": "Main Warehouse"
+  ,"Secondary Warehouse": "Secondary Warehouse"
+  ,"Search packages...": "Search packages..."
+  ,"Category": "Category"
+  ,"All Categories": "All Categories"
+  ,"Stock Level": "Stock Level"
+  ,"All Levels": "All Levels"
+  ,"Low Stock (< 100)": "Low Stock (< 100)"
+  ,"Medium Stock (100-499)": "Medium Stock (100-499)"
+  ,"High Stock (500+)": "High Stock (500+)"
+  ,"Location": "Location"
+  ,"All Locations": "All Locations"
+  ,"Warehouse A": "Warehouse A"
+  ,"Warehouse B": "Warehouse B"
+  ,"Retail Store": "Retail Store"
+  ,"Routes Management": "Routes Management"
+  ,"Configure and manage warehouse routing rules": "Configure and manage warehouse routing rules"
+  ,"Add Route": "Add Route"
+  ,"Inactive Routes": "Inactive Routes"
+  ,"Search routes...": "Search routes..."
+  ,"Active": "Active"
+  ,"Inactive": "Inactive"
+  ,"Rule": "Rule"
+  ,"Click to edit →": "Click to edit →"
+  ,"Applicable On": "Applicable On"
+  ,"Select the places where this route can be selected": "Select the places where this route can be selected"
+  ,"Action": "Action"
+  ,"Destination Location": "Destination Location"
+  ,"Add a line": "Add a line"
+  ,"Warehouse Rules": "Warehouse Rules"
+  ,"Add Rule": "Add Rule"
+  ,"Most Used Action": "Most Used Action"
+  ,"Avg Lead Time": "Avg Lead Time"
+  ,"days": "days"
+  ,"Route:": "Route:"
+  ,"Supply Method:": "Supply Method:"
+  ,"Lead Time:": "Lead Time:"
+  ,"New Rule": "New Rule"
+  ,"Edit Rule": "Edit Rule"
+  ,"Name": "Name"
+  ,"Supply Method": "Supply Method"
+  ,"Applicability": "Applicability"
+  ,"Route": "Route"
+  ,"Propagation": "Propagation"
+  ,"Cancel Next Move": "Cancel Next Move"
+  ,"Propagation of carrier": "Propagation of carrier"
+  ,"Options": "Options"
+  ,"Allow New Product": "Allow New Product"
+  ,"Allow mixed products": "Allow mixed products"
+  ,"Allow same products only": "Allow same products only"
+  ,"No new products allowed": "No new products allowed"
+  ,"Max Weight (kg)": "Max Weight (kg)"
+  ,"Capacity by Package": "Capacity by Package"
+  ,"Capacity by Product": "Capacity by Product"
+  ,"Package Type": "Package Type"
+  ,"Product": "Product"
+  ,"Quantity": "Quantity"
+  ,"Select type": "Select type"
+  ,"Create Category": "Create Category"
+  ,"Storage Categories": "Storage Categories"
+  ,"Add Storage Category": "Add Storage Category"
+  ,"Total Categories": "Total Categories"
+  ,"Avg Utilization": "Avg Utilization"
+  ,"Highest Capacity": "Highest Capacity"
+  ,"Max Weight": "Max Weight"
+  ,"Utilization": "Utilization"
+  ,"Package Types": "Package Types"
+  ,"Edit Storage Category": "Edit Storage Category"
+  ,"New Storage Category": "New Storage Category"
+  ,"Storage Category": "Storage Category"
+  ,"Enter category name": "Enter category name"
+  ,"Value Range": "Value Range"
+  ,"High Value": "High Value"
+  ,"Low Value": "Low Value"
+  ,"All Values": "All Values"
+  ,"Low (< 50K)": "Low (< 50K)"
+  ,"Medium (50K-150K)": "Medium (50K-150K)"
+  ,"High (> 150K)": "High (> 150K)",
+  "Manage product packaging configurations and units": "Manage product packaging configurations and units",
+  "Add Product Packaging": "Add Product Packaging",
+  "Total Packagings": "Total Packagings",
+  "Products with Packaging": "Products with Packaging",
+  "Sales Enabled": "Sales Enabled",
+  "Purchase Enabled": "Purchase Enabled",
+  "Search packagings, products, or types...": "Search packagings, products, or types...",
+  "Contained Quantity": "Contained Quantity",
+  "Packaging Name": "Packaging Name",
+  "e.g. Box of 12": "e.g. Box of 12",
+  "Select product": "Select product",
+  "Select package type": "Select package type",
+  "Main Company": "Main Company",
+  "Create": "Create",
+  "Putaway Rules": "Putaway Rules",
+  "Manage automatic product routing to storage locations": "Manage automatic product routing to storage locations",
+  "Add Putaway Rule": "Add Putaway Rule",
+  "Total Rules": "Total Rules",
+  "Active Rules": "Active Rules",
+  "Destinations": "Destinations",
+  "Search putaway rules...": "Search putaway rules...",
+  "Storage": "Storage",
+  "Sublocation": "Sublocation",
+  "Product Categories": "Product Categories",
+  "Add Category": "Add Category",
+  "Parent Categories": "Parent Categories",
+  "Child Categories": "Child Categories",
+  "With Routes": "With Routes",
+  "Parent:": "Parent:",
+  "Hierarchy Level": "Hierarchy Level",
+  "Level": "Level",
+  "Reserve Packagings": "Reserve Packagings",
+  "Full Only": "Full Only",
+  "Partial": "Partial",
+  "Category Name": "Category Name",
+  "e.g. Lamps": "e.g. Lamps",
+  "Parent Category": "Parent Category",
+  "Select parent category": "Select parent category",
+  "None": "None",
+  "LOGISTICS": "LOGISTICS",
+  "Enter routes": "Enter routes",
+  "Force Removal Strategy": "Force Removal Strategy",
+  "Select strategy": "Select strategy"
+  ,"Manage packaging options and carrier integrations": "Manage packaging options and carrier integrations"
+  ,"Add Package Type": "Add Package Type"
+  ,"Total Package Types": "Total Package Types"
+  ,"Carriers Integrated": "Carriers Integrated"
+  ,"Average Weight": "Average Weight"
+  ,"Search categories...": "Search categories..."
+  ,"Unit of Measure": "Unit of Measure"
+  ,"Type": "Type"
+  ,"Ratio": "Ratio"
+  ,"Active": "Active"
+  ,"Rounding": "Rounding"
+  ,"Actions": "Actions"
+  ,"Unit name": "Unit name"
+  ,"Reference Unit": "Reference Unit"
+  ,"Bigger than reference": "Bigger than reference"
+  ,"Smaller than reference": "Smaller than reference"
+  ,"Add Unit of Measure Category": "Add Unit of Measure Category"
+  ,"Edit Unit of Measure Category": "Edit Unit of Measure Category"
+  ,"Unit of Measure Category": "Unit of Measure Category"
+  ,"e.g., Weight, Length, Volume": "e.g., Weight, Length, Volume",
+  "Manage shipping methods and pricing rules": "Manage shipping methods and pricing rules",
+  "Search delivery methods...": "Search delivery methods...",
+  "Total Methods": "Total Methods",
+  "Average Price": "Average Price",
+  "Most Used Provider": "Most Used Provider",
+  "Unpublished": "Unpublished",
+  "No limit": "No limit",
+  "Available Countries": "Available Countries",
+  "Edit Delivery Method": "Edit Delivery Method",
+  "Add Delivery Method": "Add Delivery Method",
+  "Configure shipping method and pricing rules": "Configure shipping method and pricing rules",
+  "Delivery Method Name *": "Delivery Method Name *",
+  "e.g. UPS Express": "e.g. UPS Express",
+  "All websites": "All websites",
+  "Main Store": "Main Store",
+  "International Store": "International Store",
+  "Provider": "Provider",
+  "Fixed Price": "Fixed Price",
+  "Max Weight": "Max Weight",
+  "Delivery Product": "Delivery Product",
+  "Select delivery product": "Select delivery product",
+  "Tracking Link": "Tracking Link",
+  "Set a fixed price for this delivery method. If you specify a free threshold, shipping will be free when the order amount exceeds that value.": "Set a fixed price for this delivery method. If you specify a free threshold, shipping will be free when the order amount exceeds that value.",
+  "Destination": "Destination",
+  "Countries": "Countries",
+  "Select countries": "Select countries",
+  "States": "States",
+  "Select states": "Select states",
+  "Zip Prefixes": "Zip Prefixes",
+  "e.g. 90, 91, 92": "e.g. 90, 91, 92",
+  "Content": "Content",
+  "Max Volume (m³)": "Max Volume (m³)",
+  "Must Have Tags": "Must Have Tags",
+  "Excluded Tags": "Excluded Tags",
+  "Configure availability rules to make this shipping method available according to the order content or destination.": "Configure availability rules to make this shipping method available according to the order content or destination.",
+  "Add a description for this delivery method...": "Add a description for this delivery method...",
+  "Create Method": "Create Method",
+  "Receipt Details": "Receipt Details",
+  "Delivery Details": "Delivery Details",
+  "Receive from": "Receive from",
+  "Deliver to": "Deliver to",
+  "Select partner": "Select partner",
+  "Select location": "Select location",
+  "Select operation type": "Select operation type",
+  "Select date": "Select date",
+  "Lines": "Lines",
+  "Add Line": "Add Line",
+  "Packaging": "Packaging",
+  "Demand": "Demand",
+  "No operation lines": "No operation lines",
+  "Confirm": "Confirm",
+  "Tracking Reference": "Tracking Reference",
+  "Weight (kg)": "Weight (kg)",
+  "Note": "Note",
+  "Additional Information": "Additional Information",
+  "Close": "Close",
+  "Discard unsaved changes?": "Discard unsaved changes?",
+  "January": "January",
+  "February": "February",
+  "March": "March",
+  "April": "April",
+  "May": "May",
+  "June": "June",
+  "July": "July",
+  "August": "August",
+  "September": "September",
+  "October": "October",
+  "November": "November",
+  "December": "December",
+  "Monday": "Monday",
+  "Tuesday": "Tuesday",
+  "Wednesday": "Wednesday",
+  "Thursday": "Thursday",
+  "Friday": "Friday",
+  "Saturday": "Saturday",
+  "Sunday": "Sunday",
+  "Plan and track your manufacturing operations": "Plan and track your manufacturing operations",
+  "New MO": "New MO",
+  "Total Manufacturing Orders": "Total Manufacturing Orders",
+  "Search manufacturing orders...": "Search manufacturing orders...",
+  "New Manufacturing Order": "New Manufacturing Order",
+  "Lot and Serial Number": "Lot and Serial Number",
+  "Select lot": "Select lot",
+  "Select BOM": "Select BOM",
+  "Select user": "Select user",
+  "Enter quantity": "Enter quantity",
+  "To consume": "To consume",
+  "Consumed": "Consumed",
+  "No component lines": "No component lines",
+  "Work Orders": "Work Orders",
+  "Work center": "Work center",
+  "Quantity Remaining": "Quantity Remaining",
+  "Expected duration": "Expected duration",
+  "Real duration": "Real duration",
+  "No work order lines": "No work order lines",
+  "Qty Remaining": "Qty Remaining",
+  "Expected duration (hours)": "Expected duration (hours)",
+  "Real duration (hours)": "Real duration (hours)",
+  "Enter hours": "Enter hours",
+  "Create": "Create",
+  "Waiting": "Waiting",
+  "Planned": "Planned",
+  "Select": "Select",
+  "selected": "selected",
+  "Clear Selection": "Clear Selection",
+  "No options": "No options",
+  "Picking updated successfully": "Picking updated successfully",
+  "Failed to update picking": "Failed to update picking",
+  "Picking created successfully": "Picking created successfully",
+  "Failed to create picking": "Failed to create picking",
+  "Manufacturing order updated successfully": "Manufacturing order updated successfully",
+  "Failed to update manufacturing order": "Failed to update manufacturing order",
+  "Manufacturing order created successfully": "Manufacturing order created successfully",
+  "Failed to create manufacturing order": "Failed to create manufacturing order",
+  "Landed cost updated successfully": "Landed cost updated successfully",
+  "Failed to update landed cost": "Failed to update landed cost",
+  "Landed cost created successfully": "Landed cost created successfully",
+  "Failed to create landed cost": "Failed to create landed cost",
+  "Add Wave": "Add Wave",
+  "Available Transfers": "Available Transfers",
+  "Create Wave": "Create Wave",
+  "Try adjusting your location filter": "Try adjusting your location filter",
+  "Filter by location (e.g., Zone A, Aisle 1)...": "Filter by location (e.g., Zone A, Aisle 1)...",
+  "Select transfers to group into a wave": "Select transfers to group into a wave",
+  "Expand Panel": "Expand Panel",
+  "Live Analytics": "Live Analytics",
+  "Real-time inventory telemetry": "Real-time inventory telemetry",
+  "Total Utilization": "Total Utilization",
+  "Free Space": "Free Space",
+  "cells": "cells",
+  "Hourly Throughput": "Hourly Throughput",
+  "System Alerts": "System Alerts",
+  "Active": "Active",
+  "Critical Temperature": "Critical Temperature",
+  "Zone A-B122 reporting elevated heat levels above threshold.": "Zone A-B122 reporting elevated heat levels above threshold.",
+  "All systems normal": "All systems normal",
+  "Inbound Shipment": "Inbound Shipment",
+  "View incoming manifest & schedules": "View incoming manifest & schedules",
+  "Download Report": "Download Report",
+  "Unit": "Unit",
+  "Rack": "Rack",
+  "Attention Needed": "Attention Needed",
+  "Operational": "Operational",
+  "Action Required": "Action Required",
+  "Unspecified critical error. Technician required.": "Unspecified critical error. Technician required.",
+  "Temperature": "Temperature",
+  "Humidity": "Humidity",
+  "Shelf Configuration": "Shelf Configuration",
+  "Full": "Full",
+  "Empty Shelf": "Empty Shelf",
+  "Updated": "Updated",
+  "ID": "ID",
+  "History": "History",
+  "Manage Rack": "Manage Rack",
+  "Inbound Schedule": "Inbound Schedule",
+  "Today's incoming deliveries": "Today's incoming deliveries",
+  "ETA": "ETA",
+  "Units expected": "Units expected",
+  "Close": "Close",
+  "Download Manifest": "Download Manifest",
+  "Current Location": "Current Location",
+  "Quantum Processor X2": "Quantum Processor X2",
+  "Hydraulic Piston A": "Hydraulic Piston A",
+  "Neural Interface Kit": "Neural Interface Kit",
+  "Graphene Sheet": "Graphene Sheet",
+  "Optical Sensor Array": "Optical Sensor Array",
+  "Fusion Cell Battery": "Fusion Cell Battery",
+  "Titanium Fastener": "Titanium Fastener",
+  "Liquid Cooling Unit": "Liquid Cooling Unit",
+  "Positron Emitter": "Positron Emitter",
+  "Nano-Weave Fiber": "Nano-Weave Fiber",
+  "Raw Materials": "Raw Materials",
+  "Components": "Components",
+  "Hazardous": "Hazardous",
+  "Structural integrity warning: Support beam stress detected": "Structural integrity warning: Support beam stress detected",
+  "Ambient temperature threshold exceeded (Max: 24°C)": "Ambient temperature threshold exceeded (Max: 24°C)",
+  "Humidity levels critical (>65%)": "Humidity levels critical (>65%)",
+  "Weight distribution unbalanced: Top-heavy": "Weight distribution unbalanced: Top-heavy",
+  "Sensor malfunction: Optical gate obscured": "Sensor malfunction: Optical gate obscured",
+  "Unauthorized access detected on rear panel": "Unauthorized access detected on rear panel",
+  "Logistics Hub Alpha": "Logistics Hub Alpha",
+  "Distribution Center Beta": "Distribution Center Beta",
+  "San Francisco, CA": "San Francisco, CA",
+  "Austin, TX": "Austin, TX",
+  "Cyberdyne Systems": "Cyberdyne Systems",
+  "Massive Dynamic": "Massive Dynamic",
+  "Aperture Science": "Aperture Science",
+  "Wayne Enterprises": "Wayne Enterprises",
+  "Stark Industries": "Stark Industries",
+  "Arriving": "Arriving",
+  "Delayed": "Delayed",
+  "Dock 1": "Dock 1",
+  "Dock 2": "Dock 2",
+  "Dock 3": "Dock 3",
+  "Dock 4": "Dock 4",
+  "Dock 5": "Dock 5",
+  "Margin": "Margin",
+  "New Delivery Method": "New Delivery Method",
+  "Basic Information": "Basic Information",
+  "Delivery Method Name": "Delivery Method Name",
+  "Pricing": "Pricing",
+  "Availability": "Availability",
+  "Margin on rate": "Margin on rate",
+  "Additional Margin": "Additional Margin",
+  "Tracking link": "Tracking link",
+  "Pricing Rules": "Pricing Rules",
+  "Add line": "Add line",
+  "Condition": "Condition",
+  "Formula": "Formula",
+  "Base": "Base",
+  "Coeff.": "Coeff.",
+  "Zip prefixes": "Zip prefixes",
+  "Select zip prefixes": "Select zip prefixes",
+  "Select routes": "Select routes",
+  "Max weight (kg)": "Max weight (kg)",
+  "Max volume (m³)": "Max volume (m³)",
+  "Weight * Volume": "Weight * Volume",
+  "Session expired. Please sign in again.": "Session expired. Please sign in again.",
+  "Delivery method updated successfully": "Delivery method updated successfully",
+  "Delivery method created successfully": "Delivery method created successfully",
+  "Failed to update delivery method": "Failed to update delivery method",
+  "Failed to create delivery method": "Failed to create delivery method",
+  "Unknown error occurred": "Unknown error occurred",
+  "Saving...": "Saving...",
+  "Select product": "Select product",
+  "e.g. https://example.com/track/<shipment>": "e.g. https://example.com/track/<shipment>",
+  "Operations": "Operations",
+  "No session ID found": "No session ID found",
+  "Packaging updated successfully": "Packaging updated successfully",
+  "Packaging created successfully": "Packaging created successfully",
+  "Failed to update packaging": "Failed to update packaging",
+  "Failed to create packaging": "Failed to create packaging",
+  "New packaging": "New packaging",
+  "Remove": "Remove",
+  "Sales & Purchase": "Sales & Purchase",
+  "Packaging": "Packaging",
+  "Please enter a value": "Please enter a value",
+  "Failed to create attribute value. Please try again.": "Failed to create attribute value. Please try again.",
+  "Failed to save attribute. Please try again.": "Failed to save attribute. Please try again.",
+  "Please enter a unit name": "Please enter a unit name",
+  "Unit created successfully": "Unit created successfully",
+  "Failed to create unit. Please try again.": "Failed to create unit. Please try again.",
+  "Session ID not found": "Session ID not found",
+  "Category created successfully": "Category created successfully",
+  "Failed to create category": "Failed to create category",
+  "Category updated successfully": "Category updated successfully",
+  "Failed to update category": "Failed to update category",
+  "Save": "Save",
+  "more": "more",
+  "Attribute created successfully": "Attribute created successfully",
+  "Attribute updated successfully": "Attribute updated successfully",
+  "Select all": "Select all",
+  "Select row": "Select row",
+  "Columns": "Columns",
+  "No results found": "No results found",
+  "Product Count": "Product Count",
+  "Create Date": "Create Date",
+  "Complete Name": "Complete Name",
+  "Parent": "Parent",
+  "Children": "Children",
+  "Child": "Child",
+  "Package Type Name": "Package Type Name",
+  "Height (mm)": "Height (mm)",
+  "Width (mm)": "Width (mm)",
+  "Length (mm)": "Length (mm)",
+  "Weight (kg)": "Weight (kg)",
+  "Max Weight (kg)": "Max Weight (kg)",
+  "Carrier": "Carrier",
+  "Carrier Code": "Carrier Code",
+  "Switch to Table View": "Switch to Table View",
+  "Switch to Cards View": "Switch to Cards View",
+  "Sequence": "Sequence",
+  "Clear": "Clear",
+  "Apply": "Apply",
+  "Max Weight Range": "Max Weight Range",
+  "Storage Category Name": "Storage Category Name",
+  "Package Caps": "Package Caps",
+  "Product Caps": "Product Caps",
+  "Unit of measure": "Unit of measure",
+  "Packaging Name": "Packaging Name",
+  "Usage Type": "Usage Type",
+  "Rule Name": "Rule Name",
+  "Source Location": "Source Location",
+  "Destination Location": "Destination Location",
+  "Supply Method": "Supply Method",
+  "Operation Type": "Operation Type",
+  "Lead Time": "Lead Time",
+  "Delivery Type": "Delivery Type",
+  "Fixed Price": "Fixed Price",
+  "Based on Rules": "Based on Rules",
+  "Margin": "Margin",
+  "Fixed Margin": "Fixed Margin",
+  "Tracking URL": "Tracking URL",
+  "Routes": "Routes",
+  "Max Weight": "Max Weight",
+  "Max Volume": "Max Volume",
+  "Countries": "Countries",
+  "Warehouse Name": "Warehouse Name",
+  "Short Name": "Short Name",
+  "Location": "Location",
+  "Incoming Shipments": "Incoming Shipments",
+  "Outgoing Shipments": "Outgoing Shipments",
+  "Manufacture": "Manufacture",
+  "Buy to Resupply": "Buy to Resupply",
+  "Receive and Store (1 step)": "Receive and Store (1 step)",
+  "Receive then Store (2 steps)": "Receive then Store (2 steps)",
+  "Receive, Quality Control, then Store (3 steps)": "Receive, Quality Control, then Store (3 steps)",
+  "Deliver (1 step)": "Deliver (1 step)",
+  "Pick then Deliver (2 steps)": "Pick then Deliver (2 steps)",
+  "Pick, Pack, then Deliver (3 steps)": "Pick, Pack, then Deliver (3 steps)",
+  "Manufacture (1 step)": "Manufacture (1 step)",
+  "Pick components then manufacture (2 steps)": "Pick components then manufacture (2 steps)",
+  "Pick components, manufacture, then store products (3 steps)": "Pick components, manufacture, then store products (3 steps)",
+  "Yes": "Yes",
+  "No": "No",
+  "Status": "Status",
+  "Active": "Active",
+  "Inactive": "Inactive",
+  "Total Units": "Total Units",
+  "Active Units": "Active Units",
+  "Reference Units": "Reference Units",
+  "Bigger Units": "Bigger Units",
+  "Smaller Units": "Smaller Units",
+  "Units List": "Units List",
+  "Unit Type": "Unit Type",
+  "Reference": "Reference",
+  "Bigger": "Bigger",
+  "Smaller": "Smaller",
+  "When product arrives in": "When product arrives in",
+  "Store To": "Store To",
+  "Having Category": "Having Category",
+  "Closest Location": "Closest Location",
+  "Display Type": "Display Type",
+  "Variant Creation": "Variant Creation",
+  "Filter Visibility": "Filter Visibility",
+  "Values Count": "Values Count",
+  "Values List": "Values List",
+  "Radio": "Radio",
+  "Pills": "Pills",
+  "Select": "Select",
+  "Color": "Color",
+  "Multi-checkbox": "Multi-checkbox",
+  "Instantly": "Instantly",
+  "Dynamically": "Dynamically",
+  "Never": "Never",
+  "Hidden": "Hidden",
+  "Source Location": "Source Location",
+  "Destination Location": "Destination Location",
+  "Rules Count": "Rules Count",
+  "Applicable On": "Applicable On",
+  "Has Rules": "Has Rules",
+  "No Rules": "No Rules",
+  "Source": "Source",
+  "Destination": "Destination",
+  "Categories": "Categories",
+  "Packagings": "Packagings",
+  "Shipping Methods": "Shipping Methods",
+  "Sales Order Lines": "Sales Order Lines",
+  "Product ID": "Product ID",
+  "Product Name": "Product Name",
+  "SKU": "SKU",
+  "On Hand": "On Hand",
+  "Unit Cost": "Unit Cost",
+  "Reserved": "Reserved",
+  "Out of Stock": "Out of Stock",
+  "Low Stock": "Low Stock",
+  "In Stock": "In Stock",
+  "Incoming": "Incoming",
+  "Outgoing": "Outgoing",
+  "Location Name": "Location Name",
+  "Total": "Total",
+  "Quantity Done": "Quantity Done",
+  "Origin": "Origin",
+  "Package ID": "Package ID",
+  "Package Name": "Package Name",
+  "Dimensions": "Dimensions",
+  "Width": "Width",
+  "Height": "Height",
+  "Length": "Length",
+  "Rows per page:": "Rows per page:",
+  "Page": "Page",
+  "of": "of",
+  "Previous": "Previous",
+  "Next": "Next",
+  "Switch to Table View": "Switch to Table View",
+  "Switch to Cards View": "Switch to Cards View",
+  "Location ID": "Location ID",
+  "Location Type": "Location Type",
+  "Storage Category": "Storage Category",
+  "Parent Location": "Parent Location",
+  "Items": "Items",
+  "Is Reception": "Is Reception",
+  "Is Scrap Location": "Is Scrap Location",
+  "Is Dock Location": "Is Dock Location",
+  "Replenish Location": "Replenish Location",
+  "Inventory Frequency": "Inventory Frequency",
+  "Removal Strategy": "Removal Strategy",
+  "Comment": "Comment",
+  "Lot Number": "Lot Number",
+  "Scrap ID": "Scrap ID",
+  "Replenish Quantities": "Replenish Quantities",
+  "Product Category": "Product Category",
+  "Showing": "Showing",
+  "lots": "lots",
+  "First": "First",
+  "Last": "Last",
+  "Picking Count": "Picking Count",
+  "Total Cost": "Total Cost",
+  "costs": "costs",
+  "With Bill": "With Bill",
+  "Without Bill": "Without Bill",
+  "Receipt ID": "Receipt ID",
+  "Batch Transfer": "Batch Transfer",
+  "Delivery Address": "Delivery Address",
+  "ready": "Ready",
+  "waiting": "Waiting",
+  "cancelled": "Cancelled",
+  "Operations": "Operations",
+  "Manufacturing Order ID": "Manufacturing Order ID",
+  "Manufacturing Order Name": "Manufacturing Order Name",
+  "Unit of Measure": "Unit of Measure",
+  "Dropship ID": "Dropship ID",
+  "Wave ID": "Wave ID",
+  "Wave Name": "Wave Name",
+  "Batch ID": "Batch ID",
+  "Batch Name": "Batch Name",
+  "Vehicle Category": "Vehicle Category",
+  "Transfers Count": "Transfers Count",
+  "Transfer": "Transfer",
+  "Transfers": "Transfers",
+  "Workflow Builder": "Workflow Builder",
+  "Nodes Library": "Nodes Library",
+  "Templates": "Templates",
+  "Help & Support": "Help & Support",
+  "Close": "Close",
+  "Workflows": "Workflows",
+  "Save": "Save",
+  "Undo": "Undo",
+  "Redo": "Redo",
+  "Export": "Export",
+  "Import": "Import",
+  "Save as Image": "Save as Image",
+  "Archive": "Archive",
+  "Publish": "Publish",
+  "Properties": "Properties",
+  "Basic Information": "Basic Information",
+  "Label": "Label",
+  "Enter label": "Enter label",
+  "Description": "Description",
+  "Enter description": "Enter description",
+  "Node Type": "Node Type",
+  "Node Settings": "Node Settings",
+  "Appearance": "Appearance",
+  "Border Color": "Border Color",
+  "Delete Node": "Delete Node",
+  "Connection Settings": "Connection Settings",
+  "Animation": "Animation",
+  "Direction": "Direction",
+  "Start Marker": "Start Marker",
+  "End Marker": "End Marker",
+  "Line Style": "Line Style",
+  "Stroke Width": "Stroke Width",
+  "Color": "Color",
+  "Delete Connection": "Delete Connection",
+  "Trigger": "Trigger",
+  "Trigger Type": "Trigger Type",
+  "Entity Type": "Entity Type",
+  "Select trigger type...": "Select trigger type...",
+  "Select entity type...": "Select entity type...",
+  "Create": "Create",
+  "Update": "Update",
+  "Delete": "Delete",
+  "Approval": "Approval",
+  "Approval Type": "Approval Type",
+  "Approvers": "Approvers",
+  "Required Approvals": "Required Approvals",
+  "Require Comments": "Require Comments",
+  "Sequential (One by One)": "Sequential (One by One)",
+  "Parallel (All at Once)": "Parallel (All at Once)",
+  "Any (First to Respond)": "Any (First to Respond)",
+  "Select approvers...": "Select approvers...",
+  "Action": "Action",
+  "Condition": "Condition",
+  "Condition Type": "Condition Type",
+  "Condition Expression": "Condition Expression",
+  "Field Value": "Field Value",
+  "Approval Result": "Approval Result",
+  "Amount": "Amount",
+  "Custom Expression": "Custom Expression",
+  "Notification": "Notification",
+  "Notification Type": "Notification Type",
+  "Recipients": "Recipients",
+  "Subject": "Subject",
+  "Message": "Message",
+  "Email": "Email",
+  "In-App": "In-App",
+  "SMS": "SMS",
+  "All Channels": "All Channels",
+  "Comma-separated names": "Comma-separated names",
+  "Notification subject": "Notification subject",
+  "Notification message...": "Notification message...",
+  "Person": "Person",
+  "Assign to Person": "Assign to Person",
+  "Assign To": "Assign To",
+  "Task Priority": "Task Priority",
+  "Due In (Hours)": "Due In (Hours)",
+  "Instructions": "Instructions",
+  "Task instructions...": "Task instructions...",
+  "Low": "Low",
+  "Medium": "Medium",
+  "High": "High",
+  "Urgent": "Urgent",
+  "Select person...": "Select person...",
+  "Document": "Document",
+  "Document Action": "Document Action",
+  "Template (if generating)": "Template (if generating)",
+  "Template ID": "Template ID",
+  "Required Fields": "Required Fields",
+  "Review": "Review",
+  "Generate": "Generate",
+  "Upload": "Upload",
+  "Sign": "Sign",
+  "Escalation": "Escalation",
+  "Escalate After (Hours)": "Escalate After (Hours)",
+  "Escalate To": "Escalate To",
+  "Escalation Action": "Escalation Action",
+  "Notify Only": "Notify Only",
+  "Reassign Task": "Reassign Task",
+  "Skip Task": "Skip Task",
+  "Cancel Workflow": "Cancel Workflow",
+  "Delay": "Delay",
+  "Delay Amount": "Delay Amount",
+  "Delay Unit": "Delay Unit",
+  "Minutes": "Minutes",
+  "Hours": "Hours",
+  "Days": "Days",
+  "Weeks": "Weeks",
+  "Why this delay is needed...": "Why this delay is needed...",
+  "End": "End",
+  "Outcome": "Outcome",
+  "Final Message": "Final Message",
+  "Workflow completion message...": "Workflow completion message...",
+  "Completed": "Completed",
+  "Approved": "Approved",
+  "Rejected": "Rejected",
+  "Cancelled": "Cancelled",
+  "Failed": "Failed",
+  "Workflow Templates": "Workflow Templates",
+  "Select workflows to manage ({{count}} selected)": "Select workflows to manage ({{count}} selected)",
+  "Select a workflow to load and edit": "Select a workflow to load and edit",
+  "Search workflows...": "Search workflows...",
+  "Loading workflows...": "Loading workflows...",
+  "No workflows found": "No workflows found",
+  "No workflows available": "No workflows available",
+  "Try a different search term": "Try a different search term",
+  "Current": "Current",
+  "Delete Workflows": "Delete Workflows",
+  "Are you sure you want to delete {{count}} workflow(s)? This action cannot be undone.": "Are you sure you want to delete {{count}} workflow(s)? This action cannot be undone.",
+  "Yes": "Yes",
+  "No": "No",
+  "Type:": "Type:",
+  "Entity:": "Entity:",
+  "nodes": "nodes",
+  "After {{hours}}h → {{to}}": "After {{hours}}h → {{to}}",
+  "Manager": "Manager",
+  "Wait {{amount}} {{unit}}": "Wait {{amount}} {{unit}}",
+  "Due in {{hours}} hours": "Due in {{hours}} hours",
+  "Start the workflow": "Start the workflow",
+  "Perform an action": "Perform an action",
+  "Branch based on conditions": "Branch based on conditions",
+  "Wait before continuing": "Wait before continuing",
+  "Multiple choice decision": "Multiple choice decision",
+  "Send a notification": "Send a notification",
+  "Require approval": "Require approval",
+  "Assign to person": "Assign to person",
+  "Document action": "Document action",
+  "Escalate task": "Escalate task",
+  "End workflow": "End workflow",
+  "Edit": "Edit",
+  "Cancel": "Cancel"
+}

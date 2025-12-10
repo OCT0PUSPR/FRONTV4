@@ -1,0 +1,29 @@
+.label-edge-path {
+  stroke-width: 1.5;
+  transition: stroke 0.15s ease;
+}
+
+.label-edge-path:hover {
+  stroke: #60a5fa !important;
+  stroke-width: 2;
+}
+
+/* Keep original edge color when selected - don't change to blue */
+.label-edge-path.selected {
+  /* Don't override stroke color - keep original */
+  stroke-width: 2;
+}
+
+.label-edge-label {
+  position: absolute;
+  background: var(--wf-card, white);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--wf-text-secondary, #6b7280);
+  border: 1px solid var(--wf-border, #e5e7eb);
+  pointer-events: all;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
