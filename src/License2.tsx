@@ -15,6 +15,9 @@ const LicensePage = () => {
   const [isHovered, setIsHovered] = useState(false);
   const [activationStatus, setActivationStatus] = useState<'idle' | 'activating' | 'success'>('idle');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [licenseStartDate, setLicenseStartDate] = useState<string | null>(null);
+  const [licenseEndDate, setLicenseEndDate] = useState<string | null>(null);
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
 
   const toggleTheme = () => setMode(isDarkMode ? 'light' : 'dark');
@@ -22,16 +25,16 @@ const LicensePage = () => {
   // Get tenant ID from navigation state or localStorage
   const tenantId = location.state?.tenantId || localStorage.getItem('current_tenant_id');
 
-  // Calculate expiry date (1 year from today)
-  const expiryDate = React.useMemo(() => {
-    const date = new Date();
-    date.setFullYear(date.getFullYear() + 1);
+  // Format license dates for display
+  const formatLicenseDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     }).format(date);
-  }, []);
+  };
 
   // Handle input change for segmented fields
   const handleChange = (index: number, value: string) => {
@@ -144,7 +147,13 @@ const LicensePage = () => {
         // Clear license cache to force fresh check on next page load
         localStorage.removeItem('licenseLastCheck');
         localStorage.removeItem('licenseValid');
-        // Set success status to trigger animation
+        // Store license dates from response
+        if (data?.license) {
+          setLicenseStartDate(data.license.startDate || null);
+          setLicenseEndDate(data.license.endDate || null);
+        }
+        // Set success message and status
+        setSuccessMessage(data?.message || 'WMS license activated successfully.');
         setActivationStatus('success');
       } else {
         setError(data?.message || 'Failed to activate license');
@@ -195,16 +204,10 @@ const LicensePage = () => {
     checkLicense();
   }, [navigate]);
 
-  // Redirect to signin after success animation completes
-  useEffect(() => {
-    if (activationStatus === 'success') {
-      const redirectTimer = setTimeout(() => {
-        navigate('/signin', { replace: true });
-      }, 2500);
-
-      return () => clearTimeout(redirectTimer);
-    }
-  }, [activationStatus, navigate]);
+  // Handler to navigate to dashboard
+  const handleGoToDashboard = () => {
+    navigate('/signin', { replace: true });
+  };
 
   // Theme-aware configuration
   const themeConfig = {
@@ -632,12 +635,19 @@ const LicensePage = () => {
                       Activation Successful
                     </h2>
 
-                    <p
-                      className="text-lg mb-8 animate-slide-up delay-300"
-                      style={{ color: themeConfig.textSecondary }}
-                    >
-                      License has been verified successfully. Redirecting to sign in...
-                    </p>
+                    {successMessage && (
+                      <div
+                        className="w-full mb-8 p-4 rounded-xl text-sm font-medium animate-slide-up delay-300 flex items-center justify-center gap-2"
+                        style={{
+                          backgroundColor: isDarkMode ? 'rgba(16, 185, 129, 0.1)' : 'rgba(220, 252, 231, 0.5)',
+                          color: themeConfig.successText,
+                          border: `1px solid ${isDarkMode ? 'rgba(16, 185, 129, 0.3)' : '#d1fae5'}`
+                        }}
+                      >
+                        <Check className="w-4 h-4" />
+                        {successMessage}
+                      </div>
+                    )}
 
                     {/* License Detail Card */}
                     <div
@@ -683,41 +693,75 @@ const LicensePage = () => {
                         style={{ backgroundColor: colors.border }}
                       />
 
-                      <div className="flex items-center justify-between">
-                        <span 
-                          className="text-xs uppercase tracking-widest font-bold"
-                          style={{ color: themeConfig.textSecondary }}
-                        >
-                          Valid Until
-                        </span>
-                        <span 
-                          className="font-bold px-2 py-1 rounded border text-sm"
-                          style={{
-                            color: themeConfig.successText,
-                            backgroundColor: themeConfig.successBg,
-                            borderColor: isDarkMode ? 'rgba(16, 185, 129, 0.3)' : '#d1fae5'
-                          }}
-                        >
-                          {expiryDate}
-                        </span>
-                      </div>
+                      {licenseStartDate && (
+                        <div className="flex items-center justify-between">
+                          <span 
+                            className="text-xs uppercase tracking-widest font-bold"
+                            style={{ color: themeConfig.textSecondary }}
+                          >
+                            Start Date
+                          </span>
+                          <span 
+                            className="font-bold px-2 py-1 rounded border text-sm"
+                            style={{
+                              color: themeConfig.text,
+                              backgroundColor: themeConfig.inputBg,
+                              borderColor: themeConfig.inputBorder
+                            }}
+                          >
+                            {formatLicenseDate(licenseStartDate)}
+                          </span>
+                        </div>
+                      )}
+
+                      {licenseStartDate && licenseEndDate && (
+                        <div 
+                          className="h-px w-full"
+                          style={{ backgroundColor: colors.border }}
+                        />
+                      )}
+
+                      {licenseEndDate && (
+                        <div className="flex items-center justify-between">
+                          <span 
+                            className="text-xs uppercase tracking-widest font-bold"
+                            style={{ color: themeConfig.textSecondary }}
+                          >
+                            End Date
+                          </span>
+                          <span 
+                            className="font-bold px-2 py-1 rounded border text-sm"
+                            style={{
+                              color: themeConfig.successText,
+                              backgroundColor: themeConfig.successBg,
+                              borderColor: isDarkMode ? 'rgba(16, 185, 129, 0.3)' : '#d1fae5'
+                            }}
+                          >
+                            {formatLicenseDate(licenseEndDate)}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
-                    <div 
-                      className="mt-8 text-sm font-medium animate-slide-up delay-700 flex items-center justify-center gap-2"
-                      style={{ color: themeConfig.textSecondary }}
-                    >
-                      <div 
-                        className="spinner" 
-                        style={{ 
-                          width: '16px', 
-                          height: '16px', 
-                          borderWidth: '2px',
-                          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-                          borderTopColor: isDarkMode ? '#ffffff' : themeConfig.textSecondary
-                        }} 
-                      />
-                      <span>Redirecting to Dashboard...</span>
+                    <div className="w-full flex justify-end mt-8 animate-slide-up delay-700">
+                      <button
+                        onClick={handleGoToDashboard}
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}
+                        className="group relative w-full md:w-auto overflow-hidden rounded-xl px-10 py-4 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-xl"
+                        style={{
+                          backgroundColor: isDarkMode ? '#1e293b' : '#0f172a',
+                          color: '#ffffff',
+                          boxShadow: isDarkMode 
+                            ? '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2)' 
+                            : '0 20px 25px -5px rgba(59, 130, 246, 0.2), 0 10px 10px -5px rgba(59, 130, 246, 0.1)'
+                        }}
+                      >
+                        <div className="relative z-10 flex items-center justify-center gap-3 font-bold uppercase tracking-wider text-sm">
+                          <span>Dashboard</span>
+                          <ArrowRight className={`w-4 h-4 transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`} />
+                        </div>
+                      </button>
                     </div>
 
                   </div>
