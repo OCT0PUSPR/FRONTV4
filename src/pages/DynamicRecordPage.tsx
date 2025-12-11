@@ -994,15 +994,34 @@ export function DynamicRecordPage({
                         >
                             {field.label}
                         </label>
-                        <textarea
-                            className="premium-input min-h-[120px]"
-                            rows={4}
-                            value={value || ''}
-                            onChange={(e) => handleChange(field.name, e.target.value)}
-                            style={{
-                                color: colors.textPrimary
-                            }}
-                        />
+                        <div style={{ position: "relative" }}>
+                            <textarea
+                                className="premium-input min-h-[120px]"
+                                rows={4}
+                                value={value || ''}
+                                onChange={(e) => {
+                                    const newValue = e.target.value
+                                    if (newValue.length <= 500) {
+                                        handleChange(field.name, newValue)
+                                    }
+                                }}
+                                maxLength={500}
+                                style={{
+                                    color: colors.textPrimary,
+                                    paddingBottom: "24px"
+                                }}
+                            />
+                            <div style={{
+                                position: "absolute",
+                                bottom: "8px",
+                                right: "12px",
+                                fontSize: "11px",
+                                color: colors.textSecondary,
+                                fontWeight: "500"
+                            }}>
+                                {(value || '').length}/500
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     <CustomInput
@@ -1010,6 +1029,7 @@ export function DynamicRecordPage({
                         type={field.type === 'integer' || field.type === 'float' || field.type === 'monetary' ? 'number' : 'text'}
                         value={value || ''}
                         onChange={(v) => handleChange(field.name, field.type === 'integer' ? parseInt(v) : field.type === 'float' ? parseFloat(v) : v)}
+                        maxLength={field.type === 'integer' || field.type === 'float' || field.type === 'monetary' ? 30 : 150}
                     />
                 )}
             </div>

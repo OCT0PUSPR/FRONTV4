@@ -13,14 +13,20 @@ interface CustomInputProps {
   placeholder?: string
   disabled?: boolean
   suffix?: string
+  maxLength?: number
 }
 
-export function CustomInput({ label, type, value, onChange, placeholder = "", disabled = false, suffix }: CustomInputProps) {
+export function CustomInput({ label, type, value, onChange, placeholder = "", disabled = false, suffix, maxLength }: CustomInputProps) {
   const { colors } = useTheme()
   const [isFocused, setIsFocused] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
+    let newValue = e.target.value
+
+    // Apply maxLength if specified
+    if (maxLength && newValue.length > maxLength) {
+      newValue = newValue.slice(0, maxLength)
+    }
 
     // For number type, only allow numeric input
     if (type === "number") {
@@ -71,7 +77,14 @@ export function CustomInput({ label, type, value, onChange, placeholder = "", di
         {isTextarea ? (
           <textarea
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => {
+              let newValue = e.target.value
+              if (maxLength && newValue.length > maxLength) {
+                newValue = newValue.slice(0, maxLength)
+              }
+              onChange(newValue)
+            }}
+            maxLength={maxLength}
             onFocus={() => !disabled && setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             placeholder={placeholder}
@@ -94,6 +107,7 @@ export function CustomInput({ label, type, value, onChange, placeholder = "", di
               type={type === "number" ? "text" : type === "email" ? "email" : "text"}
               value={value}
               onChange={handleChange}
+              maxLength={maxLength}
               onFocus={() => !disabled && setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder={placeholder}

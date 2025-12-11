@@ -637,32 +637,38 @@ export function DataTable<T extends { id: string | number }>({
             align={isRTL ? "left" : "right"}
             placement="bottom"
           />
-          {onExport && Object.keys(rowSelection).length > 0 && (
+          {onExport && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                onExport()
+                if (Object.keys(rowSelection).length > 0) {
+                  onExport()
+                }
               }}
+              disabled={Object.keys(rowSelection).length === 0}
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: "0.5rem",
                 padding: "0.375rem 0.75rem",
-                background: colors.card,
-                color: colors.textPrimary,
+                background: Object.keys(rowSelection).length > 0 ? colors.card : colors.background,
+                color: Object.keys(rowSelection).length > 0 ? colors.textPrimary : colors.textSecondary,
                 border: `1px solid ${colors.border}`,
                 borderRadius: "6px",
                 fontSize: "12px",
                 fontWeight: 500,
-                cursor: "pointer",
+                cursor: Object.keys(rowSelection).length > 0 ? "pointer" : "not-allowed",
                 transition: "all 0.2s ease",
                 boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                opacity: Object.keys(rowSelection).length > 0 ? 1 : 0.6,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = colors.mutedBg
+                if (Object.keys(rowSelection).length > 0) {
+                  e.currentTarget.style.background = colors.mutedBg
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = colors.card
+                e.currentTarget.style.background = Object.keys(rowSelection).length > 0 ? colors.card : colors.background
               }}
             >
               <Download size={14} />
