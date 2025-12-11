@@ -10,7 +10,6 @@ import { CaslProvider } from '../context/casl.tsx'
 import { Route, Routes, useNavigate, Navigate, useLocation } from "react-router"
 import Lottie from 'lottie-react'
 import loadingAnimation from './assets/loading.json'
-import Inventory from './inventory.tsx'
 import Signin from './signin.tsx'
 import { EnhancedSidebar } from '../@/components/EnhancedSidebar.tsx'
 import { ChatBot } from './components/ChatBot.tsx'
@@ -56,8 +55,6 @@ import { useTranslation } from 'react-i18next'
 import ReportingLocationConst from './reporting-location.tsx'
 import FieldsTesterPage from './fields-tester.tsx'
 import { Dashboard } from './dashboard.tsx'
-import Workflow from './workflowBuilder.tsx'
-import WorkflowBuilder from './workflowBuilder.tsx'
 import { ReactFlowProvider } from 'reactflow'
 import Workflows from './workflows.tsx'
 import ApprovalPage from './pages/ApprovalPage.tsx'
@@ -288,7 +285,6 @@ function AppContent() {
                   <HeaderNavbar />
                   <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
                     <Routes>
-                      <Route path="/inventory" element={<ProtectedRoute pageId={getPageIdFromRoute('/inventory') || 'inventory'}><Inventory /></ProtectedRoute>} />
                       <Route path="/products" element={<ProtectedRoute pageId={getPageIdFromRoute('/products') || 'products'}><Products /></ProtectedRoute>} />
                       <Route path="/products/edit/:id" element={<ProtectedRoute pageId="products"><DynamicRecordPage modelName="product.template" pageTitle="Product" backRoute="/products" /></ProtectedRoute>} />
                       <Route path="/products/create" element={<ProtectedRoute pageId="products"><DynamicRecordPage modelName="product.template" pageTitle="Product" backRoute="/products" /></ProtectedRoute>} />
@@ -392,8 +388,6 @@ function AppContent() {
                       <Route path="/" element={<Navigate to="/overview" replace />} />
                       <Route path="/dashboard" element={<ProtectedRoute pageId="dashboard"><Dashboard /></ProtectedRoute>} />
                       <Route path="/workflows" element={<ProtectedRoute pageId={getPageIdFromRoute('/workflows') || 'workflows'}><ReactFlowProvider><Workflows /></ReactFlowProvider></ProtectedRoute>} />
-                      <Route path="/workflow-builder" element={<ProtectedRoute pageId={getPageIdFromRoute('/workflow-builder') || 'workflow-builder'}><ReactFlowProvider><WorkflowBuilder /></ReactFlowProvider></ProtectedRoute>} />
-                      <Route path="/builder/:id" element={<ProtectedRoute pageId={getPageIdFromRoute('/workflow-builder') || 'workflow-builder'}><ReactFlowProvider><WorkflowBuilder /></ReactFlowProvider></ProtectedRoute>} />
                       <Route path="/workflow-v2" element={<ProtectedRoute pageId={getPageIdFromRoute('/workflow-v2') || 'workflow-v2'}><WorkflowV2 /></ProtectedRoute>} />
                       <Route path="/workflow-v2/:id" element={<ProtectedRoute pageId={getPageIdFromRoute('/workflow-v2') || 'workflow-v2'}><WorkflowV2 /></ProtectedRoute>} />
                       <Route path="/form" element={<ProtectedRoute pageId={getPageIdFromRoute('/form') || 'form'}><SurveyCreator /></ProtectedRoute>} />

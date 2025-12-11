@@ -36,7 +36,7 @@ export interface ApprovalNodeData extends BaseNodeData {
   approverIds?: number[];
 }
 
-export interface ConditionNodeData {
+export interface ConditionNodeData extends Record<string, unknown> {
   label: string;
   conditionType?: 'Field Value' | 'Approval Result' | 'Amount' | 'Custom Expression';
   expression?: string;
@@ -66,10 +66,6 @@ export interface EndNodeData extends BaseNodeData {
   finalMessage?: string;
 }
 
-export interface TextNodeData {
-    label: string;
-    color?: string;
-}
 
 export interface PersonNodeData {
   label: string;
@@ -155,7 +151,6 @@ export type NodeData =
   | NotificationNodeData
   | ActionNodeData
   | EndNodeData
-  | TextNodeData
   | PersonNodeData
   | DocumentNodeData
   | EscalationNodeData

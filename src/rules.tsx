@@ -2370,6 +2370,39 @@ export default function RulesPage() {
           }
         `}
       </style>
+
+      {canExportPage("rules") && (
+        <ExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          onExport={handleExport}
+          totalRecords={filteredRules.length}
+          selectedCount={Object.keys(rowSelection).length}
+          isSelectAll={isSelectAll === true}
+        />
+      )}
+
+      {toast && (
+        <Toast
+          text={toast.text}
+          state={toast.state}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      <Alert
+        isOpen={deleteAlertOpen}
+        type="delete"
+        title={t("Delete this rule?")}
+        message={t("This rule will be permanently deleted and cannot be recovered.")}
+        onClose={() => {
+          setDeleteAlertOpen(false)
+          setRuleToDelete(null)
+        }}
+        onConfirm={deleteRuleAction}
+        confirmLabel={t("Delete")}
+        cancelLabel={t("Cancel")}
+      />
     </div>
   )
 }
@@ -2495,39 +2528,6 @@ function RuleCardSkeleton({ colors }: { colors?: any }) {
           </div>
         </div>
       </div>
-
-      {canExportPage("rules") && (
-        <ExportModal
-          isOpen={isExportModalOpen}
-          onClose={() => setIsExportModalOpen(false)}
-          onExport={handleExport}
-          totalRecords={filteredRules.length}
-          selectedCount={Object.keys(rowSelection).length}
-          isSelectAll={isSelectAll === true}
-        />
-      )}
-
-      {toast && (
-        <Toast
-          text={toast.text}
-          state={toast.state}
-          onClose={() => setToast(null)}
-        />
-      )}
-
-      <Alert
-        isOpen={deleteAlertOpen}
-        type="delete"
-        title={t("Delete this rule?")}
-        message={t("This rule will be permanently deleted and cannot be recovered.")}
-        onClose={() => {
-          setDeleteAlertOpen(false)
-          setRuleToDelete(null)
-        }}
-        onConfirm={deleteRuleAction}
-        confirmLabel={t("Delete")}
-        cancelLabel={t("Cancel")}
-      />
     </div>
   )
 }

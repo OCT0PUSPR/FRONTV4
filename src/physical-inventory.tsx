@@ -62,6 +62,7 @@ export default function PhysicalInventory() {
   const { sessionId, isAuthenticated } = useAuth()
   const { colors } = useTheme()
   const { canEditPage, canExportPage } = useCasl()
+  const navigate = useNavigate()
   const {
     quants,
     products,

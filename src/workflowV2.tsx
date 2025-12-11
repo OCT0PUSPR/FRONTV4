@@ -13,7 +13,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { useWorkflowStore } from './stores/workflowStoreV2';
-import { NodeType, NodeData } from '../types';
+import { NodeType, NodeData } from './components/workflowV2/types';
 import { useParams } from 'react-router-dom';
 import { API_CONFIG, tenantFetch, getTenantHeaders } from './config/api';
 import { useTheme } from '../context/theme';

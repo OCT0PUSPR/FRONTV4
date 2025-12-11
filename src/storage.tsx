@@ -35,6 +35,7 @@ export default function StorageCategoriesPage() {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
   const [policyFilter, setPolicyFilter] = useState<string[]>([]) // Policy filter (mixed, same, empty)
+  const [dateRange, setDateRange] = useState<[string | null, string | null] | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(9)
   const [isRowModalOpen, setIsRowModalOpen] = useState(false)
@@ -1507,6 +1508,17 @@ export default function StorageCategoriesPage() {
         confirmLabel={t("Delete")}
         cancelLabel={t("Cancel")}
       />
+
+      {canExportPage("storage") && (
+        <ExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          onExport={handleExport}
+          totalRecords={filteredCategories.length}
+          selectedCount={Object.keys(rowSelection).length}
+          isSelectAll={isSelectAll === true}
+        />
+      )}
     </div>
   )
 }
@@ -1633,17 +1645,6 @@ function StorageCategoryCardSkeleton({ colors }: { colors?: any }) {
           </div>
         </div>
       </div>
-
-      {canExportPage("storage") && (
-        <ExportModal
-          isOpen={isExportModalOpen}
-          onClose={() => setIsExportModalOpen(false)}
-          onExport={handleExport}
-          totalRecords={filteredCategories.length}
-          selectedCount={Object.keys(rowSelection).length}
-          isSelectAll={isSelectAll === true}
-        />
-      )}
     </div>
   )
 }

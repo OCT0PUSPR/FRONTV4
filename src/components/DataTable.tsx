@@ -18,7 +18,7 @@ export interface ColumnDef<T> {
   width?: string
 }
 
-interface ActionItem {
+export interface ActionItem {
   key: string
   label: string
   icon?: LucideIcon

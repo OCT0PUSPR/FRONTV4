@@ -15,8 +15,8 @@ import {
   FileText,
   MapPin,
 } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../@/components/ui/select"
+import { Card } from "../@/components/ui/card"
 import { useTheme } from "../context/theme"
 
 interface InventoryMove {

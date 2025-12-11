@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { useTheme } from "../context/theme"
-import { Plus, Truck, Clock, CheckCircle2, FileText, AlertCircle, XCircle, RefreshCcw, Edit, Printer, RotateCcw, Trash2, Eye } from "lucide-react"
+import { Plus, Truck, Clock, CheckCircle2, FileText, AlertCircle, XCircle, RefreshCcw, Edit, Printer, RotateCcw, Trash2, Eye, type LucideIcon } from "lucide-react"
 import { Button } from "../@/components/ui/button"
 import { useData } from "../context/data"
 import { useAuth } from "../context/auth"
@@ -17,7 +17,7 @@ import { Skeleton } from "@mui/material"
 import { StatCard } from "./components/StatCard"
 import { DeliveryCard } from "./components/DeliveryCard"
 import { TransferFiltersBar } from "./components/TransferFiltersBar"
-import { DataTable, ColumnDef } from "./components/DataTable"
+import { DataTable, ColumnDef, type ActionItem } from "./components/DataTable"
 import Toast from "./components/Toast"
 import Alert from "./components/Alert"
 import { useSmartFieldRecords } from "./hooks/useSmartFieldRecords"
@@ -851,7 +851,7 @@ export default function TransferDeliveriesPage() {
                 const currentStatus = rawPicking?.state || "draft"
                 const isDone = currentStatus === "done"
 
-                const actions = [
+                const actions: ActionItem[] = [
                   {
                     key: "view",
                     label: t("View"),

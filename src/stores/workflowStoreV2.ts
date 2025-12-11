@@ -9,7 +9,7 @@ import {
   OnSelectionChangeParams,
   Node,
 } from '@xyflow/react';
-import { NodeType, NodeData } from '../../types';
+import { NodeType, NodeData } from '../components/workflowV2/types';
 import { nanoid } from 'nanoid';
 
 type HistoryState = {
@@ -165,8 +165,8 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
       (change) => change.type === 'select'
     );
     
-    const updatedNodes = applyNodeChanges(changes, get().nodes);
-    set({ nodes: updatedNodes });
+    const updatedNodes = applyNodeChanges(changes, get().nodes as any);
+    set({ nodes: updatedNodes as Node<NodeData>[] });
     
     // Save to history for:
     // 1. Node removals (CRITICAL - must save!)
@@ -225,7 +225,7 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
   onSelectionChange: (params) => {
     const hasSelection = params.nodes.length > 0 || params.edges.length > 0;
     set({
-      selectedNodes: params.nodes,
+      selectedNodes: params.nodes as Node<NodeData>[],
       selectedEdges: params.edges,
       // Auto-open properties bar when something is selected
       isPropertiesBarVisible: hasSelection ? true : get().isPropertiesBarVisible,

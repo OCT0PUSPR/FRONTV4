@@ -1,15 +1,23 @@
-import { Handle, Position, NodeProps } from "@xyflow/react";
+import { memo } from "react";
+import { Handle, Position } from "@xyflow/react";
 import { GitFork } from "lucide-react";
 import { useTheme } from "../../context/theme";
 import { useTranslation } from "react-i18next";
 
-const ParallelNode = ({ data, id }: NodeProps<{ branchCount?: number; label?: string; color?: string }>) => {
+interface ParallelNodeData extends Record<string, unknown> {
+  branchCount?: number;
+  label?: string;
+  color?: string;
+}
+
+const ParallelNode = memo(({ data, id }: { data: any; id: string }) => {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const borderColor = data.color || "#8b5cf6"; // Purple for parallel
+  const nodeData = (data || {}) as ParallelNodeData;
+  const borderColor = nodeData.color || "#8b5cf6"; // Purple for parallel
 
   // Get branch count from data, default to 2, max 10 (matching PropertiesBar)
-  const branchCount = Math.min(Math.max(data.branchCount || 2, 1), 10);
+  const branchCount = Math.min(Math.max(nodeData.branchCount || 2, 1), 10);
 
   return (
     <div 
@@ -29,7 +37,7 @@ const ParallelNode = ({ data, id }: NodeProps<{ branchCount?: number; label?: st
         <GitFork style={{ height: "16px", width: "16px", color: "#8b5cf6" }} />
         <div style={{ fontWeight: 600, fontSize: "14px", color: colors.textPrimary }}>{t('Parallel')}</div>
       </div>
-      <div style={{ fontSize: "12px", color: colors.textPrimary }}>{data.label}</div>
+      <div style={{ fontSize: "12px", color: colors.textPrimary }}>{nodeData.label}</div>
       <div style={{ 
         fontSize: "11px", 
         color: colors.textSecondary, 
@@ -62,7 +70,7 @@ const ParallelNode = ({ data, id }: NodeProps<{ branchCount?: number; label?: st
       />
     </div>
   );
-};
+});
 
 ParallelNode.displayName = "ParallelNode";
 

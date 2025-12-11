@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { Check } from "lucide-react"
 import { useTheme } from "../../../context/theme"
 
-interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'checked'> {
   checked?: boolean | "indeterminate"
   onCheckedChange?: (checked: boolean) => void
   checkboxStyle?: React.CSSProperties

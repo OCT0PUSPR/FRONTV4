@@ -1385,6 +1385,17 @@ export default function PutawaysRulesPage() {
         </div>
       )}
 
+      {canExportPage("putaway") && (
+        <ExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          onExport={handleExport}
+          totalRecords={filteredRules.length}
+          selectedCount={Object.keys(rowSelection).length}
+          isSelectAll={isSelectAll === true}
+        />
+      )}
+
       {toast && <Toast text={toast.text} state={toast.state} onClose={() => setToast(null)} />}
 
       <Alert
@@ -1526,17 +1537,6 @@ function PutawayCardSkeleton(props: { colors?: any }) {
           </div>
         </div>
       </div>
-
-      {canExportPage("putaway") && (
-        <ExportModal
-          isOpen={isExportModalOpen}
-          onClose={() => setIsExportModalOpen(false)}
-          onExport={handleExport}
-          totalRecords={filteredRules.length}
-          selectedCount={Object.keys(rowSelection).length}
-          isSelectAll={isSelectAll === true}
-        />
-      )}
     </div>
   )
 }

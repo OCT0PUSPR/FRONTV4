@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react';
 import { Node, Edge } from '@xyflow/react';
 import { NodeType, NodeData, TriggerNodeData, ApprovalNodeData, ConditionNodeData, NotificationNodeData, EndNodeData, PersonNodeData, DocumentNodeData, EscalationNodeData, DelayNodeData, AIAgentNodeData, ToolNodeData } from '../types';
 import { X, Trash2, ArrowRight, ArrowLeft, Minus } from 'lucide-react';
-import { AVAILABLE_USERS_AND_ROLES, NODE_COLORS } from '../../../../constants';
+import { AVAILABLE_USERS_AND_ROLES, NODE_COLORS } from '../../../constants';
 import { API_CONFIG, getTenantHeaders, tenantFetch } from '../../../config/api';
 import { useAuth } from '../../../../context/auth';
 import { useTranslation } from 'react-i18next';
@@ -160,7 +160,7 @@ export const PropertiesBar = ({
 
   const handleColorChange = (color: string) => {
     if (!selectedNode || !nodeData) return;
-    const newColor = NODE_COLORS.find(c => c === color) || color;
+    const newColor = Object.values(NODE_COLORS).includes(color) ? color : color;
     const updatedData = { ...nodeData, color: newColor } as NodeData;
     setNodeData(updatedData);
     onUpdateNode(selectedNode.id, { color: newColor });
@@ -1721,7 +1721,7 @@ export const PropertiesBar = ({
               <div className="property-field">
                 <label className="property-label">{t('Border Color')}</label>
                 <div className="property-color-picker">
-                  {NODE_COLORS.map(color => (
+                  {Object.values(NODE_COLORS).map(color => (
                     <button
                       key={color}
                       onClick={() => handleColorChange(color)}

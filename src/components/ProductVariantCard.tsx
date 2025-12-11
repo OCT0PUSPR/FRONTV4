@@ -128,7 +128,7 @@ export function ProductVariantCard({ variant, onClick, index }: ProductVariantCa
               <div
                 className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300 relative"
                 style={{
-                  background: colors.mode === 'dark' ? colors.card : '#FFFFFF',
+                  background: colors.card,
                   border: `1px solid ${colors.border}`,
                 }}
               >

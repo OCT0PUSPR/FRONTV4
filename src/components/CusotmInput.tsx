@@ -7,14 +7,15 @@ import { useTheme } from "../../context/theme"
 
 interface CustomInputProps {
   label: string
-  type: "text" | "number"
+  type: "text" | "number" | "email" | "textarea"
   value: string
   onChange: (value: string) => void
   placeholder?: string
   disabled?: boolean
+  suffix?: string
 }
 
-export function CustomInput({ label, type, value, onChange, placeholder = "", disabled = false }: CustomInputProps) {
+export function CustomInput({ label, type, value, onChange, placeholder = "", disabled = false, suffix }: CustomInputProps) {
   const { colors } = useTheme()
   const [isFocused, setIsFocused] = useState(false)
 
@@ -33,6 +34,24 @@ export function CustomInput({ label, type, value, onChange, placeholder = "", di
   }
 
   const hasValue = value.length > 0
+  const isTextarea = type === "textarea"
+
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 10px",
+    background: disabled ? colors.background : colors.card,
+    border: `1px solid ${isFocused ? '#60a5fa' : colors.border}`,
+    borderRadius: "0.75rem",
+    fontSize: "12px",
+    color: disabled ? colors.textSecondary : colors.textPrimary,
+    outline: "none",
+    transition: "all 0.2s ease",
+    fontWeight: hasValue ? "500" : "400",
+    cursor: disabled ? "not-allowed" : "text",
+    opacity: disabled ? 0.6 : 1,
+    boxShadow: isFocused ? '0 0 0 4px rgba(96, 165, 250, 0.1)' : 'inset 0 2px 4px rgba(0,0,0,0.02)',
+    ...(isTextarea && { minHeight: "100px", resize: "vertical" as const }),
+  }
 
   return (
     <div style={{ position: "relative", width: "100%" }}>
@@ -48,40 +67,63 @@ export function CustomInput({ label, type, value, onChange, placeholder = "", di
         {label}
       </label>
 
-      <input
-        type={type === "number" ? "text" : "text"}
-        value={value}
-        onChange={handleChange}
-        onFocus={() => !disabled && setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        placeholder={placeholder}
-        disabled={disabled}
-        style={{
-          width: "100%",
-          padding: "10px 10px",
-          background: disabled ? colors.background : colors.card,
-          border: `1px solid ${isFocused ? '#60a5fa' : colors.border}`,
-          borderRadius: "0.75rem",
-          fontSize: "12px",
-          color: disabled ? colors.textSecondary : colors.textPrimary,
-          outline: "none",
-          transition: "all 0.2s ease",
-          fontWeight: hasValue ? "500" : "400",
-          cursor: disabled ? "not-allowed" : "text",
-          opacity: disabled ? 0.6 : 1,
-          boxShadow: isFocused ? '0 0 0 4px rgba(96, 165, 250, 0.1)' : 'inset 0 2px 4px rgba(0,0,0,0.02)',
-        }}
-        onMouseEnter={(e) => {
-          if (!disabled && !isFocused && !hasValue) {
-            e.currentTarget.style.backgroundColor = isFocused ? colors.card : 'rgba(0,0,0,0.05)'
-          }
-        }}
-        onMouseLeave={(e) => {
-           if (!disabled && !isFocused) {
-             e.currentTarget.style.backgroundColor = colors.card
-           }
-        }}
-      />
+      <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+        {isTextarea ? (
+          <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={() => !disabled && setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            placeholder={placeholder}
+            disabled={disabled}
+            style={inputStyle}
+            onMouseEnter={(e) => {
+              if (!disabled && !isFocused && !hasValue) {
+                e.currentTarget.style.backgroundColor = isFocused ? colors.card : 'rgba(0,0,0,0.05)'
+              }
+            }}
+            onMouseLeave={(e) => {
+               if (!disabled && !isFocused) {
+                 e.currentTarget.style.backgroundColor = colors.card
+               }
+            }}
+          />
+        ) : (
+          <>
+            <input
+              type={type === "number" ? "text" : type === "email" ? "email" : "text"}
+              value={value}
+              onChange={handleChange}
+              onFocus={() => !disabled && setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder={placeholder}
+              disabled={disabled}
+              style={inputStyle}
+              onMouseEnter={(e) => {
+                if (!disabled && !isFocused && !hasValue) {
+                  e.currentTarget.style.backgroundColor = isFocused ? colors.card : 'rgba(0,0,0,0.05)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                 if (!disabled && !isFocused) {
+                   e.currentTarget.style.backgroundColor = colors.card
+                 }
+              }}
+            />
+            {suffix && (
+              <span style={{ 
+                position: "absolute", 
+                right: "10px", 
+                color: colors.textSecondary,
+                fontSize: "12px",
+                pointerEvents: "none"
+              }}>
+                {suffix}
+              </span>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

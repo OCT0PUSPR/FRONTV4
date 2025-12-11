@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, User, Mail, Phone, X, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
-import { OrgNode } from './types';
+import { OrgNode } from './orgchart/types';
 
 interface NodeCardProps {
   node: OrgNode;

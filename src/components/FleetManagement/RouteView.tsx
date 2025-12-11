@@ -458,7 +458,7 @@ const RouteView: React.FC<Props> = ({ vehicle }) => {
                             
                             <div className="flex justify-between items-start mb-3">
                                 <div className="font-bold text-zinc-800">{activeOrder.destination}</div>
-                                <div className="text-xs font-mono text-zinc-500">#{activeOrder.id.split('-')[1]}</div>
+                                <div className="text-xs font-mono text-zinc-500">#{String(activeOrder.id).split('-')[1]}</div>
                             </div>
                             
                             {/* Items being handled */}

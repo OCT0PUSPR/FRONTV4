@@ -14,7 +14,7 @@ interface StyledSectionProps {
   defaultStyles?: CSSProperties;
   className?: string;
   children: ReactNode;
-  as?: keyof JSX.IntrinsicElements;
+  as?: keyof React.JSX.IntrinsicElements | React.ComponentType<any>;
   [key: string]: any; // Allow other props
 }
 
@@ -49,15 +49,16 @@ export const StyledSection: React.FC<StyledSectionProps> = ({
   // Merge className if provided
   const mergedClassName = className ? className : undefined;
 
+  const ComponentElement = Component as any;
   return (
-    <Component 
+    <ComponentElement 
       data-section-id={sectionId}
       className={mergedClassName} 
       style={styles} 
       {...props}
     >
       {children}
-    </Component>
+    </ComponentElement>
   );
 };
 
@@ -224,15 +225,16 @@ export const CombinedSecuredStyledSection: React.FC<StyledSectionProps & {
     return null;
   }
 
+  const ComponentElement = Component as any;
   return (
-    <Component 
+    <ComponentElement 
       data-section-id={sectionId}
       className={className} 
       style={styles} 
       {...props}
     >
       {children}
-    </Component>
+    </ComponentElement>
   );
 };
 

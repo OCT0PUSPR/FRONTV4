@@ -12,11 +12,12 @@ export enum NodeType {
   END = 'end',
   ACTION = 'action',
   AI_AGENT = 'ai_agent',
-  TOOL = 'tool'
+  TOOL = 'tool',
+  LOOP = 'loop'
 }
 
 
-export interface BaseNodeData {
+export interface BaseNodeData extends Record<string, unknown> {
   label: string;
   color?: string;
   url?: string;
@@ -36,7 +37,7 @@ export interface ApprovalNodeData extends BaseNodeData {
   approverIds?: number[];
 }
 
-export interface ConditionNodeData {
+export interface ConditionNodeData extends Record<string, unknown> {
   label: string;
   conditionType?: 'Field Value' | 'Approval Result' | 'Amount' | 'Custom Expression';
   expression?: string;
@@ -64,12 +65,8 @@ export interface EndNodeData extends BaseNodeData {
   finalMessage?: string;
 }
 
-export interface TextNodeData {
-    label: string;
-    color?: string;
-}
 
-export interface PersonNodeData {
+export interface PersonNodeData extends Record<string, unknown> {
   label: string;
   assignedTo?: string;
   assignedToId?: number;
@@ -80,7 +77,7 @@ export interface PersonNodeData {
   description?: string;
 }
 
-export interface DocumentNodeData {
+export interface DocumentNodeData extends Record<string, unknown> {
   label: string;
   documentAction?: 'Review' | 'Generate' | 'Upload' | 'Archive' | 'Sign';
   templateId?: string;
@@ -89,7 +86,7 @@ export interface DocumentNodeData {
   description?: string;
 }
 
-export interface EscalationNodeData {
+export interface EscalationNodeData extends Record<string, unknown> {
   label: string;
   escalateAfterHours?: number;
   escalateTo?: string;
@@ -98,7 +95,7 @@ export interface EscalationNodeData {
   description?: string;
 }
 
-export interface DelayNodeData {
+export interface DelayNodeData extends Record<string, unknown> {
   label: string;
   delayAmount?: number;
   delayUnit?: 'minutes' | 'hours' | 'days' | 'weeks';
@@ -117,7 +114,7 @@ export interface AIToolConfig {
   icon?: string;
 }
 
-export interface AIAgentNodeData {
+export interface AIAgentNodeData extends Record<string, unknown> {
   label: string;
   provider?: 'openai' | 'anthropic' | 'google' | 'azure' | 'ollama' | 'groq' | 'custom';
   model?: string;
@@ -133,7 +130,7 @@ export interface AIAgentNodeData {
   description?: string;
 }
 
-export interface ToolNodeData {
+export interface ToolNodeData extends Record<string, unknown> {
   label: string;
   toolId?: string;
   toolName?: string;
@@ -153,7 +150,6 @@ export type NodeData =
   | NotificationNodeData
   | ActionNodeData
   | EndNodeData
-  | TextNodeData
   | PersonNodeData
   | DocumentNodeData
   | EscalationNodeData

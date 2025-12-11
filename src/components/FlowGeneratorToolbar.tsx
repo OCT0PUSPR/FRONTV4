@@ -17,9 +17,11 @@ const FlowGeneratorToolbar: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const { nodes, edges } = await geminiService.generateFlow(prompt);
-            setNodes(nodes as Node<NodeData>[]); // Cast to correct type
-            setEdges(edges);
+            // TODO: Implement geminiService
+            // const { nodes, edges } = await geminiService.generateFlow(prompt);
+            // setNodes(nodes as Node<NodeData>[]); // Cast to correct type
+            // setEdges(edges);
+            setError('Gemini service not implemented yet');
         } catch (err: any) {
             setError(err.message || 'An unknown error occurred');
         } finally {

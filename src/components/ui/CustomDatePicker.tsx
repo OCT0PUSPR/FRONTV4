@@ -38,6 +38,7 @@ interface CustomDatePickerProps {
   onChange: (date: string) => void
   label?: string
   placeholder?: string
+  disabled?: boolean
   colors?: {
     action: string
     background: string
@@ -53,6 +54,7 @@ export function CustomDatePicker({
   onChange, 
   label, 
   placeholder = "Select date",
+  disabled = false,
   colors 
 }: CustomDatePickerProps) {
   const { t, i18n } = useTranslation()

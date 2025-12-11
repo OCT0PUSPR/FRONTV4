@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Button } from "../../@/components/ui/button"
+import { Card } from "../../@/components/ui/card"
 import { X, Trash2, Package, TrendingUp, TrendingDown, Calendar } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../@/components/ui/select"
 
 // Mock data for warehouses
 const warehouses = [

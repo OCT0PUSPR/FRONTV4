@@ -31,12 +31,25 @@ const DEVICE_TYPES = {
 };
 
 // IoT Device Component
-function IoTDevice({ device, isSelected, onClick, onPositionChange }) {
-  const meshRef = useRef();
-  const [hovered, setHovered] = useState(false);
-  const config = DEVICE_TYPES[device.type];
+interface IoTDeviceProps {
+  device: {
+    id: number;
+    type: string;
+    name: string;
+    position: [number, number, number];
+    showCoverage: boolean;
+  };
+  isSelected: boolean;
+  onClick: (id: number) => void;
+  onPositionChange?: (id: number, position: [number, number, number]) => void;
+}
 
-  useFrame((state) => {
+function IoTDevice({ device, isSelected, onClick, onPositionChange }: IoTDeviceProps) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const [hovered, setHovered] = useState(false);
+  const config = DEVICE_TYPES[device.type as keyof typeof DEVICE_TYPES];
+
+  useFrame(() => {
     if (meshRef.current && !isSelected) {
       meshRef.current.rotation.y += 0.01;
     }
@@ -106,8 +119,24 @@ function IoTDevice({ device, isSelected, onClick, onPositionChange }) {
 }
 
 // Coverage Area Visualization
-function CoverageArea({ device, config }) {
-  const materialRef = useRef();
+interface CoverageAreaProps {
+  device: {
+    id: number;
+    type: string;
+    name: string;
+    position: [number, number, number];
+    showCoverage: boolean;
+  };
+  config: {
+    color: string;
+    coverageType: string;
+    range: number;
+    angle?: number;
+  };
+}
+
+function CoverageArea({ device, config }: CoverageAreaProps) {
+  const materialRef = useRef<THREE.MeshBasicMaterial>(null);
 
   useFrame((state) => {
     if (materialRef.current) {
@@ -185,19 +214,25 @@ function Warehouse() {
 
 // Main App Component
 export default function IoTWarehouseManager() {
-  const [devices, setDevices] = useState([
+  const [devices, setDevices] = useState<Array<{
+    id: number;
+    type: string;
+    name: string;
+    position: [number, number, number];
+    showCoverage: boolean;
+  }>>([
     {
       id: 1,
       type: 'camera',
       name: 'Camera 01',
-      position: [5, 2, 5],
+      position: [5, 2, 5] as [number, number, number],
       showCoverage: true
     },
     {
       id: 2,
       type: 'router',
       name: 'Router 01',
-      position: [0, 3, 0],
+      position: [0, 3, 0] as [number, number, number],
       showCoverage: true
     }
   ]);
@@ -205,12 +240,12 @@ export default function IoTWarehouseManager() {
   const [placementMode, setPlacementMode] = useState(null);
   const [viewMode, setViewMode] = useState('perspective');
 
-  const handleAddDevice = (type) => {
+  const handleAddDevice = (type: string) => {
     const newDevice = {
       id: Date.now(),
       type,
-      name: `${DEVICE_TYPES[type].name} ${devices.filter(d => d.type === type).length + 1}`,
-      position: [0, 2, 0],
+      name: `${DEVICE_TYPES[type as keyof typeof DEVICE_TYPES].name} ${devices.filter(d => d.type === type).length + 1}`,
+      position: [0, 2, 0] as [number, number, number],
       showCoverage: true
     };
     setDevices([...devices, newDevice]);
@@ -528,6 +563,9 @@ export default function IoTWarehouseManager() {
             device={device}
             isSelected={device.id === selectedDevice}
             onClick={setSelectedDevice}
+            onPositionChange={(id, position) => {
+              setDevices(devices.map(d => d.id === id ? { ...d, position } : d));
+            }}
           />
         ))}
       </Canvas>

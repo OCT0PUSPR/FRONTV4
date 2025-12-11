@@ -381,7 +381,7 @@ export default function Workflow() {
             <Controls />
             <MiniMap
               nodeColor={(node) => {
-                return node.data.color || '#3b82f6';
+                return String(node.data?.color || '#3b82f6');
               }}
               maskColor="rgb(240, 240, 240, 0.6)"
             />
@@ -413,7 +413,7 @@ export default function Workflow() {
                 </label>
                 <input
                   type="text"
-                  value={selectedNodeData.data.label || ''}
+                  value={String(selectedNodeData.data.label || '')}
                   onChange={(e) =>
                     updateNodeData(selectedNode!, { label: e.target.value })
                   }
@@ -428,7 +428,7 @@ export default function Workflow() {
                     Assign To
                   </label>
                   <select
-                    value={selectedNodeData.data.person || ''}
+                    value={String(selectedNodeData.data.person || '')}
                     onChange={(e) =>
                       updateNodeData(selectedNode!, { person: e.target.value })
                     }
@@ -449,7 +449,7 @@ export default function Workflow() {
                     Condition
                   </label>
                   <textarea
-                    value={selectedNodeData.data.condition || ''}
+                    value={String(selectedNodeData.data.condition || '')}
                     onChange={(e) =>
                       updateNodeData(selectedNode!, { condition: e.target.value })
                     }

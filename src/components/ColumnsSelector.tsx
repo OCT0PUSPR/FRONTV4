@@ -32,7 +32,7 @@ export function ColumnsSelector({
   const { colors } = useTheme()
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const [dropdownWidth, setDropdownWidth] = useState<number | undefined>(undefined)
 
   useEffect(() => {

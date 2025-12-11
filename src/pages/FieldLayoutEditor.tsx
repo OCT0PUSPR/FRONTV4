@@ -160,7 +160,7 @@ const SortableField = ({ field, sectionKey, onRemove, colors, getTypeColor, getT
 };
 
 // Searchable Select Component
-const SearchableSelect = ({ value, options, onChange, placeholder, colors, disabled }: any) => {
+const SearchableSelect = ({ value, options, onChange, placeholder, colors, mode, disabled }: any) => {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
     
@@ -967,6 +967,7 @@ const FieldLayoutEditor = () => {
                         onChange={setSelectedModel}
                         placeholder="Select a model..."
                         colors={colors}
+                        mode={mode}
                         disabled={loadingModels}
                     />
                 </div>

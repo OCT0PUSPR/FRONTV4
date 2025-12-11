@@ -104,8 +104,8 @@ export function WaveCard({ wave, onClick, index }: WaveCardProps) {
     <div
       className="group relative w-full rounded-[24px] p-[2px] transition-all duration-300 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1"
       onClick={onClick}
-      style={{ cursor: onClick ? 'pointer' : 'default' }}
       style={{
+        cursor: onClick ? 'pointer' : 'default',
         animationDelay: `${index * 50}ms`,
         background: colors.card,
       }}

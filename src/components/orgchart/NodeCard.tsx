@@ -19,6 +19,7 @@ interface User {
   name: string;
   email: string;
   login: string;
+  phone?: string;
 }
 
 interface Position {

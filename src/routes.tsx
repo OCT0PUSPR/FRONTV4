@@ -2075,6 +2075,39 @@ export default function RoutesPage() {
           }
         `}
       </style>
+
+      {canExportPage("routes") && (
+        <ExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          onExport={handleExport}
+          totalRecords={filteredRoutes.length}
+          selectedCount={Object.keys(rowSelection).length}
+          isSelectAll={isSelectAll === true}
+        />
+      )}
+
+      {toast && (
+        <Toast
+          text={toast.text}
+          state={toast.state}
+          onClose={() => setToast(null)}
+        /> 
+      )}
+
+      <Alert
+        isOpen={deleteAlertOpen}
+        type="delete"
+        title={t("Delete this route?")}
+        message={t("This route will be permanently deleted and cannot be recovered.")}
+        onClose={() => {
+          setDeleteAlertOpen(false)
+          setRouteToDelete(null)
+        }}
+        onConfirm={deleteRouteAction}
+        confirmLabel={t("Delete")}
+        cancelLabel={t("Cancel")}
+      />
     </div>
   )
 }
@@ -2200,39 +2233,6 @@ function RouteCardSkeleton({ colors }: { colors?: any }) {
           </div>
         </div>
       </div>
-
-      {canExportPage("routes") && (
-        <ExportModal
-          isOpen={isExportModalOpen}
-          onClose={() => setIsExportModalOpen(false)}
-          onExport={handleExport}
-          totalRecords={filteredRoutes.length}
-          selectedCount={Object.keys(rowSelection).length}
-          isSelectAll={isSelectAll === true}
-        />
-      )}
-
-      {toast && (
-        <Toast
-          text={toast.text}
-          state={toast.state}
-          onClose={() => setToast(null)}
-        />
-      )}
-
-      <Alert
-        isOpen={deleteAlertOpen}
-        type="delete"
-        title={t("Delete this route?")}
-        message={t("This route will be permanently deleted and cannot be recovered.")}
-        onClose={() => {
-          setDeleteAlertOpen(false)
-          setRouteToDelete(null)
-        }}
-        onConfirm={deleteRouteAction}
-        confirmLabel={t("Delete")}
-        cancelLabel={t("Cancel")}
-      />
     </div>
   )
 }

@@ -1,8 +1,8 @@
 import { Plus, Search, Grid3x3, List } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "../@/components/ui/button";
+import { Input } from "../@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../@/components/ui/card";
+import { Badge } from "../@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { API_CONFIG } from "./config/api";

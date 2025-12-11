@@ -4,7 +4,7 @@ import type { ChangeEvent } from 'react';
 import useStore from '../../store/workflowStore';
 import { NodeData, NodeType, TriggerNodeData, ApprovalNodeData, ConditionNodeData, NotificationNodeData, EndNodeData, PersonNodeData, DocumentNodeData, EscalationNodeData, DelayNodeData } from '../../types';
 import { Trash2 } from 'lucide-react';
-import { AVAILABLE_USERS_AND_ROLES, NODE_COLORS } from '../../constants';
+import { AVAILABLE_USERS_AND_ROLES, NODE_COLORS } from '../constants';
 import { API_CONFIG } from '../config/api';
 import { useAuth } from '../../context/auth';
 import { CustomDropdown } from './NewCustomDropdown';
@@ -53,7 +53,7 @@ const NodeSettingsPanel: React.FC = () => {
   };
   
   const handleColorChange = (color: string) => {
-    const newColor = NODE_COLORS.find(c => c === color) || color;
+    const newColor = Object.values(NODE_COLORS).includes(color) ? color : color;
     const updatedData = { ...nodeData, color: newColor } as NodeData;
     setNodeData(updatedData);
     updateNodeData(selectedNode.id, { color: newColor });
@@ -509,7 +509,7 @@ const NodeSettingsPanel: React.FC = () => {
           <label className="block text-sm font-medium text-gray-700 mb-2">Border Color</label>
           <div className="flex items-center justify-between">
             <div className="flex gap-2 flex-wrap">
-              {NODE_COLORS.map(color => (
+              {Object.values(NODE_COLORS).map(color => (
                 <button key={color} onClick={() => handleColorChange(color)} className={`w-8 h-8 rounded-md border-2 transition-all hover:scale-110 ${(nodeData as any)?.color === color ? 'border-gray-800 ring-2 ring-blue-400' : 'border-gray-300'}`} style={{ backgroundColor: color }} title={color}/>
               ))}
             </div>

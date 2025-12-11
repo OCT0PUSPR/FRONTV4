@@ -14,12 +14,13 @@ import { useTranslation } from 'react-i18next';
 import AttributesPage from '../attributes';
 import BatchTransfersPage from '../batch';
 import ProductCategoriesPage from '../categories';
-import DashboardPage from '../dashboard';
+import { Dashboard as DashboardPage } from '../dashboard';
 import TransferDeliveriesPage from '../deliveries';
 import DeliveryMethodsPage from '../deliveryMethods';
 import DropshipsPage from '../dropship';
 import InternalTransfersPage from '../internal';
-import Inventory from '../inventory';
+// import Inventory from '../inventory'; // TODO: Create inventory component
+const Inventory = () => <div>Inventory Page</div>;
 import LandedCostsPage from '../landed-costs';
 import LocationsPage from '../locations';
 

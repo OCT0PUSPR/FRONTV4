@@ -228,7 +228,7 @@ export default function ValuationPage() {
         .map(([pid, qty]) => ({ productId: Number(pid), quantity: qty })),
     })
 
-    const result: Array<{ date: string; reference: string; product: string; quantity: number; totalValue: number; category: string; unitValue: number; imageBase64?: string; currency: string; }> = []
+    const result: Array<{ id: number; date: string; reference: string; product: string; quantity: number; totalValue: number; category: string; unitValue: number; imageBase64?: string; currency: string; }> = []
     let productProcessed = 0
     let productSkippedNoId = 0
     let productSkippedNoQty = 0
@@ -270,7 +270,7 @@ export default function ValuationPage() {
       const dateStr = String(p.write_date || p.create_date || '')
       const imageBase64 = typeof p.image_1920 === 'string' ? p.image_1920 : undefined
       const currency = getCurrencySymbol(p.currency_id)
-      result.push({ date: dateStr, reference: 'On Hand', product: productLabel, quantity: qty, totalValue: total, category: categ || 'Uncategorized', unitValue: unit, imageBase64, currency })
+      result.push({ id: pid, date: dateStr, reference: 'On Hand', product: productLabel, quantity: qty, totalValue: total, category: categ || 'Uncategorized', unitValue: unit, imageBase64, currency })
       productAdded++
       if (productAdded <= 3) {
         console.log('[Valuation] ✅ Product added:', {
