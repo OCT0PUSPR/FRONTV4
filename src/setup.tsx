@@ -92,17 +92,26 @@ export default function SetupMultitenancyPage() {
     setIsFetching(true)
     try {
       // First, ensure master database is initialized
-      await fetch(`${API_BASE_URL}/tenants/init`, {
+      const initResponse = await fetch(`${API_BASE_URL}/tenants/init`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
-      console.log('[Setup] Master database initialized')
-    } catch (e) {
+      
+      const initData = await initResponse.json()
+      
+      if (!initResponse.ok || !initData.success) {
+        throw new Error(initData.message || 'Failed to initialize master database')
+      }
+      
+      console.log('[Setup] Master database initialized successfully')
+    } catch (e: unknown) {
       console.error('Failed to initialize master database:', e)
-      // Continue anyway - fetch tenants might still work if DB was already initialized
+      const errorMessage = e instanceof Error ? e.message : 'Failed to initialize master database'
+      setError(errorMessage)
+      // Still try to fetch tenants in case DB was already initialized
     }
     
-    // Then fetch tenants
+    // Then fetch tenants (will work if DB exists, even if init failed)
     await fetchTenants()
   }
 

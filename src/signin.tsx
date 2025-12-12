@@ -6,6 +6,7 @@ import { useAuth } from "../context/auth"
 import { useState, useEffect } from "react"
 import { EmailIcon } from "./components/emailIcon"
 import { LockIcon } from "./components/LockIcon"
+import Toast from "./components/Toast"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { ArrowRight, XIcon, Eye, EyeOff, Building2, ChevronDown, Check } from "lucide-react"
 import { Package, Truck, MapPin, BarChart3, ClipboardCheck, Boxes, Search, TrendingUp, Users, Settings } from "lucide-react"
@@ -102,6 +103,7 @@ function Signin() {
   const [selectedTenantId, setSelectedTenantId] = useState<string>("")
   const [isFetchingTenants, setIsFetchingTenants] = useState(false)
   const [isTenantDropdownOpen, setIsTenantDropdownOpen] = useState(false)
+  const [toast, setToast] = useState<{ text: string; state: "success" | "error" } | null>(null)
   const { signIn, isAuthenticated, isLoading: authLoading } = useAuth()
   const navigate = useNavigate()
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -123,6 +125,7 @@ function Signin() {
         setSelectedTenantId(storedTenantId)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isModalOpen])
 
   // Close dropdown when clicking outside
@@ -179,20 +182,34 @@ function Signin() {
     e.preventDefault()
     setError("")
     setIsLoading(true)
-    const result = await signIn(email, password)
-    setIsLoading(false)
     
-    // Check if setup is required
-    if (result.setupRequired || result.redirectTo === '/setup') {
-      navigate('/setup', { replace: true })
-      return
-    }
-    
-    if (result.success) {
-      console.log("success")
-      navigate("/overview")
-    } else {
-      setError(result.error || "Sign in failed. Please try again.")
+    try {
+      const result = await signIn(email, password)
+      
+      // Check if setup is required
+      if (result.setupRequired || result.redirectTo === '/setup') {
+        navigate('/setup', { replace: true })
+        return
+      }
+      
+      if (result.success) {
+        console.log("success")
+        navigate("/overview")
+      } else {
+        // Show toast error and stay on signin page
+        const errorMessage = result.error || "Invalid credentials. Please check your email and password."
+        setToast({ text: errorMessage, state: "error" })
+        setTimeout(() => setToast(null), 5000)
+        setError("") // Clear inline error since we're using toast
+      }
+    } catch (err: unknown) {
+      // Handle unexpected errors
+      const errorMessage = err instanceof Error ? err.message : "An error occurred. Please try again."
+      setToast({ text: errorMessage, state: "error" })
+      setTimeout(() => setToast(null), 5000)
+      setError("")
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -469,6 +486,15 @@ function Signin() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          text={toast.text}
+          state={toast.state}
+          onClose={() => setToast(null)}
+        />
+      )}
 
       {/* CSS Animations */}
       <style>{`

@@ -22,8 +22,9 @@ export default function TenantCheck({ children }: TenantCheckProps) {
 
   useEffect(() => {
     const checkTenants = async () => {
-      // Don't check if we're already on setup or signin page
-      if (location.pathname === '/setup' || location.pathname === '/signin') {
+      // Don't check if we're already on setup, signin, or license page
+      // License is system-wide and doesn't require tenants
+      if (location.pathname === '/setup' || location.pathname === '/signin' || location.pathname === '/license') {
         setIsChecking(false)
         return
       }
@@ -35,8 +36,8 @@ export default function TenantCheck({ children }: TenantCheckProps) {
         if (data.success) {
           setHasTenants(data.hasTenants)
           
-          // If no tenants exist and we're not on setup page, redirect to setup
-          if (!data.hasTenants && location.pathname !== '/setup') {
+          // If no tenants exist and we're not on setup or license page, redirect to setup
+          if (!data.hasTenants && location.pathname !== '/setup' && location.pathname !== '/license') {
             navigate('/setup', { replace: true })
           }
         } else {

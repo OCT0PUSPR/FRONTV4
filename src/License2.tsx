@@ -164,10 +164,30 @@ const LicensePage = () => {
     }
   };
 
-  // Check for existing license on mount
+  // Initialize master database and check for existing license on mount
   useEffect(() => {
-    const checkLicense = async () => {
+    const initializeAndCheckLicense = async () => {
       try {
+        // First, ensure master database is initialized
+        try {
+          const initResponse = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/tenants/init`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          const initData = await initResponse.json();
+          
+          if (!initResponse.ok || !initData.success) {
+            console.warn('Failed to initialize master database:', initData.message || 'Unknown error');
+            // Continue anyway - license check might still work if DB was already initialized
+          } else {
+            console.log('[License2] Master database initialized successfully');
+          }
+        } catch (initError) {
+          console.error('Error initializing master database:', initError);
+          // Continue anyway - license check might still work if DB was already initialized
+        }
+
         // Build headers - license is global, tenantId not required but can be included for compatibility
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
@@ -219,7 +239,7 @@ const LicensePage = () => {
       }
     };
 
-    checkLicense();
+    initializeAndCheckLicense();
   }, [navigate, tenantId]);
 
   // Handler to navigate to dashboard
