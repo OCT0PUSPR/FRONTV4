@@ -115,13 +115,6 @@ const LicensePage = () => {
       return;
     }
 
-    // Check if tenant ID is available
-    if (!tenantId) {
-      setError('Tenant ID is required. Please set up an instance first.');
-      setActivationStatus('idle');
-      return;
-    }
-
     setError('');
     setActivationStatus('activating');
 
@@ -129,14 +122,20 @@ const LicensePage = () => {
       // Join license key segments and remove any dashes
       const cleanedKey = licenseKey.join('').replace(/-/g, '');
 
-      // Use tenant license endpoint
-      const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/tenants/license`, {
+      // Use license activation endpoint (verifies against signed license file)
+      // License is stored globally in masterdb, so tenantId is not required
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      // Include tenantId in header if available (for backward compatibility)
+      if (tenantId) {
+        headers['X-Tenant-ID'] = tenantId;
+      }
+
+      const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/license/activate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
-          tenantId: parseInt(tenantId),
           licenseKey: cleanedKey,
         }),
       });
@@ -169,15 +168,17 @@ const LicensePage = () => {
   useEffect(() => {
     const checkLicense = async () => {
       try {
-        // Build headers with tenant ID if available
+        // Build headers - license is global, tenantId not required but can be included for compatibility
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
         };
+        // Include tenantId in header if available (for backward compatibility)
         if (tenantId) {
           headers['X-Tenant-ID'] = tenantId;
         }
 
-        const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/license/check`, {
+        // Use /license endpoint to get activated status
+        const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/license`, {
           method: 'GET',
           headers,
         });
@@ -190,11 +191,28 @@ const LicensePage = () => {
 
         const data = await res.json();
 
-        if (res.ok && data?.success && data?.valid) {
-          // License is valid, redirect to signin
-          navigate('/signin', { replace: true });
+        if (res.ok && data?.success) {
+          // Check if license is activated
+          if (data?.activated && data?.license) {
+            // License is already activated, show success state
+            setActivationStatus('success');
+            setLicenseStartDate(data.license.startDate || null);
+            setLicenseEndDate(data.license.endDate || null);
+            // Set license key for display (split into segments)
+            if (data.license.licenseKey) {
+              const key = data.license.licenseKey.replace(/[-\s]/g, '').toUpperCase();
+              setLicenseKey([
+                key.substring(0, 4) || '',
+                key.substring(4, 8) || '',
+                key.substring(8, 12) || '',
+                key.substring(12, 16) || ''
+              ]);
+            }
+            setSuccessMessage(data?.message || 'License is already activated.');
+            // Don't redirect - stay on license page showing success state
+          }
+          // If not activated, stay on page with input form
         }
-        // If valid is false (license table empty), stay on license page
       } catch (err) {
         // Network error - stay on page
         console.error('License check error:', err);
@@ -202,7 +220,7 @@ const LicensePage = () => {
     };
 
     checkLicense();
-  }, [navigate]);
+  }, [navigate, tenantId]);
 
   // Handler to navigate to dashboard
   const handleGoToDashboard = () => {

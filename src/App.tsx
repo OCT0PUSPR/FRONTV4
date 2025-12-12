@@ -99,6 +99,8 @@ function AppContent() {
   const isRTL = i18n.dir() === 'rtl'
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>(WAREHOUSES[0].id);
   const [timeRange, setTimeRange] = useState<TimeRange>('Week');
+  const [isCheckingLicense, setIsCheckingLicense] = useState(true);
+  const [isLicenseValid, setIsLicenseValid] = useState<boolean | null>(null);
   
 
   const currentWarehouse = useMemo(() =>
@@ -194,12 +196,66 @@ function AppContent() {
   }, [location.pathname, t, routeTitleKeys]);
 
 
+  // Check license status globally
+  useEffect(() => {
+    const checkLicenseStatus = async () => {
+      // Don't check license on public routes
+      const publicRoutes = ['/license', '/signin', '/setup', '/error500', '/testing', '/approval']
+      const isPublicRoute = publicRoutes.some(route => location.pathname === route || location.pathname.startsWith('/approval/'))
+      
+      if (isPublicRoute) {
+        setIsCheckingLicense(false)
+        return
+      }
+
+      try {
+        const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/license/check`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (!res.ok && (res.status === 0 || res.status >= 500)) {
+          // Backend connection failed, allow access (will show error page if needed)
+          setIsLicenseValid(true)
+          setIsCheckingLicense(false)
+          return
+        }
+
+        const data = await res.json()
+
+        if (res.ok && data?.success) {
+          if (data?.valid) {
+            setIsLicenseValid(true)
+          } else {
+            // License not verified, redirect to license page
+            setIsLicenseValid(false)
+            navigate('/license', { replace: true })
+          }
+        } else {
+          // If check fails, assume license needs activation
+          setIsLicenseValid(false)
+          navigate('/license', { replace: true })
+        }
+      } catch (err) {
+        // Network error - allow access (will show error if needed)
+        console.error('License check error:', err)
+        setIsLicenseValid(true)
+      } finally {
+        setIsCheckingLicense(false)
+      }
+    }
+
+    checkLicenseStatus()
+  }, [location.pathname, navigate])
+
   // Define public routes
   const publicRoutes = ['/license', '/signin', '/setup', '/error500', '/testing', '/approval', '/settings']
   const isPublicRoute = publicRoutes.some(route => location.pathname === route || location.pathname.startsWith('/approval/'))
 
-  // Show loading while checking auth (but allow public routes)
-  if (isLoading) {
+  // Show loading while checking auth or license (but allow public routes)
+  if (isLoading || (isCheckingLicense && !isPublicRoute)) {
     // We need to access theme here, but ThemeProvider wraps AppContent
     // So we'll use a simple approach - check localStorage for theme
     const savedTheme = localStorage.getItem('theme_mode') || 'light'
