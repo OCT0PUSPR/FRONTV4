@@ -64,21 +64,6 @@ export default function SetupLogin() {
         <Moon className={`w-4 h-4 transition-colors ${isDarkMode ? "text-blue-400" : "text-zinc-400"}`} />
       </div>
 
-      {/* Background decoration */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-50 blur-3xl" 
-          style={{ 
-            backgroundColor: isDarkMode ? '#3b82f6' : '#c7d2fe' 
-          }} 
-        />
-        <div 
-          className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full opacity-50 blur-3xl" 
-          style={{ 
-            backgroundColor: isDarkMode ? '#8b5cf6' : '#e9d5ff' 
-          }} 
-        />
-      </div>
 
       {/* Login Card */}
       <div className="w-full max-w-md relative z-10">

@@ -470,12 +470,6 @@ export default function RolesPage() {
         .delay-100 { animation-delay: 100ms; }
       `}</style>
 
-      {/* Background Elements */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-500/10 blur-[100px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-500/10 blur-[100px] rounded-full" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03]" />
-      </div>
 
       <div className="relative z-10 p-6 md:p-10 max-w-7xl mx-auto">
         <div className="mb-12 animate-enter">
@@ -538,8 +532,6 @@ export default function RolesPage() {
                     border: `1px solid ${colors.border}`,
                   }}
                 >
-                  {/* Abstract Glow */}
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/0 rounded-full blur-2xl -mr-10 -mt-10 transition-opacity opacity-0 group-hover:opacity-100 pointer-events-none" />
 
                   {/* Header */}
                   <div className="relative z-10 flex justify-between items-start mb-6">

@@ -190,22 +190,27 @@ const PROVIDER_DEFAULTS: Record<string, Partial<SmtpConfig>> = {
 
 // --- Components ---
 
-const ToggleSwitch = ({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) => (
+const ToggleSwitch = ({ checked, onChange, disabled, mode }: { checked: boolean; onChange: () => void; disabled?: boolean; mode?: string }) => (
   <button
     type="button"
     onClick={onChange}
     disabled={disabled}
     className={`
       relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none
-      ${checked ? 'bg-green-600' : 'bg-gray-200'}
       ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
     `}
+    style={{
+      backgroundColor: checked 
+        ? '#16A34A' 
+        : (mode === 'dark' ? 'rgba(255,255,255,0.2)' : '#E5E7EB')
+    }}
   >
     <span
-      className={`
-        pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
-        ${checked ? 'translate-x-5' : 'translate-x-0'}
-      `}
+      className="pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
+      style={{
+        backgroundColor: mode === 'dark' ? '#FFFFFF' : '#FFFFFF',
+        transform: checked ? 'translateX(1.25rem)' : 'translateX(0)'
+      }}
     />
   </button>
 )
@@ -361,11 +366,61 @@ export default function IntegrationsPage() {
     }
   }
 
-  const openIntegrationModal = (integration: Integration) => {
+  const openIntegrationModal = async (integration: Integration) => {
     if (!integration.isAvailable) return
     setSelectedIntegration(integration)
     setIsModalOpen(true)
     setTestResult(null)
+    
+    // Load existing SMTP config if available
+    if (integration.id === 'smtp') {
+      // Reload configs to ensure we have the latest data
+      try {
+        const response = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/mailer/smtp`, {
+          headers: getTenantHeaders()
+        })
+        if (response.ok) {
+          const configs = await response.json()
+          setExistingConfigs(configs)
+          
+          if (configs.length > 0) {
+            // Find default config or use first one
+            const existingConfig = configs.find(c => c.is_default) || configs[0]
+            if (existingConfig) {
+              setSmtpConfig({
+                name: existingConfig.name || 'Primary SMTP',
+                provider: existingConfig.provider || 'smtp',
+                host: existingConfig.host || '',
+                port: existingConfig.port || 587,
+                secure: existingConfig.secure !== undefined ? existingConfig.secure : false,
+                auth_user: existingConfig.auth_user || '',
+                auth_pass: existingConfig.auth_pass || '', // Note: password might not be returned for security
+                from_email: existingConfig.from_email || '',
+                from_name: existingConfig.from_name || '',
+                is_default: existingConfig.is_default !== undefined ? existingConfig.is_default : true
+              })
+              return
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load SMTP configs:', error)
+      }
+      
+      // Reset to defaults if no existing config
+      setSmtpConfig({
+        name: 'Primary SMTP',
+        provider: 'smtp',
+        host: '',
+        port: 587,
+        secure: false,
+        auth_user: '',
+        auth_pass: '',
+        from_email: '',
+        from_name: '',
+        is_default: true
+      })
+    }
   }
 
   // Filter integrations based on tab and search
@@ -411,13 +466,21 @@ export default function IntegrationsPage() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
-                className={`
-                  px-4 py-2 rounded-md text-sm font-medium transition-all
-                  ${activeTab === tab ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}
-                `}
+                className="px-4 py-2 rounded-md text-sm font-medium transition-all"
                 style={{
                   backgroundColor: activeTab === tab ? colors.card : 'transparent',
-                  color: activeTab === tab ? colors.textPrimary : colors.textSecondary
+                  color: activeTab === tab ? colors.textPrimary : colors.textSecondary,
+                  boxShadow: activeTab === tab ? (mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.2)' : '0 1px 2px rgba(0,0,0,0.05)') : 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== tab) {
+                    e.currentTarget.style.color = colors.textPrimary
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== tab) {
+                    e.currentTarget.style.color = colors.textSecondary
+                  }
                 }}
               >
                 {tab === 'all' ? 'All Applications' : tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -469,7 +532,7 @@ export default function IntegrationsPage() {
               }}
               onMouseEnter={(e) => {
                 if (document.activeElement !== e.currentTarget && !searchTerm) {
-                  e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'
+                  e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
                 }
               }}
               onMouseLeave={(e) => {
@@ -532,23 +595,39 @@ export default function IntegrationsPage() {
                     >
                       <div className="flex gap-2">
                         <button 
-                          className="px-4 py-1.5 rounded border text-sm font-medium hover:bg-gray-50 transition-colors"
+                          className="px-4 py-1.5 rounded border text-sm font-medium transition-colors"
                           style={{
                             borderColor: colors.border,
                             color: colors.textPrimary,
                             backgroundColor: 'transparent'
                           }}
                           onClick={() => openIntegrationModal(integration)}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#F9FAFB'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent'
+                          }}
                         >
                           Details
                         </button>
                         {integration.status === 'connected' && (
                           <button 
-                            className="px-4 py-1.5 rounded border text-sm font-medium hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-colors"
+                            className="px-4 py-1.5 rounded border text-sm font-medium transition-colors"
                             style={{
                               borderColor: colors.border,
                               color: colors.textSecondary,
                               backgroundColor: 'transparent'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2'
+                              e.currentTarget.style.borderColor = mode === 'dark' ? 'rgba(239, 68, 68, 0.5)' : '#FECACA'
+                              e.currentTarget.style.color = mode === 'dark' ? '#FCA5A5' : '#DC2626'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent'
+                              e.currentTarget.style.borderColor = colors.border
+                              e.currentTarget.style.color = colors.textSecondary
                             }}
                           >
                             Remove
@@ -559,7 +638,8 @@ export default function IntegrationsPage() {
                       <ToggleSwitch 
                         checked={integration.status === 'connected'} 
                         onChange={() => openIntegrationModal(integration)}
-                        disabled={!integration.isAvailable} 
+                        disabled={!integration.isAvailable}
+                        mode={mode}
                       />
                     </div>
                   </div>
@@ -570,8 +650,8 @@ export default function IntegrationsPage() {
           
           {filteredIntegrations.length === 0 && (
             <div className="text-center py-20 opacity-60">
-              <Search size={48} className="mx-auto mb-4 text-gray-300" />
-              <p className="text-lg">No integrations found matching your criteria</p>
+              <Search size={48} className="mx-auto mb-4" style={{ color: colors.textSecondary }} />
+              <p className="text-lg" style={{ color: colors.textSecondary }}>No integrations found matching your criteria</p>
             </div>
           )}
         </div>
@@ -593,7 +673,7 @@ export default function IntegrationsPage() {
               <div className="flex items-center gap-4">
                 <div 
                   className="w-12 h-12 rounded-xl flex items-center justify-center p-2.5 border"
-                  style={{ backgroundColor: '#F8F9FA', borderColor: colors.border }}
+                  style={{ backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#F8F9FA', borderColor: colors.border }}
                 >
                   <selectedIntegration.icon />
                 </div>
@@ -608,8 +688,17 @@ export default function IntegrationsPage() {
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 rounded-full hover:bg-black/5 transition-colors"
-                style={{ color: colors.textSecondary }}
+                className="p-2 rounded-full transition-colors"
+                style={{ 
+                  color: colors.textSecondary,
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
               >
                 <X size={20} />
               </button>
@@ -689,7 +778,7 @@ export default function IntegrationsPage() {
                         }}
                         onMouseEnter={(e) => {
                           if (document.activeElement !== e.currentTarget && !smtpConfig.host) {
-                            e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'
+                            e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
                           }
                         }}
                         onMouseLeave={(e) => {
@@ -739,7 +828,7 @@ export default function IntegrationsPage() {
                         }}
                         onMouseEnter={(e) => {
                           if (document.activeElement !== e.currentTarget && !smtpConfig.port) {
-                            e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'
+                            e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
                           }
                         }}
                         onMouseLeave={(e) => {
@@ -754,7 +843,8 @@ export default function IntegrationsPage() {
                   <div className="flex items-center gap-2">
                      <ToggleSwitch 
                        checked={smtpConfig.secure} 
-                       onChange={() => setSmtpConfig(prev => ({ ...prev, secure: !prev.secure }))} 
+                       onChange={() => setSmtpConfig(prev => ({ ...prev, secure: !prev.secure }))}
+                       mode={mode}
                      />
                      <span className="text-sm font-medium" style={{ color: colors.textPrimary }}>Use Secure Connection (SSL/TLS)</span>
                   </div>
@@ -807,7 +897,7 @@ export default function IntegrationsPage() {
                         }}
                         onMouseEnter={(e) => {
                           if (document.activeElement !== e.currentTarget && !smtpConfig.auth_user) {
-                            e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'
+                            e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
                           }
                         }}
                         onMouseLeave={(e) => {
@@ -859,7 +949,7 @@ export default function IntegrationsPage() {
                           }}
                           onMouseEnter={(e) => {
                             if (document.activeElement !== e.currentTarget && !smtpConfig.auth_pass) {
-                              e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'
+                              e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
                             }
                           }}
                           onMouseLeave={(e) => {
@@ -947,7 +1037,7 @@ export default function IntegrationsPage() {
                         }}
                         onMouseEnter={(e) => {
                           if (document.activeElement !== e.currentTarget && !smtpConfig.from_name) {
-                            e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'
+                            e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
                           }
                         }}
                         onMouseLeave={(e) => {
@@ -998,7 +1088,7 @@ export default function IntegrationsPage() {
                         }}
                         onMouseEnter={(e) => {
                           if (document.activeElement !== e.currentTarget && !smtpConfig.from_email) {
-                            e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'
+                            e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
                           }
                         }}
                         onMouseLeave={(e) => {
@@ -1014,10 +1104,19 @@ export default function IntegrationsPage() {
                 {/* Test Result Feedback */}
                 {testResult && (
                   <div 
-                    className={`
-                      p-4 rounded-lg flex items-start gap-3 text-sm
-                      ${testResult.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}
-                    `}
+                    className="p-4 rounded-lg flex items-start gap-3 text-sm"
+                    style={{
+                      backgroundColor: testResult.success 
+                        ? (mode === 'dark' ? 'rgba(34, 197, 94, 0.15)' : '#F0FDF4')
+                        : (mode === 'dark' ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2'),
+                      color: testResult.success
+                        ? (mode === 'dark' ? '#86EFAC' : '#166534')
+                        : (mode === 'dark' ? '#FCA5A5' : '#991B1B'),
+                      border: `1px solid ${testResult.success
+                        ? (mode === 'dark' ? 'rgba(34, 197, 94, 0.3)' : '#BBF7D0')
+                        : (mode === 'dark' ? 'rgba(239, 68, 68, 0.3)' : '#FECACA')
+                      }`
+                    }}
                   >
                     {testResult.success ? <Check size={18} className="mt-0.5" /> : <AlertCircle size={18} className="mt-0.5" />}
                     <span>{testResult.message}</span>
@@ -1031,10 +1130,19 @@ export default function IntegrationsPage() {
               <button
                 onClick={testSmtpConnection}
                 disabled={isTesting}
-                className="px-5 py-2.5 rounded-lg border font-medium text-sm transition-colors hover:bg-white focus:ring-2"
+                className="px-5 py-2.5 rounded-lg border font-medium text-sm transition-colors focus:ring-2"
                 style={{ 
                   borderColor: colors.border, 
-                  color: colors.textPrimary 
+                  color: colors.textPrimary,
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isTesting) {
+                    e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#FFFFFF'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
                 }}
               >
                 {isTesting ? 'Testing...' : 'Test Connection'}

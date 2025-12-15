@@ -90,25 +90,45 @@ export default function SetupMultitenancyPage() {
 
   const initializeMasterAndFetchTenants = async () => {
     setIsFetching(true)
+    setError(null)
+    
     try {
+      console.log('[Setup] Initializing master database...')
       // First, ensure master database is initialized
       const initResponse = await fetch(`${API_BASE_URL}/tenants/init`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
       
+      if (!initResponse.ok) {
+        const errorText = await initResponse.text()
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          errorData = { message: errorText || `HTTP ${initResponse.status}` }
+        }
+        throw new Error(errorData.message || 'Failed to initialize master database')
+      }
+      
       const initData = await initResponse.json()
       
-      if (!initResponse.ok || !initData.success) {
+      if (!initData.success) {
         throw new Error(initData.message || 'Failed to initialize master database')
       }
       
-      console.log('[Setup] Master database initialized successfully')
+      console.log('[Setup] Master database initialized successfully', {
+        setupAuthInitialized: initData.setupAuthInitialized
+      })
+      
+      if (initData.setupAuthInitialized) {
+        console.log('[Setup] Setup authentication initialized')
+      }
     } catch (e: unknown) {
-      console.error('Failed to initialize master database:', e)
+      console.error('[Setup] Failed to initialize master database:', e)
       const errorMessage = e instanceof Error ? e.message : 'Failed to initialize master database'
-      setError(errorMessage)
-      // Still try to fetch tenants in case DB was already initialized
+      // Don't set error state - just log it, as DB might already be initialized
+      console.warn('[Setup] Continuing anyway - database might already be initialized')
     }
     
     // Then fetch tenants (will work if DB exists, even if init failed)
@@ -116,17 +136,28 @@ export default function SetupMultitenancyPage() {
   }
 
   const fetchTenants = async () => {
-    setIsFetching(true)
     try {
+      console.log('[Setup] Fetching tenants...')
       const res = await fetch(`${API_BASE_URL}/tenants/list`)
-      if (res.ok) {
-        const data = await res.json()
-        if (data.success) {
-          setTenants(data.tenants || [])
-        }
+      
+      if (!res.ok) {
+        console.error('[Setup] Failed to fetch tenants:', res.status, res.statusText)
+        throw new Error(`Failed to fetch tenants: ${res.status} ${res.statusText}`)
+      }
+      
+      const data = await res.json()
+      if (data.success) {
+        setTenants(data.tenants || [])
+        console.log('[Setup] Tenants fetched successfully:', data.tenants?.length || 0)
+      } else {
+        console.error('[Setup] Failed to fetch tenants:', data.message)
+        setError(data.message || 'Failed to fetch tenants')
       }
     } catch (e) {
-      console.error('Failed to fetch tenants:', e)
+      console.error('[Setup] Error fetching tenants:', e)
+      const errorMessage = e instanceof Error ? e.message : 'Failed to fetch tenants'
+      setError(errorMessage)
+      setTenants([]) // Set empty array on error
     } finally {
       setIsFetching(false)
     }
@@ -290,16 +321,20 @@ export default function SetupMultitenancyPage() {
 
   const Header = () => (
     <div className="flex flex-col items-center mb-10 text-center">
-      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg transform transition-transform hover:scale-105 duration-300
-        ${isDarkMode 
-          ? 'bg-slate-800 text-white border border-slate-700' 
-          : 'bg-white text-slate-900 border border-slate-200'}`}>
+      <div 
+        className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg transform transition-transform hover:scale-105 duration-300 border"
+        style={{
+          backgroundColor: colors.card,
+          color: colors.textPrimary,
+          borderColor: colors.border
+        }}
+      >
         <Command className="w-8 h-8" />
       </div>
-      <h1 className={`text-3xl font-bold tracking-tight mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+      <h1 className="text-3xl font-bold tracking-tight mb-2" style={{ color: colors.textPrimary }}>
         Octopus WMS
       </h1>
-      <p className={`text-base ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+      <p className="text-base" style={{ color: colors.textSecondary }}>
         Setup your warehouse management environment
       </p>
     </div>
@@ -311,28 +346,40 @@ export default function SetupMultitenancyPage() {
         {/* Create New Instance Card */}
         <button
           onClick={() => setMode('create')}
-          className={`group relative w-full p-6 rounded-[24px] text-left transition-all duration-300 border hover:-translate-y-1 hover:shadow-lg
-            ${isDarkMode 
-              ? 'bg-slate-800 border-slate-700 hover:border-slate-600' 
-              : 'bg-white border-slate-200 hover:border-slate-300'}`}
+          className="group relative w-full p-6 rounded-[24px] text-left transition-all duration-300 border hover:-translate-y-1 hover:shadow-lg"
+          style={{
+            backgroundColor: colors.card,
+            borderColor: colors.border
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = isDarkMode ? '#3f3f46' : '#cbd5e1'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = colors.border
+          }}
         >
           <div className="flex items-start gap-5">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors
-              ${isDarkMode 
-                ? 'bg-blue-500/10 text-blue-400' 
-                : 'bg-blue-50 text-blue-600'}`}>
+            <div 
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors"
+              style={{
+                backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff',
+                color: isDarkMode ? '#60a5fa' : '#2563eb'
+              }}
+            >
               <Plus className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <h3 className={`text-lg font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              <h3 className="text-lg font-bold mb-1" style={{ color: colors.textPrimary }}>
                 Create Configuration
               </h3>
-              <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className="text-sm leading-relaxed" style={{ color: colors.textSecondary }}>
                 Connect to a new server and initialize the system.
               </p>
             </div>
-            <ArrowRight className={`w-5 h-5 mt-1 transition-transform group-hover:translate-x-1 
-              ${isDarkMode ? 'text-slate-500 group-hover:text-white' : 'text-slate-400 group-hover:text-slate-900'}`} />
+            <ArrowRight 
+              className="w-5 h-5 mt-1 transition-transform group-hover:translate-x-1"
+              style={{ color: colors.textSecondary }}
+            />
           </div>
         </button>
 
@@ -340,34 +387,51 @@ export default function SetupMultitenancyPage() {
         <button
           onClick={() => setMode('connect')}
           disabled={tenants.length === 0}
-          className={`group relative w-full p-6 rounded-[24px] text-left transition-all duration-300 border hover:-translate-y-1
-            ${tenants.length === 0
-              ? 'opacity-60 cursor-not-allowed bg-slate-50 border-slate-100 dark:bg-slate-800/50 dark:border-slate-800'
-              : isDarkMode 
-                ? 'bg-slate-800 border-slate-700 hover:border-slate-600 hover:shadow-lg' 
-                : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-lg'}`}
+          className="group relative w-full p-6 rounded-[24px] text-left transition-all duration-300 border hover:-translate-y-1"
+          style={{
+            backgroundColor: tenants.length === 0 ? colors.mutedBg : colors.card,
+            borderColor: colors.border,
+            opacity: tenants.length === 0 ? 0.6 : 1,
+            cursor: tenants.length === 0 ? 'not-allowed' : 'pointer'
+          }}
+          onMouseEnter={(e) => {
+            if (tenants.length > 0) {
+              e.currentTarget.style.borderColor = isDarkMode ? '#3f3f46' : '#cbd5e1'
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = colors.border
+          }}
         >
           <div className="flex items-start gap-5">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors
-              ${tenants.length === 0
-                ? (isDarkMode ? 'bg-slate-700 text-slate-500' : 'bg-slate-100 text-slate-400')
-                : (isDarkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600')
-              }`}>
+            <div 
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors"
+              style={{
+                backgroundColor: tenants.length === 0
+                  ? colors.mutedBg
+                  : (isDarkMode ? 'rgba(16, 185, 129, 0.1)' : '#d1fae5'),
+                color: tenants.length === 0
+                  ? colors.textSecondary
+                  : (isDarkMode ? '#34d399' : '#059669')
+              }}
+            >
               <Link className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <h3 className={`text-lg font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              <h3 className="text-lg font-bold mb-1" style={{ color: colors.textPrimary }}>
                 Connect Existing
               </h3>
-              <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className="text-sm leading-relaxed" style={{ color: colors.textSecondary }}>
                 {tenants.length === 0
                   ? 'No configurations found.'
                   : `Select from ${tenants.length} available configuration${tenants.length !== 1 ? 's' : ''}.`}
               </p>
             </div>
              {tenants.length > 0 && (
-              <ArrowRight className={`w-5 h-5 mt-1 transition-transform group-hover:translate-x-1 
-                ${isDarkMode ? 'text-slate-500 group-hover:text-white' : 'text-slate-400 group-hover:text-slate-900'}`} />
+              <ArrowRight 
+                className="w-5 h-5 mt-1 transition-transform group-hover:translate-x-1"
+                style={{ color: colors.textSecondary }}
+              />
              )}
           </div>
         </button>
@@ -375,28 +439,41 @@ export default function SetupMultitenancyPage() {
 
       {tenants.length > 0 && (
         <div className="pt-6 mt-2">
-          <p className={`text-xs font-semibold uppercase tracking-wider mb-4 pl-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className="text-xs font-semibold uppercase tracking-wider mb-4 pl-1" style={{ color: colors.textSecondary }}>
             Recent Configurations
           </p>
           <div className="grid grid-cols-1 gap-3">
             {tenants.slice(0, 4).map((tenant, idx) => (
               <div
                 key={tenant.id}
-                className={`group relative p-4 rounded-xl border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md
-                  ${isDarkMode 
-                    ? 'bg-slate-800/50 border-slate-700 hover:border-slate-600 hover:bg-slate-800' 
-                    : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                className="group relative p-4 rounded-xl border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
                 style={{
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
                   animationDelay: `${idx * 50}ms`
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = isDarkMode ? '#3f3f46' : '#cbd5e1'
+                  e.currentTarget.style.backgroundColor = isDarkMode ? colors.mutedBg : '#f8fafc'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = colors.border
+                  e.currentTarget.style.backgroundColor = colors.card
                 }}
               >
                 <div className="flex items-start gap-3">
                   {/* Icon Container */}
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-110
-                    ${tenant.isActive
-                      ? (isDarkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-50 text-emerald-600')
-                      : (isDarkMode ? 'bg-slate-700 text-slate-500' : 'bg-slate-100 text-slate-400')
-                    }`}>
+                  <div 
+                    className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
+                    style={{
+                      backgroundColor: tenant.isActive
+                        ? (isDarkMode ? 'rgba(16, 185, 129, 0.2)' : '#d1fae5')
+                        : colors.mutedBg,
+                      color: tenant.isActive
+                        ? (isDarkMode ? '#34d399' : '#059669')
+                        : colors.textSecondary
+                    }}
+                  >
                     <Building2 className="w-5 h-5" />
                   </div>
                   
@@ -408,25 +485,28 @@ export default function SetupMultitenancyPage() {
                     }}
                     className="flex-1 min-w-0 pr-2 text-left"
                   >
-                    <h4 className={`text-sm font-bold mb-1.5 line-clamp-1 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                    <h4 className="text-sm font-bold mb-1.5 line-clamp-1" style={{ color: colors.textPrimary }}>
                       {tenant.instanceName}
                     </h4>
                     <div className="flex items-center gap-2 mb-1.5">
                       {tenant.isActive && (
-                        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider shrink-0
-                          ${isDarkMode 
-                            ? 'bg-emerald-500/20 text-emerald-400' 
-                            : 'bg-emerald-50 text-emerald-600'}`}>
+                        <div 
+                          className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider shrink-0"
+                          style={{
+                            backgroundColor: isDarkMode ? 'rgba(16, 185, 129, 0.2)' : '#d1fae5',
+                            color: isDarkMode ? '#34d399' : '#059669'
+                          }}
+                        >
                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                           Active
                         </div>
                       )}
                     </div>
-                    <p className={`text-xs truncate ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    <p className="text-xs truncate" style={{ color: colors.textSecondary }}>
                       {tenant.odooUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                     </p>
                     {tenant.companyName && (
-                      <p className={`text-xs mt-0.5 truncate ${isDarkMode ? 'text-slate-600' : 'text-slate-500'}`}>
+                      <p className="text-xs mt-0.5 truncate" style={{ color: colors.textSecondary }}>
                         {tenant.companyName}
                       </p>
                     )}
@@ -477,19 +557,34 @@ export default function SetupMultitenancyPage() {
         <button
           type="button"
           onClick={() => { setMode('select'); setError(null); }}
-          className={`p-2 rounded-full transition-colors hover:bg-slate-100 dark:hover:bg-slate-800
-            ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
+          className="p-2 rounded-full transition-colors"
+          style={{
+            color: colors.textSecondary,
+            backgroundColor: 'transparent'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = isDarkMode ? colors.mutedBg : '#f1f5f9'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent'
+          }}
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+        <h2 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
           New Configuration
         </h2>
       </div>
 
       {error && (
-        <div className={`p-4 rounded-xl flex items-start gap-3 border text-sm
-          ${isDarkMode ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-red-50 border-red-100 text-red-600'}`}>
+        <div 
+          className="p-4 rounded-xl flex items-start gap-3 border text-sm"
+          style={{
+            backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+            borderColor: isDarkMode ? 'rgba(239, 68, 68, 0.2)' : '#fecaca',
+            color: isDarkMode ? '#fca5a5' : '#991b1b'
+          }}
+        >
           <AlertCircle className="w-5 h-5 shrink-0" />
           <p>{error}</p>
         </div>
@@ -497,18 +592,26 @@ export default function SetupMultitenancyPage() {
 
       <div className="space-y-5">
         <div className="space-y-2">
-          <label className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Server URL</label>
+          <label className="text-sm font-medium" style={{ color: colors.textSecondary }}>Server URL</label>
           <div className="relative">
-            <Globe className={`absolute left-3 top-3 w-5 h-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+            <Globe className="absolute left-3 top-3 w-5 h-5" style={{ color: colors.textSecondary }} />
             <input
               type="url"
               placeholder="https://your-server.com"
               value={odooUrl}
               onChange={(e) => setOdooUrl(e.target.value)}
-              className={`w-full h-11 pl-10 pr-4 rounded-xl border bg-transparent outline-none transition-all
-                ${isDarkMode 
-                  ? 'border-slate-700 focus:border-blue-500 text-white placeholder:text-slate-600' 
-                  : 'border-slate-200 focus:border-blue-500 text-slate-900 placeholder:text-slate-400'}`}
+              className="w-full h-11 pl-10 pr-4 rounded-xl border outline-none transition-all"
+              style={{
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                color: colors.textPrimary
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#3b82f6'
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = colors.border
+              }}
               required
             />
           </div>
@@ -516,74 +619,106 @@ export default function SetupMultitenancyPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Database</label>
+            <label className="text-sm font-medium" style={{ color: colors.textSecondary }}>Database</label>
             <div className="relative">
-              <Database className={`absolute left-3 top-3 w-5 h-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
-            <input
-              type="text"
+              <Database className="absolute left-3 top-3 w-5 h-5" style={{ color: colors.textSecondary }} />
+              <input
+                type="text"
                 placeholder="server_db"
-              value={odooDb}
-              onChange={(e) => setOdooDb(e.target.value)}
-                className={`w-full h-11 pl-10 pr-4 rounded-xl border bg-transparent outline-none transition-all
-                ${isDarkMode 
-                  ? 'border-slate-700 focus:border-blue-500 text-white placeholder:text-slate-600' 
-                  : 'border-slate-200 focus:border-blue-500 text-slate-900 placeholder:text-slate-400'}`}
-              required
-            />
+                value={odooDb}
+                onChange={(e) => setOdooDb(e.target.value)}
+                className="w-full h-11 pl-10 pr-4 rounded-xl border outline-none transition-all"
+                style={{
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.textPrimary
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#3b82f6'
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = colors.border
+                }}
+                required
+              />
             </div>
           </div>
           <div className="space-y-2">
-            <label className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Instance ID</label>
+            <label className="text-sm font-medium" style={{ color: colors.textSecondary }}>Instance ID</label>
             <div className="relative">
-              <HardDrive className={`absolute left-3 top-3 w-5 h-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
-            <input
-              type="text"
-              placeholder="Prod-01"
-              value={instanceName}
-              onChange={(e) => setInstanceName(e.target.value)}
-                className={`w-full h-11 pl-10 pr-4 rounded-xl border bg-transparent outline-none transition-all
-                ${isDarkMode 
-                  ? 'border-slate-700 focus:border-blue-500 text-white placeholder:text-slate-600' 
-                  : 'border-slate-200 focus:border-blue-500 text-slate-900 placeholder:text-slate-400'}`}
-              required
-            />
+              <HardDrive className="absolute left-3 top-3 w-5 h-5" style={{ color: colors.textSecondary }} />
+              <input
+                type="text"
+                placeholder="Prod-01"
+                value={instanceName}
+                onChange={(e) => setInstanceName(e.target.value)}
+                className="w-full h-11 pl-10 pr-4 rounded-xl border outline-none transition-all"
+                style={{
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.textPrimary
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#3b82f6'
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = colors.border
+                }}
+                required
+              />
             </div>
           </div>
         </div>
 
-        <div className="pt-4 border-t border-dashed border-slate-200 dark:border-slate-700">
+        <div className="pt-4 border-t border-dashed" style={{ borderColor: colors.border }}>
            <div className="space-y-4">
               <div className="space-y-2">
-                <label className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Email</label>
+                <label className="text-sm font-medium" style={{ color: colors.textSecondary }}>Email</label>
                 <div className="relative">
-                  <Mail className={`absolute left-3 top-3 w-5 h-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                  <Mail className="absolute left-3 top-3 w-5 h-5" style={{ color: colors.textSecondary }} />
                   <input
                     type="email"
                     placeholder="admin@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className={`w-full h-11 pl-10 pr-4 rounded-xl border bg-transparent outline-none transition-all
-                      ${isDarkMode 
-                        ? 'border-slate-700 focus:border-blue-500 text-white placeholder:text-slate-600' 
-                        : 'border-slate-200 focus:border-blue-500 text-slate-900 placeholder:text-slate-400'}`}
+                    className="w-full h-11 pl-10 pr-4 rounded-xl border outline-none transition-all"
+                    style={{
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      color: colors.textPrimary
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#3b82f6'
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = colors.border
+                    }}
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Password</label>
+                <label className="text-sm font-medium" style={{ color: colors.textSecondary }}>Password</label>
                 <div className="relative">
-                  <Lock className={`absolute left-3 top-3 w-5 h-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                  <Lock className="absolute left-3 top-3 w-5 h-5" style={{ color: colors.textSecondary }} />
                   <input
                     type="password"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={`w-full h-11 pl-10 pr-4 rounded-xl border bg-transparent outline-none transition-all
-                      ${isDarkMode 
-                        ? 'border-slate-700 focus:border-blue-500 text-white placeholder:text-slate-600' 
-                        : 'border-slate-200 focus:border-blue-500 text-slate-900 placeholder:text-slate-400'}`}
+                    className="w-full h-11 pl-10 pr-4 rounded-xl border outline-none transition-all"
+                    style={{
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      color: colors.textPrimary
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#3b82f6'
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = colors.border
+                    }}
                     required
                   />
                 </div>
@@ -595,9 +730,20 @@ export default function SetupMultitenancyPage() {
       <Button
         type="submit"
         disabled={isLoading || !odooUrl || !odooDb || !instanceName || !email || !password}
-        className={`w-full h-12 text-base font-medium rounded-xl transition-all hover:scale-[1.02]
-          ${isLoading ? 'opacity-80' : ''}
-          bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100`}
+        className="w-full h-12 text-base font-medium rounded-xl transition-all hover:scale-[1.02]"
+        style={{
+          backgroundColor: isDarkMode ? '#ffffff' : '#0f172a',
+          color: isDarkMode ? '#0f172a' : '#ffffff',
+          opacity: (isLoading || !odooUrl || !odooDb || !instanceName || !email || !password) ? 0.6 : 1
+        }}
+        onMouseEnter={(e) => {
+          if (!e.currentTarget.disabled) {
+            e.currentTarget.style.backgroundColor = isDarkMode ? '#f1f5f9' : '#1e293b'
+          }
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = isDarkMode ? '#ffffff' : '#0f172a'
+        }}
       >
         {isLoading ? (
           <>
@@ -620,19 +766,34 @@ export default function SetupMultitenancyPage() {
         <button
           type="button"
           onClick={() => { setMode('select'); setError(null); setSelectedTenant(null); }}
-          className={`p-2 rounded-full transition-colors hover:bg-slate-100 dark:hover:bg-slate-800
-            ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
+          className="p-2 rounded-full transition-colors"
+          style={{
+            color: colors.textSecondary,
+            backgroundColor: 'transparent'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = isDarkMode ? colors.mutedBg : '#f1f5f9'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent'
+          }}
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+        <h2 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
           Connect Instance
         </h2>
       </div>
 
       {error && (
-        <div className={`p-4 rounded-xl flex items-start gap-3 border text-sm
-          ${isDarkMode ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-red-50 border-red-100 text-red-600'}`}>
+        <div 
+          className="p-4 rounded-xl flex items-start gap-3 border text-sm"
+          style={{
+            backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+            borderColor: isDarkMode ? 'rgba(239, 68, 68, 0.2)' : '#fecaca',
+            color: isDarkMode ? '#fca5a5' : '#991b1b'
+          }}
+        >
           <AlertCircle className="w-5 h-5 shrink-0" />
           <p>{error}</p>
         </div>
@@ -640,41 +801,60 @@ export default function SetupMultitenancyPage() {
 
       <div className="space-y-6">
         <div className="space-y-3">
-          <label className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Select Instance</label>
+          <label className="text-sm font-medium" style={{ color: colors.textSecondary }}>Select Instance</label>
           <div className="grid gap-3 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
             {tenants.map(tenant => (
               <button
                 key={tenant.id}
                 type="button"
                 onClick={() => setSelectedTenant(tenant)}
-                className={`w-full p-4 rounded-xl border text-left transition-all relative overflow-hidden group
-                  ${selectedTenant?.id === tenant.id
-                    ? (isDarkMode 
-                        ? 'bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/20' 
-                        : 'bg-blue-50 border-blue-200 ring-1 ring-blue-200')
-                    : (isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 hover:border-slate-600' 
-                        : 'bg-white border-slate-200 hover:border-slate-300')
-                  }`}
+                className="w-full p-4 rounded-xl border text-left transition-all relative overflow-hidden group"
+                style={{
+                  backgroundColor: selectedTenant?.id === tenant.id
+                    ? (isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff')
+                    : colors.card,
+                  borderColor: selectedTenant?.id === tenant.id
+                    ? (isDarkMode ? 'rgba(59, 130, 246, 0.5)' : '#bfdbfe')
+                    : colors.border
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedTenant?.id !== tenant.id) {
+                    e.currentTarget.style.borderColor = isDarkMode ? '#3f3f46' : '#cbd5e1'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedTenant?.id !== tenant.id) {
+                    e.currentTarget.style.borderColor = colors.border
+                  }
+                }}
               >
                 <div className="flex items-center gap-4 relative z-10">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors
-                    ${selectedTenant?.id === tenant.id
-                      ? (isDarkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600')
-                      : (isDarkMode ? 'bg-slate-700 text-slate-400' : 'bg-slate-100 text-slate-500')
-                    }`}>
+                  <div 
+                    className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                    style={{
+                      backgroundColor: selectedTenant?.id === tenant.id
+                        ? (isDarkMode ? 'rgba(59, 130, 246, 0.2)' : '#dbeafe')
+                        : colors.mutedBg,
+                      color: selectedTenant?.id === tenant.id
+                        ? (isDarkMode ? '#60a5fa' : '#2563eb')
+                        : colors.textSecondary
+                    }}
+                  >
                     <Building2 className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`font-medium truncate ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                    <p className="font-medium truncate" style={{ color: colors.textPrimary }}>
                       {tenant.instanceName}
                     </p>
-                    <p className={`text-xs truncate ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                    <p className="text-xs truncate" style={{ color: colors.textSecondary }}>
                       {tenant.odooUrl}
                     </p>
                   </div>
                   {selectedTenant?.id === tenant.id && (
-                    <CheckCircle2 className={`w-5 h-5 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                    <CheckCircle2 
+                      className="w-5 h-5"
+                      style={{ color: isDarkMode ? '#60a5fa' : '#2563eb' }}
+                    />
                   )}
                 </div>
               </button>
@@ -683,38 +863,54 @@ export default function SetupMultitenancyPage() {
         </div>
 
         {selectedTenant && (
-          <div className={`space-y-4 pt-4 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'} animate-in fade-in slide-in-from-top-2`}>
+          <div className="space-y-4 pt-4 border-t animate-in fade-in slide-in-from-top-2" style={{ borderColor: colors.border }}>
             <div className="space-y-2">
-              <label className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Email</label>
+              <label className="text-sm font-medium" style={{ color: colors.textSecondary }}>Email</label>
               <div className="relative">
-                <Mail className={`absolute left-3 top-3 w-5 h-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                <Mail className="absolute left-3 top-3 w-5 h-5" style={{ color: colors.textSecondary }} />
                 <input
                   type="email"
                   placeholder="admin@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full h-11 pl-10 pr-4 rounded-xl border bg-transparent outline-none transition-all
-                    ${isDarkMode 
-                      ? 'border-slate-700 focus:border-blue-500 text-white placeholder:text-slate-600' 
-                      : 'border-slate-200 focus:border-blue-500 text-slate-900 placeholder:text-slate-400'}`}
+                  className="w-full h-11 pl-10 pr-4 rounded-xl border outline-none transition-all"
+                  style={{
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    color: colors.textPrimary
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#3b82f6'
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border
+                  }}
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Password</label>
+              <label className="text-sm font-medium" style={{ color: colors.textSecondary }}>Password</label>
               <div className="relative">
-                <Lock className={`absolute left-3 top-3 w-5 h-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                <Lock className="absolute left-3 top-3 w-5 h-5" style={{ color: colors.textSecondary }} />
                 <input
                   type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full h-11 pl-10 pr-4 rounded-xl border bg-transparent outline-none transition-all
-                    ${isDarkMode 
-                      ? 'border-slate-700 focus:border-blue-500 text-white placeholder:text-slate-600' 
-                      : 'border-slate-200 focus:border-blue-500 text-slate-900 placeholder:text-slate-400'}`}
+                  className="w-full h-11 pl-10 pr-4 rounded-xl border outline-none transition-all"
+                  style={{
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    color: colors.textPrimary
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#3b82f6'
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border
+                  }}
                   required
                 />
               </div>
@@ -726,9 +922,20 @@ export default function SetupMultitenancyPage() {
       <Button
         type="submit"
         disabled={isLoading || !selectedTenant || !email || !password}
-        className={`w-full h-12 text-base font-medium rounded-xl transition-all hover:scale-[1.02]
-          ${isLoading ? 'opacity-80' : ''}
-          bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100`}
+        className="w-full h-12 text-base font-medium rounded-xl transition-all hover:scale-[1.02]"
+        style={{
+          backgroundColor: isDarkMode ? '#ffffff' : '#0f172a',
+          color: isDarkMode ? '#0f172a' : '#ffffff',
+          opacity: (isLoading || !selectedTenant || !email || !password) ? 0.6 : 1
+        }}
+        onMouseEnter={(e) => {
+          if (!e.currentTarget.disabled) {
+            e.currentTarget.style.backgroundColor = isDarkMode ? '#f1f5f9' : '#1e293b'
+          }
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = isDarkMode ? '#ffffff' : '#0f172a'
+        }}
       >
         {isLoading ? (
           <>
@@ -748,12 +955,12 @@ export default function SetupMultitenancyPage() {
   const renderProgress = () => (
     <div className="py-8 animate-in fade-in zoom-in-95 duration-500">
       <div className="flex flex-col items-center gap-6 mb-10">
-        <Loader2 className={`w-12 h-12 animate-spin ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+        <Loader2 className="w-12 h-12 animate-spin" style={{ color: isDarkMode ? '#60a5fa' : '#2563eb' }} />
         <div className="text-center">
-          <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+          <h3 className="text-xl font-bold mb-2" style={{ color: colors.textPrimary }}>
             Setting Up
           </h3>
-          <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+          <p style={{ color: colors.textSecondary }}>
             Please wait while we configure your instance...
           </p>
         </div>
@@ -771,30 +978,40 @@ export default function SetupMultitenancyPage() {
           return (
             <div 
               key={step.id} 
-              className={`flex items-center gap-4 p-4 rounded-xl border transition-all duration-300
-                ${isActive 
-                  ? (isDarkMode ? 'bg-blue-500/10 border-blue-500/30' : 'bg-blue-50 border-blue-100') 
+              className="flex items-center gap-4 p-4 rounded-xl border transition-all duration-300"
+              style={{
+                backgroundColor: isActive 
+                  ? (isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff')
                   : isCompleted
-                    ? (isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-emerald-50/50 border-emerald-100')
-                    : (isDarkMode ? 'bg-slate-800/30 border-slate-800' : 'bg-slate-50 border-slate-100 opacity-60')
-                }`}
+                    ? (isDarkMode ? 'rgba(16, 185, 129, 0.05)' : 'rgba(209, 250, 229, 0.5)')
+                    : colors.mutedBg,
+                borderColor: isActive 
+                  ? (isDarkMode ? 'rgba(59, 130, 246, 0.3)' : '#bfdbfe')
+                  : isCompleted
+                    ? (isDarkMode ? 'rgba(16, 185, 129, 0.2)' : '#d1fae5')
+                    : colors.border,
+                opacity: (!isActive && !isCompleted) ? 0.6 : 1
+              }}
             >
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0
-                ${isActive 
-                  ? 'text-blue-500' 
-                  : isCompleted 
-                    ? 'text-emerald-500' 
-                    : 'text-slate-400'}`}>
+              <div 
+                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                style={{
+                  color: isActive 
+                    ? '#3b82f6' 
+                    : isCompleted 
+                      ? '#10b981' 
+                      : colors.textSecondary
+                }}
+              >
                 <step.icon className="w-5 h-5" />
               </div>
-              <span className={`text-sm font-medium flex-1
-                ${isActive || isCompleted 
-                  ? (isDarkMode ? 'text-slate-200' : 'text-slate-800') 
-                  : 'text-slate-500'}`}>
+              <span className="text-sm font-medium flex-1" style={{ 
+                color: (isActive || isCompleted) ? colors.textPrimary : colors.textSecondary 
+              }}>
                 {step.label}
               </span>
-              {isActive && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
-              {isCompleted && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+              {isActive && <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#3b82f6' }} />}
+              {isCompleted && <CheckCircle2 className="w-5 h-5" style={{ color: '#10b981' }} />}
             </div>
           )
         })}
@@ -804,18 +1021,24 @@ export default function SetupMultitenancyPage() {
 
   const renderComplete = () => (
     <div className="py-8 text-center animate-in fade-in zoom-in-95 duration-500">
-      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 mb-6">
+      <div 
+        className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6"
+        style={{
+          backgroundColor: isDarkMode ? 'rgba(16, 185, 129, 0.2)' : '#d1fae5',
+          color: isDarkMode ? '#34d399' : '#059669'
+        }}
+      >
         <CheckCircle2 className="w-10 h-10" />
       </div>
       
-      <h3 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+      <h3 className="text-2xl font-bold mb-2" style={{ color: colors.textPrimary }}>
         Setup Complete!
       </h3>
-      <p className={`mb-8 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+      <p className="mb-8" style={{ color: colors.textSecondary }}>
         Your instance is ready. Redirecting...
       </p>
 
-      <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+      <div className="flex items-center justify-center gap-2 text-sm" style={{ color: colors.textSecondary }}>
         <Loader2 className="w-4 h-4 animate-spin" />
         Loading dashboard...
       </div>
@@ -824,14 +1047,20 @@ export default function SetupMultitenancyPage() {
 
   const renderError = () => (
     <div className="py-8 text-center animate-in fade-in zoom-in-95 duration-500">
-      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 mb-6">
+      <div 
+        className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6"
+        style={{
+          backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
+          color: isDarkMode ? '#fca5a5' : '#dc2626'
+        }}
+      >
         <AlertCircle className="w-10 h-10" />
       </div>
       
-      <h3 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+      <h3 className="text-2xl font-bold mb-2" style={{ color: colors.textPrimary }}>
         Setup Failed
       </h3>
-      <p className={`mb-8 max-w-xs mx-auto ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>
+      <p className="mb-8 max-w-xs mx-auto" style={{ color: isDarkMode ? '#fca5a5' : '#dc2626' }}>
         {error}
       </p>
 
@@ -846,14 +1075,15 @@ export default function SetupMultitenancyPage() {
   )
 
   return (
-    <div className={`min-h-screen w-full flex items-center justify-center p-4 relative transition-colors duration-500
-      ${isDarkMode ? 'bg-slate-950' : 'bg-slate-50'}`}
+    <div 
+      className="min-h-screen w-full flex items-center justify-center p-4 relative transition-colors duration-500"
+      style={{ backgroundColor: colors.background }}
     >
       {/* Background Pattern */}
       <div className="absolute inset-0 z-0 opacity-[0.4] pointer-events-none" 
         style={{
           backgroundImage: isDarkMode 
-            ? 'radial-gradient(#334155 1px, transparent 1px)' 
+            ? 'radial-gradient(#27272a 1px, transparent 1px)' 
             : 'radial-gradient(#cbd5e1 1px, transparent 1px)',
           backgroundSize: '24px 24px'
         }} 
@@ -863,10 +1093,18 @@ export default function SetupMultitenancyPage() {
       <div className="absolute top-4 right-4 z-20">
         <button
           onClick={toggleTheme}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all
-            ${isDarkMode 
-              ? 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white' 
-              : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 shadow-sm'}`}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all"
+          style={{
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            color: colors.textSecondary
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = colors.textPrimary
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = colors.textSecondary
+          }}
         >
           {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           <span className="text-xs font-medium">{isDarkMode ? 'Dark' : 'Light'}</span>
@@ -874,10 +1112,14 @@ export default function SetupMultitenancyPage() {
       </div>
 
       {/* Main Card */}
-      <div className={`relative z-10 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transition-all duration-300
-        ${isDarkMode 
-          ? 'bg-slate-900 border border-slate-800 shadow-black/50' 
-          : 'bg-white border border-slate-100 shadow-slate-200/50'}`}
+      <div 
+        className="relative z-10 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transition-all duration-300"
+        style={{
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          borderWidth: '1px',
+          borderStyle: 'solid'
+        }}
       >
         <div className="p-8 md:p-10">
           {setupPhase === 'form' && mode === 'select' && <Header />}
@@ -905,8 +1147,14 @@ export default function SetupMultitenancyPage() {
         </div>
         
         {/* Footer in card */}
-        <div className={`py-4 text-center text-xs border-t
-          ${isDarkMode ? 'border-slate-800 text-slate-600 bg-slate-900/50' : 'border-slate-50 text-slate-400 bg-slate-50/50'}`}>
+        <div 
+          className="py-4 text-center text-xs border-t"
+          style={{
+            borderColor: colors.border,
+            color: colors.textSecondary,
+            backgroundColor: colors.mutedBg
+          }}
+        >
           &copy; {new Date().getFullYear()} Octopus WMS
         </div>
       </div>

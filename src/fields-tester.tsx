@@ -218,21 +218,13 @@ export default function FieldsTesterPage() {
           className="flex items-center justify-between"
         >
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/20">
-              <Database className="text-white" size={24} />
-            </div>
             <div>
               <h1 className="text-3xl font-display font-bold tracking-tight">Schema Explorer</h1>
               <p className="text-sm font-body opacity-60">Inspect models, modules, and field definitions</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 px-4 py-2 rounded-full" style={glassStyle}>
-            <div className={`w-2 h-2 rounded-full ${sessionId ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
-            <span className="text-xs font-medium font-display uppercase tracking-wider">
-              {sessionId ? 'Connected' : 'Disconnected'}
-            </span>
-          </div>
+         
         </motion.div>
 
         {/* Main Content Grid */}
