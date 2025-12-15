@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Lottie from 'lottie-react'
-import loadingAnimation from '../assets/loading.json'
+import loadingAnimation from '../assets/Loading.json'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3006'
 
