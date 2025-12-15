@@ -9,7 +9,7 @@ import { PersonalizationProvider } from '../context/personalization.tsx'
 import { CaslProvider } from '../context/casl.tsx'
 import { Route, Routes, useNavigate, Navigate, useLocation } from "react-router"
 import Lottie from 'lottie-react'
-import loadingAnimation from './assets/loading.json'
+import loadingAnimation from './assets/Loading.json'
 import Signin from './signin.tsx'
 import { EnhancedSidebar } from '../@/components/EnhancedSidebar.tsx'
 import { ChatBot } from './components/ChatBot.tsx'
@@ -91,7 +91,7 @@ import EmailTemplateEditorPage from './pages/EmailTemplateEditorPage'
 import SendEmailPage from './pages/SendEmailPage'
 
 function AppContent() {
-  const { isAuthenticated, isLoading, signOut } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
   const { isCollapsed } = useSidebar()
   const navigate = useNavigate()
   const location = useLocation()
