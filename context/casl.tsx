@@ -80,7 +80,6 @@ export const CaslProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       setUserId(userIdNum);
-      console.log('User ID loaded:', userIdNum);
     } catch (error) {
       console.error('Error loading user ID:', error);
       setUserId(null);
@@ -98,7 +97,6 @@ export const CaslProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      console.log('Loading all page permissions from ABAC policy_permissions...');
       const startTime = performance.now();
       
       // Use the bulk endpoint to get all page permissions at once
@@ -121,7 +119,6 @@ export const CaslProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const data = await response.json();
       const endTime = performance.now();
-      console.log(`Page permissions loaded in ${(endTime - startTime).toFixed(2)}ms`);
 
       if (data.success && data.data) {
         // data.data is a map of page_key -> { view: boolean, edit: boolean, create: boolean, export: boolean, delete: boolean, ... }
@@ -145,12 +142,6 @@ export const CaslProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setPageEditPermissions(editPermissions);
         setPageExportPermissions(exportPermissions);
         setPageDeletePermissions(deletePermissions);
-        console.log(`Loaded permissions for ${Object.keys(viewPermissions).length} pages`);
-        console.log(`View permissions:`, viewPermissions);
-        console.log(`Create permissions:`, createPermissions);
-        console.log(`Edit permissions:`, editPermissions);
-        console.log(`Export permissions:`, exportPermissions);
-        console.log(`Delete permissions:`, deletePermissions);
       } else {
         console.warn('Error loading page permissions, denying all by default');
         setPagePermissions({});
@@ -195,7 +186,6 @@ export const CaslProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      console.log(`Loading section permissions for page: ${pageId}`);
       
       // Use ABAC to get all sections for this page and evaluate permissions
       // For now, we'll use the registry to get sections, then evaluate each
@@ -203,7 +193,6 @@ export const CaslProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Get sections from registry (if available) or evaluate on-demand
       // For now, sections will be loaded on-demand via loadSectionPermission
-      console.log(`Section permissions for page ${pageId} will be loaded on-demand`);
     } catch (error) {
       console.error(`Error loading section permissions for page ${pageId}:`, error);
     }
@@ -260,12 +249,6 @@ export const CaslProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const builtAbility = build();
     setAbility(builtAbility);
-    console.log('CASL Ability built (ABAC strict mode):', {
-      userId,
-      pagePermissionsCount: Object.keys(pagePermissions).length,
-      sectionPermissionsCount: Object.keys(sectionPermissions).length,
-      rules: builtAbility.rules,
-    });
   }, [userId, pagePermissions, sectionPermissions]);
 
   /**
@@ -413,7 +396,6 @@ export const CaslProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         setUserId(userIdNum);
-        console.log('[CASL_PROVIDER] User ID set:', userIdNum);
 
         // Load page permissions
         const tenantId = getCurrentTenantId();
@@ -452,7 +434,6 @@ export const CaslProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setPageEditPermissions(editPermissions);
           setPageExportPermissions(exportPermissions);
           setPageDeletePermissions(deletePermissions);
-          console.log(`[CASL_PROVIDER] Loaded permissions for ${Object.keys(viewPermissions).length} pages`);
         } else {
           console.warn('[CASL_PROVIDER] Failed to load permissions, denying all by default');
           setPagePermissions({});

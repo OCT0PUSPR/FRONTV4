@@ -1317,5 +1317,6 @@
   "Escalate task": "Escalate task",
   "End workflow": "End workflow",
   "Edit": "Edit",
-  "Cancel": "Cancel"
+  "Cancel": "Cancel",
+  "Invalid email or password. Please check your credentials and try again.": "Invalid email or password. Please check your credentials and try again."
 }

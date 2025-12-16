@@ -4,6 +4,7 @@ import type React from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../context/auth"
 import { useState, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { EmailIcon } from "./components/emailIcon"
 import { LockIcon } from "./components/LockIcon"
 import Toast from "./components/Toast"
@@ -93,11 +94,11 @@ interface Tenant {
 }
 
 function Signin() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [selectedTenantId, setSelectedTenantId] = useState<string>("")
@@ -108,12 +109,12 @@ function Signin() {
   const navigate = useNavigate()
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-  // Redirect to overview if already authenticated
+  // Redirect to overview if already authenticated (but only if we're not in the middle of a sign-in attempt)
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
+    if (!authLoading && isAuthenticated && !isLoading) {
       navigate('/overview', { replace: true })
     }
-  }, [isAuthenticated, authLoading, navigate])
+  }, [isAuthenticated, authLoading, isLoading, navigate])
 
   // Fetch tenants when modal opens
   useEffect(() => {
@@ -127,6 +128,15 @@ function Signin() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isModalOpen])
+
+  // Auto-select tenant if there's only one
+  useEffect(() => {
+    if (tenants.length === 1 && !selectedTenantId) {
+      const singleTenantId = tenants[0].id.toString()
+      setSelectedTenantId(singleTenantId)
+      localStorage.setItem('current_tenant_id', singleTenantId)
+    }
+  }, [tenants, selectedTenantId])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -180,36 +190,44 @@ function Signin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
+    setToast(null) // Clear any previous toast
     setIsLoading(true)
     
     try {
       const result = await signIn(email, password)
       
-      // Check if setup is required
+      // Always wait for the sign-in to complete before any navigation
+      if (!result.success) {
+        // Sign-in failed - show toast error message and stay on page
+        const defaultErrorMessage = "Invalid email or password. Please check your credentials and try again."
+        const errorMessage = result.error || defaultErrorMessage
+        // Translate the error message if it matches our known error message
+        const translatedError = errorMessage === defaultErrorMessage 
+          ? t(defaultErrorMessage)
+          : errorMessage
+        setToast({ text: translatedError, state: "error" })
+        setIsLoading(false)
+        return // Don't navigate, stay on signin page
+      }
+      
+      // Sign-in successful - check if setup is required
       if (result.setupRequired || result.redirectTo === '/setup') {
+        setIsLoading(false)
         navigate('/setup', { replace: true })
         return
       }
       
-      if (result.success) {
-        console.log("success")
-        navigate("/overview")
-      } else {
-        // Show toast error and stay on signin page
-        const errorMessage = result.error || "Invalid credentials. Please check your email and password."
-        setToast({ text: errorMessage, state: "error" })
-        setTimeout(() => setToast(null), 5000)
-        setError("") // Clear inline error since we're using toast
-      }
-    } catch (err: unknown) {
-      // Handle unexpected errors
-      const errorMessage = err instanceof Error ? err.message : "An error occurred. Please try again."
-      setToast({ text: errorMessage, state: "error" })
-      setTimeout(() => setToast(null), 5000)
-      setError("")
-    } finally {
+      // Sign-in successful - navigate to overview
       setIsLoading(false)
+      navigate("/overview", { replace: true })
+    } catch (err: unknown) {
+      // Handle unexpected errors - show toast error and stay on page
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "An unexpected error occurred. Please try again."
+      setToast({ text: errorMessage, state: "error" })
+      setIsLoading(false)
+      // Don't navigate on error - stay on signin page
     }
   }
 
@@ -315,7 +333,6 @@ function Signin() {
             <button
               onClick={() => {
                 setIsModalOpen(true)
-                setError("")
               }}
               className="bg-[#4A7FA7] hover:bg-[#1A3D63] text-white font-semibold py-4 sm:py-5 px-6 sm:px-10 rounded-2xl text-base sm:text-lg transition-all duration-300 inline-flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl"
             >
@@ -330,11 +347,11 @@ function Signin() {
       <Dialog open={isModalOpen} onOpenChange={(open) => {
         setIsModalOpen(open)
         if (!open) {
-          setError("")
           setEmail("")
           setPassword("")
           setSelectedTenantId("")
           setIsTenantDropdownOpen(false)
+          setToast(null)
         }
       }}>
         <DialogContent className="sm:max-w-md bg-white border-[#4A7FA7]/20 p-6 sm:p-8">
@@ -360,7 +377,6 @@ function Signin() {
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value)
-                      setError("")
                     }}
                     placeholder="Enter your email"
                     required
@@ -385,7 +401,6 @@ function Signin() {
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value)
-                      setError("")
                     }}
                     placeholder="Enter your password"
                     required
@@ -403,66 +418,62 @@ function Signin() {
                 </div>
               </div>
 
-              {/* Tenant Selection */}
-              <div className="space-y-2">
-                <label htmlFor="tenant" className="text-sm font-medium text-[#0A1931]">
-                  Tenant Instance
-                </label>
-                <div className="relative tenant-dropdown-container">
-                  <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
-                    <Building2 className="w-5 h-5 text-[#4A7FA7]" />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => !isLoading && !isFetchingTenants && setIsTenantDropdownOpen(!isTenantDropdownOpen)}
-                    disabled={isLoading || isFetchingTenants}
-                    className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 sm:py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4A7FA7] focus:border-[#4A7FA7] transition-all bg-gray-50 hover:bg-white hover:border-[#4A7FA7]/40 disabled:opacity-50 disabled:cursor-not-allowed text-left flex items-center justify-between"
-                  >
-                    <span className={`truncate ${!selectedTenantId ? 'text-gray-400' : 'text-[#0A1931]'}`}>
-                      {isFetchingTenants ? 'Loading tenants...' : selectedTenantDisplay}
-                    </span>
-                    <ChevronDown className={`w-4 h-4 text-[#4A7FA7] transition-transform ${isTenantDropdownOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  
-                  {isTenantDropdownOpen && !isFetchingTenants && (
-                    <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-60 overflow-auto">
-                      <button
-                        type="button"
-                        onClick={() => handleTenantChange("")}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center justify-between border-b border-gray-100"
-                      >
-                        <span className="text-gray-400">Select a tenant instance</span>
-                        {!selectedTenantId && <Check className="w-4 h-4 text-[#4A7FA7]" />}
-                      </button>
-                      {tenants.map((tenant) => (
-                        <button
-                          key={tenant.id}
-                          type="button"
-                          onClick={() => handleTenantChange(tenant.id.toString())}
-                          className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center justify-between"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-[#0A1931] truncate">{tenant.instanceName}</div>
-                            {tenant.companyName && (
-                              <div className="text-xs text-gray-500 truncate">{tenant.companyName}</div>
-                            )}
-                          </div>
-                          {selectedTenantId === tenant.id.toString() && (
-                            <Check className="w-4 h-4 text-[#4A7FA7] ml-2 flex-shrink-0" />
-                          )}
-                        </button>
-                      ))}
+              {/* Tenant Selection - Only show if more than one tenant */}
+              {tenants.length > 1 && (
+                <div className="space-y-2">
+                  <label htmlFor="tenant" className="text-sm font-medium text-[#0A1931]">
+                    Tenant Instance
+                  </label>
+                  <div className="relative tenant-dropdown-container">
+                    <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+                      <Building2 className="w-5 h-5 text-[#4A7FA7]" />
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Error Message */}
-              {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 animate-fade-in">
-                  {error}
+                    <button
+                      type="button"
+                      onClick={() => !isLoading && !isFetchingTenants && setIsTenantDropdownOpen(!isTenantDropdownOpen)}
+                      disabled={isLoading || isFetchingTenants}
+                      className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 sm:py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4A7FA7] focus:border-[#4A7FA7] transition-all bg-gray-50 hover:bg-white hover:border-[#4A7FA7]/40 disabled:opacity-50 disabled:cursor-not-allowed text-left flex items-center justify-between"
+                    >
+                      <span className={`truncate ${!selectedTenantId ? 'text-gray-400' : 'text-[#0A1931]'}`}>
+                        {isFetchingTenants ? 'Loading tenants...' : selectedTenantDisplay}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-[#4A7FA7] transition-transform ${isTenantDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {isTenantDropdownOpen && !isFetchingTenants && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-60 overflow-auto">
+                        <button
+                          type="button"
+                          onClick={() => handleTenantChange("")}
+                          className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center justify-between border-b border-gray-100"
+                        >
+                          <span className="text-gray-400">Select a tenant instance</span>
+                          {!selectedTenantId && <Check className="w-4 h-4 text-[#4A7FA7]" />}
+                        </button>
+                        {tenants.map((tenant) => (
+                          <button
+                            key={tenant.id}
+                            type="button"
+                            onClick={() => handleTenantChange(tenant.id.toString())}
+                            className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center justify-between"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-[#0A1931] truncate">{tenant.instanceName}</div>
+                              {tenant.companyName && (
+                                <div className="text-xs text-gray-500 truncate">{tenant.companyName}</div>
+                              )}
+                            </div>
+                            {selectedTenantId === tenant.id.toString() && (
+                              <Check className="w-4 h-4 text-[#4A7FA7] ml-2 flex-shrink-0" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
+
             </div>
 
             {/* Forgot Password Link */}

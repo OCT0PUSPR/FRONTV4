@@ -101,8 +101,6 @@ const OrgChartPage: React.FC = () => {
 
   // Dynamic page styles based on theme
   const pageStyles = `
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
-
     /* Custom scrollbar for premium feel */
     ::-webkit-scrollbar {
       width: 8px;

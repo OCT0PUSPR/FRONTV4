@@ -194,9 +194,8 @@ export default function FieldsTesterPage() {
   return (
     <div className="min-h-screen p-6 font-sans overflow-hidden" style={{ backgroundColor: colors.background, color: colors.textPrimary }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600&display=swap');
         .font-display { font-family: 'Space Grotesk', sans-serif; }
-        .font-body { font-family: 'Outfit', sans-serif; }
+        .font-body { font-family: 'Space Grotesk', sans-serif; }
         
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }

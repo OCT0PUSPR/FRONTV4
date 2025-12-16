@@ -255,7 +255,9 @@ function AppContent() {
   const isPublicRoute = publicRoutes.some(route => location.pathname === route || location.pathname.startsWith('/approval/'))
 
   // Show loading while checking auth or license (but allow public routes)
-  if (isLoading || (isCheckingLicense && !isPublicRoute)) {
+  // Don't show loading screen on signin page - let the signin page handle its own loading state
+  const isSigninPage = location.pathname === '/signin'
+  if ((isLoading || (isCheckingLicense && !isPublicRoute)) && !isSigninPage) {
     // We need to access theme here, but ThemeProvider wraps AppContent
     // So we'll use a simple approach - check localStorage for theme
     const savedTheme = localStorage.getItem('theme_mode') || 'light'
@@ -497,9 +499,7 @@ function AppContent() {
   )
 }
 
-function App() {
-  console.log('[APP] App component rendering, initializing providers...')
-  
+function App() {  
   return (
     <ThemeProvider>
       <DataProvider>

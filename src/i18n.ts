@@ -4,10 +4,6 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import en from './locales/en/translation.json'
 import ar from './locales/ar/translation.json'
 
-console.log('[I18N] Starting i18n initialization...')
-console.log('[I18N] English translations loaded, keys:', Object.keys(en || {}).length)
-console.log('[I18N] Arabic translations loaded, keys:', Object.keys(ar || {}).length)
-
 const resources = {
   en: { translation: en },
   ar: { translation: ar },
@@ -30,7 +26,6 @@ try {
         caches: ['localStorage']
       }
     })
-  console.log('[I18N] i18n initialized successfully, language:', i18n.language || i18n.resolvedLanguage || 'en')
 } catch (error) {
   console.error('[I18N] Fatal error during i18n initialization:', error)
   throw error
@@ -38,7 +33,6 @@ try {
 
 // Set document direction/lang and font on load and language change
 const setDir = (lng: string) => {
-  console.log('[I18N] Setting document direction for language:', lng)
   const dir = i18n.dir(lng)
   document.documentElement.setAttribute('dir', dir)
   document.documentElement.setAttribute('lang', lng)
@@ -66,16 +60,12 @@ const setDir = (lng: string) => {
 
 try {
   const initialLang = i18n.resolvedLanguage || i18n.language || 'en'
-  console.log('[I18N] Initial language:', initialLang)
   setDir(initialLang)
   
   i18n.on('languageChanged', (lng) => {
-    console.log('[I18N] Language changed to:', lng)
     setDir(lng)
   })
-  console.log('[I18N] Language change listener registered')
 } catch (error) {
-  console.error('[I18N] Error setting up language:', error)
 }
 
 export default i18n

@@ -9,7 +9,7 @@ import * as fleetApi from './components/FleetManagement/fleetApi';
 
 const GLOBAL_STYLES = `
   :root {
-    --font-primary: 'Manrope', sans-serif;
+    --font-primary: 'Space Grotesk', sans-serif;
   }
   body {
     font-family: var(--font-primary);
@@ -166,10 +166,7 @@ const FleetManagementPage: React.FC = () => {
   useEffect(() => {
     const initResources = async () => {
         try {
-            // Load Fonts first
-            await loadResource('style', 'https://fonts.googleapis.com', 'google-fonts-preconnect');
-            await loadResource('style', 'https://fonts.gstatic.com', 'google-fonts-gstatic');
-            await loadResource('style', 'https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap', 'app-font');
+            // Fonts are loaded via local @font-face in index.css (Space Grotesk)
             
             // Load Leaflet CSS
             await loadResource('style', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', 'leaflet-css');

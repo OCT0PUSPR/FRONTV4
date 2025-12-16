@@ -611,7 +611,6 @@ export default function SimulationModal({
       onClick={onClose}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
         
         .simulation-input-scroll::-webkit-scrollbar {
           width: 6px;
