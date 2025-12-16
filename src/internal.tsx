@@ -245,6 +245,9 @@ export default function InternalTransfersPage() {
     const headers: Record<string, string> = {}
     if (rawBase) headers['x-odoo-base'] = rawBase
     if (db) headers['x-odoo-db'] = db
+    // Include tenant ID for multi-tenant support
+    const tenantId = localStorage.getItem('current_tenant_id')
+    if (tenantId) headers['X-Tenant-ID'] = tenantId
     return headers
   }
 
@@ -261,17 +264,36 @@ export default function InternalTransfersPage() {
   }
 
   const printPickingAction = async (pickingId: number) => {
-    if (!pickingId) return
+    if (!pickingId || !sessionId) return
     try {
-      // Get tenant Odoo URL from localStorage
-      const odooBaseUrl = localStorage.getItem('odoo_base_url') || 'https://egy.thetalenter.net'
-      const baseUrl = odooBaseUrl.replace(/\/$/, '') // Remove trailing slash
+      const headers = {
+        "Content-Type": "application/json",
+        ...getOdooHeaders(),
+      }
       
-      // Construct the PDF report URL
-      const pdfUrl = `${baseUrl}/report/pdf/stock.report_picking/${pickingId}`
+      // Fetch PDF from backend proxy (which uses the direct Odoo URL)
+      const response = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/pickings/${pickingId}/print`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ sessionId }),
+      })
       
-      // Open PDF in new window
-      window.open(pdfUrl, '_blank')
+      if (!response.ok) {
+        throw new Error('Failed to fetch PDF')
+      }
+      
+      // Get PDF blob
+      const blob = await response.blob()
+      
+      // Create download link
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `picking_${pickingId}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
     } catch (error) {
       console.error("Print failed:", error)
     }
@@ -335,6 +357,20 @@ export default function InternalTransfersPage() {
     // Format value helper for different field types
     const formatValue = (value: any, fieldName: string): string => {
       if (value === null || value === undefined) return '-'
+      
+      // Handle state/status mapping to display labels
+      if (fieldName === 'state' || fieldName === 'status') {
+        const stateMap: Record<string, string> = {
+          'draft': 'Draft',
+          'waiting': 'Waiting Another Operation',
+          'confirmed': 'Waiting',
+          'assigned': 'Ready',
+          'done': 'Done',
+          'cancel': 'Cancelled',
+        }
+        const normalizedState = String(value).toLowerCase().trim()
+        return stateMap[normalizedState] || String(value)
+      }
       
       // Handle relation fields (many2one) - they come as [id, name] tuples
       if (Array.isArray(value) && value.length === 2 && typeof value[0] === 'number') {

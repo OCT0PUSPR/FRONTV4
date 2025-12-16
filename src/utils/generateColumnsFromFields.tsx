@@ -58,6 +58,26 @@ const capitalizeFirst = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
+// Helper function to map state database values to display labels
+const getStateDisplayLabel = (stateValue: string): string => {
+  if (!stateValue) return stateValue
+  
+  const stateMap: Record<string, string> = {
+    'draft': 'Draft',
+    'waiting': 'Waiting Another Operation',
+    'confirmed': 'Waiting',
+    'assigned': 'Ready',
+    'done': 'Done',
+    'cancel': 'Cancelled',
+  }
+  
+  // Normalize the state value (lowercase, trim)
+  const normalizedState = stateValue.toLowerCase().trim()
+  
+  // Return mapped label or fallback to capitalized original
+  return stateMap[normalizedState] || capitalizeFirst(stateValue)
+}
+
 export function generateColumnsFromFields(
   fields: SmartField[],
   colors: any,
@@ -201,8 +221,11 @@ export function generateColumnsFromFields(
 
           // Special styling for status/state fields - show as pill (like in locations page)
           if (fieldName === 'status' || fieldName === 'state') {
-            const statusColors = getStatusColors(formattedValue, colors)
-            const capitalizedStatus = capitalizeFirst(formattedValue)
+            // Use raw value for color matching (before formatting)
+            const rawValue = value?.toString() || ''
+            const statusColors = getStatusColors(rawValue, colors)
+            // Get display label from mapping
+            const displayLabel = getStateDisplayLabel(rawValue)
             return (
               <span
                 style={{
@@ -216,7 +239,7 @@ export function generateColumnsFromFields(
                   color: statusColors.text,
                 }}
               >
-                {capitalizedStatus}
+                {displayLabel}
               </span>
             )
           }
