@@ -260,6 +260,23 @@ export default function InternalTransfersPage() {
     setDeleteAlertOpen(true)
   }
 
+  const printPickingAction = async (pickingId: number) => {
+    if (!pickingId) return
+    try {
+      // Get tenant Odoo URL from localStorage
+      const odooBaseUrl = localStorage.getItem('odoo_base_url') || 'https://egy.thetalenter.net'
+      const baseUrl = odooBaseUrl.replace(/\/$/, '') // Remove trailing slash
+      
+      // Construct the PDF report URL
+      const pdfUrl = `${baseUrl}/report/pdf/stock.report_picking/${pickingId}`
+      
+      // Open PDF in new window
+      window.open(pdfUrl, '_blank')
+    } catch (error) {
+      console.error("Print failed:", error)
+    }
+  }
+
   const deletePickingAction = async () => {
     const sessionId = localStorage.getItem('sessionId') || sessionStorage.getItem('sessionId')
     if (!sessionId || !pickingToDelete) return
@@ -692,6 +709,12 @@ export default function InternalTransfersPage() {
                       label: t("Edit"),
                       icon: Edit,
                       onClick: () => openModal(transferId),
+                    },
+                    {
+                      key: "print",
+                      label: t("Print"),
+                      icon: Printer,
+                      onClick: () => printPickingAction(transferId),
                     },
                     ...(canDeletePage("internal") ? [{
                       key: "delete",

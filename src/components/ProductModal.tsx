@@ -497,7 +497,6 @@ export function ProductModal({ product, isOpen, onClose, onSuccess }: ProductMod
         <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 sm:p-6 font-sans">
           {/* Styles */}
           <style>{`
-            @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600&display=swap');
             
             .font-display { font-family: 'Space Grotesk', sans-serif; }
             .font-body { font-family: 'Outfit', sans-serif; }

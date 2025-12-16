@@ -296,8 +296,6 @@ const LicensePage = () => {
         <Moon className={`w-4 h-4 transition-colors ${isDarkMode ? "text-blue-400" : "text-zinc-400"}`} />
       </div>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
-
         /* OVERRIDE GLOBAL SCROLLBAR */
         ::-webkit-scrollbar {
           width: 8px;

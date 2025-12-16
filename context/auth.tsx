@@ -131,7 +131,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     };
                 }
                 
-                return { success: false, error: data.message || 'Authentication failed. Please check your credentials.' };
+                // Parse error message to provide user-friendly credentials error
+                let errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+                
+                if (data.message) {
+                    const msg = data.message.toLowerCase();
+                    // If it's a credentials/auth error, use our friendly message
+                    if (msg.includes('authentication') || msg.includes('invalid') || msg.includes('credentials') || 
+                        msg.includes('login') || msg.includes('password') || msg.includes('user not found') ||
+                        msg.includes('wrong password') || msg.includes('incorrect')) {
+                        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+                    } else if (msg.includes('odoo server error') || msg.includes('server error')) {
+                        // For server errors, still show credentials error to avoid exposing server issues
+                        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+                    } else if (msg.includes('setup') || msg.includes('configure')) {
+                        // Keep setup-related messages as-is
+                        errorMessage = data.message;
+                    } else {
+                        // For other errors, default to credentials error
+                        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+                    }
+                }
+                
+                return { success: false, error: errorMessage };
             }
         } catch (error: any) {
             console.error('Authentication error:', error);

@@ -27,6 +27,7 @@ import {
 import Toast from "../components/Toast"
 import { useNavigate } from "react-router-dom"
 import { useCasl } from "../../context/casl"
+import { ActionDropdown } from "../components/ActionDropdown"
 
 // Types
 interface ReportTemplate {
@@ -84,7 +85,6 @@ export default function ReportTemplatesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedType, setSelectedType] = useState<string>("all")
   const [toast, setToast] = useState<{ text: string; state: "success" | "error" } | null>(null)
-  const [menuOpen, setMenuOpen] = useState<number | null>(null)
 
   useEffect(() => {
     loadTemplates()
@@ -133,7 +133,6 @@ export default function ReportTemplatesPage() {
     } catch { 
       showToast("Failed to delete", "error") 
     }
-    setMenuOpen(null)
   }
 
   const handleCloneTemplate = async (id: number, name: string) => {
@@ -156,7 +155,6 @@ export default function ReportTemplatesPage() {
     } catch {
       showToast("Failed to clone", "error")
     }
-    setMenuOpen(null)
   }
 
   const showToast = (text: string, state: "success" | "error") => {
@@ -324,76 +322,65 @@ export default function ReportTemplatesPage() {
                     className="relative h-full rounded-[22px] overflow-hidden group-hover:border-transparent transition-colors p-6 flex flex-col"
                     style={{ 
                       backgroundColor: colors.card,
-                      border: `1px solid ${colors.border}`
+                      border: `1px solid ${colors.border}`,
+                      cursor: canEditPage('report-templates') ? 'pointer' : 'default'
+                    }}
+                    onClick={() => {
+                      if (canEditPage('report-templates')) {
+                        navigate(`/report-template-editor/${template.id}`)
+                      }
                     }}
                   >
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-6">
-                      <div 
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300"
-                        style={{ background: gradient }}
-                      >
-                        <TypeIcon className="w-6 h-6 text-white" />
+                    {/* Header - Icon and Name side by side */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div 
+                          className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0"
+                          style={{ background: gradient }}
+                        >
+                          <TypeIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <h3 
+                          className="text-base font-bold tracking-tight truncate transition-all"
+                          style={{ color: colors.textPrimary }}
+                        >
+                          {template.template_name}
+                        </h3>
                       </div>
 
-                      {/* Menu */}
-                      <div className="relative">
-                        <button
-                          onClick={() => setMenuOpen(menuOpen === template.id ? null : template.id)}
-                          className="p-2 rounded-full transition-colors hover:bg-opacity-10"
-                          style={{ color: colors.textSecondary, backgroundColor: colors.mutedBg }}
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-
-                        {menuOpen === template.id && (
-                          <div 
-                            className="absolute right-0 top-10 w-48 rounded-xl shadow-xl z-50 overflow-hidden py-1"
-                            style={{ backgroundColor: colors.card, border: `1px solid ${colors.border}` }}
-                          >
-                            <button
-                              onClick={(e) => { e.stopPropagation(); navigate(`/report-template-editor/${template.id}`); setMenuOpen(null); }}
-                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-left transition-colors hover:bg-opacity-50"
-                              style={{ color: colors.textPrimary }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.mutedBg}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                              <Edit className="w-4 h-4" /> {t("Edit")}
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleCloneTemplate(template.id, template.template_name); }}
-                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-left transition-colors hover:bg-opacity-50"
-                              style={{ color: colors.textPrimary }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.mutedBg}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                              <Copy className="w-4 h-4" /> {t("Clone")}
-                            </button>
-                            {!template.is_system_template && canDeletePage('report-templates') && (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(template.id); }}
-                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-left transition-colors text-red-500 hover:bg-opacity-50"
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.mutedBg}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                              >
-                                <Trash2 className="w-4 h-4" /> {t("Delete")}
-                              </button>
-                            )}
-                          </div>
-                        )}
+                      {/* Actions Dropdown */}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <ActionDropdown
+                          actions={[
+                            {
+                              key: 'edit',
+                              label: t("Edit"),
+                              icon: Edit,
+                              onClick: () => navigate(`/report-template-editor/${template.id}`)
+                            },
+                            {
+                              key: 'clone',
+                              label: t("Clone"),
+                              icon: Copy,
+                              onClick: () => handleCloneTemplate(template.id, template.template_name)
+                            },
+                            ...(!template.is_system_template && canDeletePage('report-templates') ? [{
+                              key: 'delete',
+                              label: t("Delete"),
+                              icon: Trash2,
+                              onClick: () => handleDeleteTemplate(template.id),
+                              danger: true
+                            }] : [])
+                          ]}
+                          icon={MoreVertical}
+                          iconOnly={true}
+                          align="right"
+                          placement="bottom"
+                        />
                       </div>
                     </div>
 
                     <div className="flex-1 mb-4">
-                      <h3 className="text-xl font-bold tracking-tight mb-1 transition-all"
-                        style={{ color: colors.textPrimary }}
-                      >
-                        {template.template_name}
-                      </h3>
-                      <p className="text-sm font-mono mb-3" style={{ color: colors.textSecondary }}>
-                        {template.template_key}
-                      </p>
-                      
                       {template.description && (
                         <p className="text-sm line-clamp-2" style={{ color: colors.textSecondary }}>
                           {template.description}
@@ -460,14 +447,6 @@ export default function ReportTemplatesPage() {
           </div>
         )}
       </div>
-
-      {/* Click outside to close menu - rendered before content so it doesn't block clicks */}
-      {menuOpen && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setMenuOpen(null)}
-        />
-      )}
 
       {/* Toast */}
       {toast && <Toast text={toast.text} state={toast.state} onClose={() => setToast(null)} />}

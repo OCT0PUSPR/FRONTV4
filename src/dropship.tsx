@@ -386,20 +386,17 @@ export default function DropshipsPage() {
   }
 
   const printPickingAction = async (pickingId: number) => {
-    if (!sessionId || !pickingId) return
+    if (!pickingId) return
     try {
-      const headers = {
-        "Content-Type": "application/json",
-        ...getOdooHeaders(),
-      }
-      const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/pickings/${pickingId}/print`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ sessionId }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok || !data?.success || !data?.pdfBase64) throw new Error(data?.message || "Print failed")
-      downloadBase64File(data.pdfBase64, data.filename || `picking_${pickingId}.pdf`)
+      // Get tenant Odoo URL from localStorage
+      const odooBaseUrl = localStorage.getItem('odoo_base_url') || 'https://egy.thetalenter.net'
+      const baseUrl = odooBaseUrl.replace(/\/$/, '') // Remove trailing slash
+      
+      // Construct the PDF report URL
+      const pdfUrl = `${baseUrl}/report/pdf/stock.report_picking/${pickingId}`
+      
+      // Open PDF in new window
+      window.open(pdfUrl, '_blank')
     } catch { }
   }
 

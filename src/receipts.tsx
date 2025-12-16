@@ -343,34 +343,17 @@ export default function TransferReceiptsPage() {
   }
 
   const printPickingAction = async (pickingId: number) => {
-    if (!sessionId) return
+    if (!pickingId) return
     try {
-      const headers = {
-        "Content-Type": "application/json",
-        ...getOdooHeaders(),
-      }
-      const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/pickings/${pickingId}/print`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ sessionId }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok || !data?.success || !data?.pdfBase64) throw new Error(data?.message || "Print failed")
-
-      // Download PDF
-      const byteCharacters = atob(data.pdfBase64)
-      const byteNumbers = new Array(byteCharacters.length)
-      for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i)
-      const byteArray = new Uint8Array(byteNumbers)
-      const blob = new Blob([byteArray], { type: "application/pdf" })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = url
-      link.download = data.filename || `picking_${pickingId}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      // Get tenant Odoo URL from localStorage
+      const odooBaseUrl = localStorage.getItem('odoo_base_url') || 'https://egy.thetalenter.net'
+      const baseUrl = odooBaseUrl.replace(/\/$/, '') // Remove trailing slash
+      
+      // Construct the PDF report URL
+      const pdfUrl = `${baseUrl}/report/pdf/stock.report_picking/${pickingId}`
+      
+      // Open PDF in new window
+      window.open(pdfUrl, '_blank')
     } catch (error) {
       console.error("Print failed:", error)
     }

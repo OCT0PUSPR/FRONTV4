@@ -263,19 +263,84 @@ export default function PolicyEditorPage() {
     if (pageSmartFields[pageKey]) return // Already loaded
     
     try {
-      const res = await fetch(
+      // Find the page to get its model_name
+      const page = modules.flatMap(m => m.pages || []).find((p: any) => p.page_key === pageKey || p.id === pageId)
+      
+      // Try the page-specific endpoint first
+      let res = await fetch(
         `${API_CONFIG.BACKEND_BASE_URL}/v1/abac/registry/pages/${pageId}/smart-fields`,
         { headers: getHeaders() }
       )
-      const data = await res.json()
-      if (data.success) {
+      let data = await res.json()
+      
+      // If page endpoint returns empty or fails, and page has model_name, load from model directly
+      if ((!data.success || !data.data || data.data.length === 0) && page?.model_name) {
+        console.log(`[PolicyEditor] Page endpoint returned no fields, loading from model: ${page.model_name}`)
+        res = await fetch(
+          `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/${encodeURIComponent(page.model_name)}/all`,
+          { headers: getHeaders() }
+        )
+        data = await res.json()
+        if (data.success && data.fields && data.fields.length > 0) {
+          // Convert to SmartField format
+          const smartFields = data.fields.map((f: any) => ({
+            id: f.id || f.field_name,
+            field_name: f.field_name,
+            field_label: f.field_label || f.field_name,
+            field_type: f.field_type,
+            is_required: f.is_required || false,
+            is_readonly: f.is_readonly || false,
+            display_group: f.display_group || ''
+          }))
+          setPageSmartFields(prev => ({
+            ...prev,
+            [pageKey]: smartFields
+          }))
+          return
+        }
+      }
+      
+      // Use data from page endpoint if available
+      if (data.success && data.data && data.data.length > 0) {
         setPageSmartFields(prev => ({
           ...prev,
-          [pageKey]: data.data || []
+          [pageKey]: data.data
+        }))
+      } else if (page?.model_name) {
+        // If still no fields, show a message but don't set empty array
+        console.warn(`[PolicyEditor] No fields found for page ${pageKey} with model ${page.model_name}`)
+        setPageSmartFields(prev => ({
+          ...prev,
+          [pageKey]: []
         }))
       }
     } catch (error) {
       console.error("Error loading smart fields:", error)
+      // Try fallback to model if page endpoint fails
+      const page = modules.flatMap(m => m.pages || []).find((p: any) => p.page_key === pageKey || p.id === pageId)
+      if (page?.model_name) {
+        try {
+          const res = await fetch(
+            `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/${encodeURIComponent(page.model_name)}/all`,
+            { headers: getHeaders() }
+          )
+          const data = await res.json()
+          if (data.success && data.fields) {
+            const smartFields = data.fields.map((f: any) => ({
+              id: f.id || f.field_name,
+              field_name: f.field_name,
+              field_label: f.field_label || f.field_name,
+              field_type: f.field_type
+            }))
+            setPageSmartFields(prev => ({
+              ...prev,
+              [pageKey]: smartFields
+            }))
+          }
+        } catch (fallbackError) {
+          console.error("Fallback field loading also failed:", fallbackError)
+        }
+      }
     }
   }
 
@@ -595,7 +660,6 @@ export default function PolicyEditorPage() {
   return (
     <div style={{ height: "100%", background: colors.background, color: colors.textPrimary, display: "flex", flexDirection: "column", overflow: "hidden" }} className="font-space selection:bg-blue-500/20">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
         .font-space { font-family: 'Space Grotesk', sans-serif; }
         
         /* Custom Scrollbar */
@@ -1025,23 +1089,21 @@ export default function PolicyEditorPage() {
                                           {t("Field Restrictions")}
                                         </span>
                                       )}
-                                      {/* Field permissions toggle button - only show if page has model_name */}
-                                      {page.model_name && (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            togglePageFields(page.page_key, page.id)
-                                          }}
-                                          className="ml-auto text-[10px] px-2 py-1 rounded transition-colors"
-                                          style={{ 
-                                            background: isFieldsExpanded ? `${colors.action}20` : colors.mutedBg,
-                                            color: isFieldsExpanded ? colors.action : colors.textSecondary,
-                                            border: `1px solid ${isFieldsExpanded ? colors.action : colors.border}`
-                                          }}
-                                        >
-                                          {isFieldsExpanded ? t("Hide Fields") : t("Field Permissions")}
-                                        </button>
-                                      )}
+                                      {/* Field permissions toggle button - always show */}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          togglePageFields(page.page_key, page.id)
+                                        }}
+                                        className="ml-auto text-[10px] px-2 py-1 rounded transition-colors"
+                                        style={{ 
+                                          background: isFieldsExpanded ? `${colors.action}20` : colors.mutedBg,
+                                          color: isFieldsExpanded ? colors.action : colors.textSecondary,
+                                          border: `1px solid ${isFieldsExpanded ? colors.action : colors.border}`
+                                        }}
+                                      >
+                                        {isFieldsExpanded ? t("Hide Fields") : t("Field Permissions")}
+                                      </button>
                                     </div>
                                   </td>
                                   {permissionColumns.map(col => (
