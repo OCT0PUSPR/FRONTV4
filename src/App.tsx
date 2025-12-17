@@ -90,6 +90,103 @@ import EmailTemplatesPage from './pages/EmailTemplatesPage'
 import EmailTemplateEditorPage from './pages/EmailTemplateEditorPage'
 import SendEmailPage from './pages/SendEmailPage'
 
+// Wrapper component for License page that conditionally renders layout
+function LicensePageWrapper() {
+  const { isAuthenticated } = useAuth()
+  const { isCollapsed } = useSidebar()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { i18n } = useTranslation()
+  const isRTL = i18n.dir() === 'rtl'
+  const [allLicensesActivated, setAllLicensesActivated] = useState<boolean>(false)
+  const [isChecking, setIsChecking] = useState(true)
+
+  // Redirect to signin if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/signin', { replace: true })
+    }
+  }, [isAuthenticated, navigate])
+
+  // Check license status on mount and when licenses are activated
+  useEffect(() => {
+    const checkLicenseStatus = async () => {
+      try {
+        const tenantId = localStorage.getItem('current_tenant_id')
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        }
+        if (tenantId) {
+          headers['X-Tenant-ID'] = tenantId
+        }
+
+        const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/license`, {
+          method: 'GET',
+          headers,
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          if (data?.success && data?.licenses && Array.isArray(data.licenses)) {
+            const allActivated = data.licenses.every((l: { activated: boolean }) => l.activated)
+            setAllLicensesActivated(allActivated)
+          }
+        }
+      } catch (err) {
+        console.error('Error checking license status:', err)
+        // Default to false (show full-page) if check fails
+        setAllLicensesActivated(false)
+      } finally {
+        setIsChecking(false)
+      }
+    }
+
+    checkLicenseStatus()
+
+    // Listen for license activation events
+    const handleLicenseActivated = () => {
+      checkLicenseStatus()
+    }
+
+    window.addEventListener('licensesActivated', handleLicenseActivated)
+
+    return () => {
+      window.removeEventListener('licensesActivated', handleLicenseActivated)
+    }
+  }, [])
+
+  // Redirect if not authenticated
+  if (!isAuthenticated) {
+    return null
+  }
+
+  // Show loading while checking
+  if (isChecking) {
+    return <LicensePage />
+  }
+
+  // If all licenses are activated, show within layout
+  if (allLicensesActivated) {
+    return (
+      <div className="flex h-screen overflow-hidden">
+        <EnhancedSidebar />
+        <main className={`flex-1 overflow-hidden transition-all duration-300 ${isCollapsed ? (isRTL ? 'mr-20' : 'ml-20') : (isRTL ? 'mr-64' : 'ml-64')}`}>
+          <div className="flex flex-col h-full">
+            <HeaderNavbar />
+            <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 flex items-center justify-center">
+              <LicensePage />
+            </div>
+          </div>
+        </main>
+        {location.pathname !== '/landing' && <ChatBot />}
+      </div>
+    )
+  }
+
+  // If licenses are not all activated, show full-page
+  return <LicensePage />
+}
+
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth()
   const { isCollapsed } = useSidebar()
@@ -200,7 +297,7 @@ function AppContent() {
   useEffect(() => {
     const checkLicenseStatus = async () => {
       // Don't check license on public routes
-      const publicRoutes = ['/license', '/signin', '/setup', '/error500', '/testing', '/approval']
+      const publicRoutes = ['/signin', '/setup', '/error500', '/testing', '/approval']
       const isPublicRoute = publicRoutes.some(route => location.pathname === route || location.pathname.startsWith('/approval/'))
       
       if (isPublicRoute) {
@@ -251,7 +348,7 @@ function AppContent() {
   }, [location.pathname, navigate])
 
   // Define public routes
-  const publicRoutes = ['/license', '/signin', '/setup', '/error500', '/testing', '/approval', '/settings']
+  const publicRoutes = ['/signin', '/setup', '/error500', '/testing', '/approval', '/settings']
   const isPublicRoute = publicRoutes.some(route => location.pathname === route || location.pathname.startsWith('/approval/'))
 
   // Show loading while checking auth or license (but allow public routes)
@@ -309,8 +406,11 @@ function AppContent() {
       <Route path="/testing" element={<FieldsTesterPage />} />
       <Route path="/approval/:taskId" element={<ApprovalPage />} />
 
-      {/* License page - only accessible when backend is connected */}
-      <Route path="/license" element={<LicensePage />} />
+      {/* License page - full-page when not activated, within layout when activated */}
+      <Route
+        path="/license"
+        element={<LicensePageWrapper />}
+      />
 
       {/* Settings page - accessible without authentication but with layout */}
       <Route
