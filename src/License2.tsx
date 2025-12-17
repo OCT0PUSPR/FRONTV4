@@ -1,9 +1,23 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, ShieldCheck, Box, Truck, Activity, Copy, Check, Sun, Moon } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Box, Truck, Activity, Copy, Check, Sun, Moon, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
 import { API_CONFIG } from './config/api';
 import { useTheme } from '../context/theme';
+import { SimpleDropdown } from './components/SimpleDropdown';
+
+interface LicenseInfo {
+  productName: string;
+  licenseKey: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  product: string | null;
+  type: string | null;
+  activated: boolean;
+  error?: string;
+}
+
+const PRODUCT_NAMES = ['WMS System RFID', 'Mobile app', 'Middleware'];
 
 const LicensePage = () => {
   const navigate = useNavigate();
@@ -16,6 +30,9 @@ const LicensePage = () => {
   const [activationStatus, setActivationStatus] = useState<'idle' | 'activating' | 'success'>('idle');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [allLicenses, setAllLicenses] = useState<LicenseInfo[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<string>('WMS System RFID');
+  const [currentProductIndex, setCurrentProductIndex] = useState<number>(0); // Track which product to activate next
   const [licenseStartDate, setLicenseStartDate] = useState<string | null>(null);
   const [licenseEndDate, setLicenseEndDate] = useState<string | null>(null);
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
@@ -146,25 +163,124 @@ const LicensePage = () => {
         // Clear license cache to force fresh check on next page load
         localStorage.removeItem('licenseLastCheck');
         localStorage.removeItem('licenseValid');
+        
+        // Set success message
+        const productName = data?.license?.productName || selectedProduct;
+        const successMsg = data?.message || `${productName} license activated successfully.`;
+        
         // Store license dates from response
         if (data?.license) {
           setLicenseStartDate(data.license.startDate || null);
           setLicenseEndDate(data.license.endDate || null);
         }
-        // Set success message and status
-        setSuccessMessage(data?.message || 'WMS license activated successfully.');
-        setActivationStatus('success');
+        
+        // Refresh licenses list to check if all are activated
+        try {
+          const refreshRes = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/license`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(tenantId ? { 'X-Tenant-ID': tenantId } : {})
+            },
+          });
+          const licenseData = await refreshRes.json();
+          
+          if (refreshRes.ok && licenseData?.success && licenseData?.licenses) {
+            setAllLicenses(licenseData.licenses);
+            
+            // Check if all licenses are now activated
+            const allActivated = licenseData.licenses.every((l: LicenseInfo) => l.activated);
+            
+            if (allActivated) {
+              // All licenses activated, show success
+              setActivationStatus('success');
+              setSuccessMessage('All licenses are activated.');
+            } else {
+              // Find next unactivated product in order
+              const nextUnactivatedIndex = PRODUCT_NAMES.findIndex(
+                (product) => {
+                  const license = licenseData.licenses.find((l: LicenseInfo) => l.productName === product);
+                  return !license?.activated;
+                }
+              );
+              
+              if (nextUnactivatedIndex !== -1) {
+                // Move to next product and clear input
+                setCurrentProductIndex(nextUnactivatedIndex);
+                setSelectedProduct(PRODUCT_NAMES[nextUnactivatedIndex]);
+                setLicenseKey(['', '', '', '']);
+                setLicenseStartDate(null);
+                setLicenseEndDate(null);
+                setActivationStatus('idle');
+                setSuccessMessage(''); // Clear success message to show input form again
+                setError(''); // Clear any previous errors
+                // Focus first input
+                setTimeout(() => {
+                  inputRefs.current[0]?.focus();
+                }, 100);
+              } else {
+                // All licenses must be activated now
+                setActivationStatus('success');
+                setSuccessMessage('All licenses are activated.');
+              }
+            }
+          } else {
+            // Failed to refresh but activation was successful
+            // Reset to idle state to allow re-check
+            console.error('Error refreshing licenses - response not ok:', licenseData);
+            setSuccessMessage(successMsg);
+            setActivationStatus('idle');
+            setError('License activated but failed to refresh license list. Please reload the page.');
+          }
+        } catch (err) {
+          console.error('Error refreshing licenses:', err);
+          // Activation was successful but refresh failed - reset to idle
+          setSuccessMessage(successMsg);
+          setActivationStatus('idle');
+          setError('License activated but failed to refresh license list. Please reload the page.');
+        }
       } else {
-        setError(data?.message || 'Failed to activate license');
+        const errorMessage = data?.message || 'Failed to activate license';
+        console.error('[License2] Activation failed:', errorMessage, data);
+        setError(errorMessage);
         setActivationStatus('idle');
       }
     } catch (err: any) {
+      console.error('[License2] Activation error:', err);
       setError(err?.message || 'An error occurred while activating the license');
       setActivationStatus('idle');
     }
   };
 
-  // Initialize master database and check for existing license on mount
+  // Update displayed license info when selected product changes
+  useEffect(() => {
+    const selectedLicense = allLicenses.find(l => l.productName === selectedProduct);
+    if (selectedLicense) {
+      setLicenseStartDate(selectedLicense.startDate);
+      setLicenseEndDate(selectedLicense.endDate);
+      if (selectedLicense.licenseKey) {
+        const key = selectedLicense.licenseKey.replace(/[-\s]/g, '').toUpperCase();
+        setLicenseKey([
+          key.substring(0, 4) || '',
+          key.substring(4, 8) || '',
+          key.substring(8, 12) || '',
+          key.substring(12, 16) || ''
+        ]);
+      } else {
+        setLicenseKey(['', '', '', '']);
+      }
+      
+      if (selectedLicense.activated) {
+        setActivationStatus('success');
+        setSuccessMessage(`${selectedLicense.productName} license is activated.`);
+      } else {
+        setActivationStatus('idle');
+        setSuccessMessage('');
+      }
+    }
+  }, [selectedProduct, allLicenses]);
+
+  // Initialize master database and check for existing licenses on mount
   useEffect(() => {
     const initializeAndCheckLicense = async () => {
       try {
@@ -197,7 +313,7 @@ const LicensePage = () => {
           headers['X-Tenant-ID'] = tenantId;
         }
 
-        // Use /license endpoint to get activated status
+        // Use /license endpoint to get all licenses
         const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/license`, {
           method: 'GET',
           headers,
@@ -205,33 +321,72 @@ const LicensePage = () => {
 
         // Check if backend connection failed
         if (!res.ok && (res.status === 0 || res.status >= 500)) {
-          // Backend connection failed, stay on page (or redirect to error500 if needed)
+          // Backend connection failed, stay on page
           return;
         }
 
         const data = await res.json();
 
         if (res.ok && data?.success) {
-          // Check if license is activated
-          if (data?.activated && data?.license) {
-            // License is already activated, show success state
-            setActivationStatus('success');
-            setLicenseStartDate(data.license.startDate || null);
-            setLicenseEndDate(data.license.endDate || null);
-            // Set license key for display (split into segments)
-            if (data.license.licenseKey) {
-              const key = data.license.licenseKey.replace(/[-\s]/g, '').toUpperCase();
-              setLicenseKey([
-                key.substring(0, 4) || '',
-                key.substring(4, 8) || '',
-                key.substring(8, 12) || '',
-                key.substring(12, 16) || ''
-              ]);
+          // Check if we have licenses array
+          if (data?.licenses && Array.isArray(data.licenses)) {
+            setAllLicenses(data.licenses);
+            
+            // Check if all licenses are activated
+            const allActivated = data.licenses.every((l: LicenseInfo) => l.activated);
+            const hasAnyActivated = data.licenses.some((l: LicenseInfo) => l.activated);
+            
+            if (allActivated) {
+              // All licenses activated - show success with dropdown
+              setActivationStatus('success');
+              setSuccessMessage('All licenses are activated.');
+              
+              // Set selected product's license info
+              const selectedLicense = data.licenses.find((l: LicenseInfo) => l.productName === selectedProduct);
+              if (selectedLicense) {
+                setLicenseStartDate(selectedLicense.startDate);
+                setLicenseEndDate(selectedLicense.endDate);
+                if (selectedLicense.licenseKey) {
+                  const key = selectedLicense.licenseKey.replace(/[-\s]/g, '').toUpperCase();
+                  setLicenseKey([
+                    key.substring(0, 4) || '',
+                    key.substring(4, 8) || '',
+                    key.substring(8, 12) || '',
+                    key.substring(12, 16) || ''
+                  ]);
+                }
+              }
+            } else {
+              // Find first unactivated product in order
+              const firstUnactivatedIndex = PRODUCT_NAMES.findIndex(
+                (product) => {
+                  const license = data.licenses.find((l: LicenseInfo) => l.productName === product);
+                  return !license?.activated;
+                }
+              );
+              
+              if (firstUnactivatedIndex !== -1) {
+                const productToShow = PRODUCT_NAMES[firstUnactivatedIndex];
+                setCurrentProductIndex(firstUnactivatedIndex);
+                setSelectedProduct(productToShow);
+                setActivationStatus('idle');
+                
+                // Clear license key input for new entry
+                setLicenseKey(['', '', '', '']);
+                setLicenseStartDate(null);
+                setLicenseEndDate(null);
+              } else if (hasAnyActivated) {
+                // Some licenses activated but we couldn't find unactivated - show first product
+                setSelectedProduct(PRODUCT_NAMES[0]);
+                setActivationStatus('idle');
+              } else {
+                // No licenses activated - show first product (WMS System RFID)
+                setCurrentProductIndex(0);
+                setSelectedProduct(PRODUCT_NAMES[0]);
+                setActivationStatus('idle');
+              }
             }
-            setSuccessMessage(data?.message || 'License is already activated.');
-            // Don't redirect - stay on license page showing success state
           }
-          // If not activated, stay on page with input form
         }
       } catch (err) {
         // Network error - stay on page
@@ -478,6 +633,40 @@ const LicensePage = () => {
                       Enter License Key
                     </h3>
 
+                    {/* Current Product Display - Show which product license is being entered */}
+                    <div className="w-full max-w-md">
+                      <div 
+                        className="px-4 py-3 rounded-xl border-2 text-center"
+                        style={{
+                          backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)',
+                          borderColor: isDarkMode ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)',
+                        }}
+                      >
+                        <div 
+                          className="text-xs uppercase tracking-widest font-bold mb-1"
+                          style={{ color: themeConfig.textSecondary }}
+                        >
+                          Activating License For
+                        </div>
+                        <div 
+                          className="text-lg font-bold"
+                          style={{ color: isDarkMode ? '#60a5fa' : '#2563eb' }}
+                        >
+                          {selectedProduct}
+                        </div>
+                        {allLicenses.length > 0 && (
+                          <div 
+                            className="text-xs mt-2"
+                            style={{ color: themeConfig.textSecondary }}
+                          >
+                            Step {currentProductIndex + 1} of {PRODUCT_NAMES.length}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    
+
                     <div className="w-full grid grid-cols-4 gap-2 md:gap-3 lg:gap-4">
                       {[0, 1, 2, 3].map((index) => (
                         <div key={index} className="relative">
@@ -518,15 +707,23 @@ const LicensePage = () => {
 
                     {error && (
                       <div
-                        className="w-full p-4 rounded-xl text-sm font-medium animate-slide-up flex items-center justify-center gap-2"
+                        className="w-full p-4 rounded-xl text-sm font-medium animate-slide-up flex flex-col items-center gap-2"
                         style={{
                           backgroundColor: isDarkMode ? '#7f1d1d' : '#FEF2F2',
                           color: isDarkMode ? '#fca5a5' : '#EF4444',
                           border: `1px solid ${isDarkMode ? '#991b1b' : '#FECACA'}`
                         }}
                       >
-                        <Activity className="w-4 h-4" />
-                        {error}
+                        <div className="flex items-center gap-2">
+                          <Activity className="w-4 h-4" />
+                          <span className="font-bold">Activation Failed</span>
+                        </div>
+                        <div className="text-center">
+                          {error}
+                        </div>
+                        <div className="text-xs opacity-75 text-center mt-1">
+                          Please ensure you are entering the correct license key for <strong>{selectedProduct}</strong>
+                        </div>
                       </div>
                     )}
 
@@ -628,48 +825,49 @@ const LicensePage = () => {
             {activationStatus === 'success' && (
               <div className="absolute inset-0 z-30 flex items-center justify-center animate-blur-in">
                 <div 
-                  className="glass-panel w-full rounded-[24px] md:rounded-[32px] p-4 md:p-6 lg:p-8 text-center relative overflow-hidden max-h-[90vh] overflow-y-auto"
+                  className="glass-panel w-full rounded-[24px] md:rounded-[32px] p-4 md:p-6 lg:p-8 relative overflow-hidden max-h-[90vh] overflow-y-auto"
                   style={{
                     backgroundColor: isDarkMode ? 'rgba(30, 30, 35, 0.9)' : 'rgba(255, 255, 255, 0.8)'
                   }}
                 >
+                  {/* Header Row: Title & Dropdown */}
+                  <div className="flex items-start justify-between mb-8 animate-slide-up relative z-50">
+                     {/* Empty spacer or logo to balance if needed, or just let title center and dropdown right */}
+                     <div className="flex-1"></div>
+                     
+                     <div className="flex flex-col items-center justify-center flex-[2]">
+                        {/* Animated Checkmark SVG - Smaller version for header */}
+                        <div className="relative w-16 h-16 mb-2">
+                          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke={themeConfig.successText} strokeWidth="2" strokeLinecap="round" className="animate-draw-circle rotate-[-90deg] origin-center" />
+                            <path d="M30 52 L45 67 L75 35" fill="none" stroke={themeConfig.successText} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" className="animate-draw-check" />
+                          </svg>
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-center" style={{ color: themeConfig.text }}>
+                          {allLicenses.every(l => l.activated) ? 'System Activated' : 'Activation Successful'}
+                        </h2>
+                     </div>
+
+                     {/* Product Selection Dropdown - Top Right, 30% Width */}
+                     <div className="flex-1 flex justify-end">
+                       {allLicenses.every(l => l.activated) && (
+                          <div className="w-full max-w-[200px] animate-slide-up delay-100">
+                             <SimpleDropdown
+                                value={selectedProduct}
+                                onChange={(val) => setSelectedProduct(val)}
+                                options={PRODUCT_NAMES.map(p => ({ value: p, label: p }))}
+                                placeholder="Select Product"
+                                className="w-full"
+                             />
+                          </div>
+                       )}
+                     </div>
+                  </div>
 
                   {/* Confetti / Glow Effect */}
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-emerald-500/10 rounded-full blur-[80px] animate-pulse-ring pointer-events-none" />
 
-                  <div className="relative z-10 flex flex-col items-center">
-
-                    {/* Animated Checkmark SVG */}
-                    <div className="mb-8 relative w-24 h-24">
-                      <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl">
-                        {/* Outer Circle Drawing */}
-                        <circle
-                          cx="50" cy="50" r="45"
-                          fill="none"
-                          stroke={themeConfig.successText}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          className="animate-draw-circle rotate-[-90deg] origin-center"
-                        />
-                        {/* Inner Check Drawing */}
-                        <path
-                          d="M30 52 L45 67 L75 35"
-                          fill="none"
-                          stroke={themeConfig.successText}
-                          strokeWidth="5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="animate-draw-check"
-                        />
-                      </svg>
-                    </div>
-
-                    <h2 
-                      className="text-3xl md:text-4xl font-bold mb-3 tracking-tight animate-slide-up delay-200"
-                      style={{ color: themeConfig.text }}
-                    >
-                      Activation Successful
-                    </h2>
+                  <div className="relative z-10 flex flex-col items-center max-w-xl mx-auto">
 
                     {successMessage && (
                       <div
@@ -698,6 +896,26 @@ const LicensePage = () => {
                           className="text-xs uppercase tracking-widest font-bold"
                           style={{ color: themeConfig.textSecondary }}
                         >
+                          Product
+                        </span>
+                        <span 
+                          className="text-sm font-bold"
+                          style={{ color: themeConfig.text }}
+                        >
+                          {selectedProduct}
+                        </span>
+                      </div>
+                      
+                      <div 
+                        className="h-px w-full"
+                        style={{ backgroundColor: colors.border }}
+                      />
+                      
+                      <div className="flex items-center justify-between">
+                        <span 
+                          className="text-xs uppercase tracking-widest font-bold"
+                          style={{ color: themeConfig.textSecondary }}
+                        >
                           License Key
                         </span>
                         <div className="flex items-center gap-2">
@@ -705,22 +923,24 @@ const LicensePage = () => {
                             className="font-mono text-sm tracking-wider font-bold"
                             style={{ color: themeConfig.text }}
                           >
-                            {licenseKey.join('-')}
+                            {licenseKey.join('') ? licenseKey.join('-') : 'N/A'}
                           </span>
-                          <div 
-                            className="p-1 rounded cursor-pointer transition-colors"
-                            style={{
-                              color: themeConfig.textSecondary,
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = colors.border;
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'transparent';
-                            }}
-                          >
-                            <Check className="w-3 h-3" />
-                          </div>
+                          {licenseKey.join('') && (
+                            <div 
+                              className="p-1 rounded cursor-pointer transition-colors"
+                              style={{
+                                color: themeConfig.textSecondary,
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = colors.border;
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                            >
+                              <Check className="w-3 h-3" />
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -814,3 +1034,4 @@ const LicensePage = () => {
 };
 
 export default LicensePage;
+
