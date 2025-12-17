@@ -162,6 +162,8 @@ const menuItems: MenuItem[] = [
       { title: "Field Management", icon: ListChecks, url: "/field-management" },
       { title: "Field Layout Editor", icon: LayoutGrid, url: "/field-layout-editor" },
       { title: "Integrations", icon: Settings, url: "/integrations" },
+      { title: "License", icon: Ruler, url: "/license" },
+
     ],
   },
   {
