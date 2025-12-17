@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, ShieldCheck, Box, Truck, Activity, Copy, Check, Sun, Moon, ChevronDown } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Box, Truck, Activity, Check, Sun, Moon } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
 import { API_CONFIG } from './config/api';
 import { useTheme } from '../context/theme';
@@ -22,10 +21,9 @@ const PRODUCT_NAMES = ['WMS System RFID', 'Mobile app', 'Middleware'];
 const LicensePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { mode, setMode, colors } = useTheme();
+  const { mode, colors, setMode } = useTheme();
   const isDarkMode = mode === 'dark';
   const [licenseKey, setLicenseKey] = useState(['', '', '', '']);
-  const [activeInput, setActiveInput] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [activationStatus, setActivationStatus] = useState<'idle' | 'activating' | 'success'>('idle');
   const [error, setError] = useState('');
@@ -35,9 +33,8 @@ const LicensePage = () => {
   const [currentProductIndex, setCurrentProductIndex] = useState<number>(0); // Track which product to activate next
   const [licenseStartDate, setLicenseStartDate] = useState<string | null>(null);
   const [licenseEndDate, setLicenseEndDate] = useState<string | null>(null);
+  const [allLicensesActivated, setAllLicensesActivated] = useState<boolean>(false);
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
-
-  const toggleTheme = () => setMode(isDarkMode ? 'light' : 'dark');
 
   // Get tenant ID from navigation state or localStorage
   const tenantId = location.state?.tenantId || localStorage.getItem('current_tenant_id');
@@ -62,7 +59,6 @@ const LicensePage = () => {
 
     if (value.length === 4 && index < 3) {
       inputRefs.current[index + 1]?.focus();
-      setActiveInput(index + 1);
     }
   };
 
@@ -105,7 +101,6 @@ const LicensePage = () => {
     
     setTimeout(() => {
       inputRefs.current[targetFieldIndex]?.focus();
-      setActiveInput(targetFieldIndex);
       // Place cursor at the end of the field
       const targetInput = inputRefs.current[targetFieldIndex];
       if (targetInput) {
@@ -118,7 +113,6 @@ const LicensePage = () => {
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !licenseKey[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
-      setActiveInput(index - 1);
     }
     if (e.key === 'Enter' && licenseKey.every(k => k.length === 4)) {
       handleActivate();
@@ -193,9 +187,13 @@ const LicensePage = () => {
             
             if (allActivated) {
               // All licenses activated, show success
+              setAllLicensesActivated(true);
               setActivationStatus('success');
               setSuccessMessage('All licenses are activated.');
+              // Notify parent component that licenses are now activated
+              window.dispatchEvent(new CustomEvent('licensesActivated'));
             } else {
+              setAllLicensesActivated(false);
               // Find next unactivated product in order
               const nextUnactivatedIndex = PRODUCT_NAMES.findIndex(
                 (product) => {
@@ -245,9 +243,10 @@ const LicensePage = () => {
         setError(errorMessage);
         setActivationStatus('idle');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while activating the license';
       console.error('[License2] Activation error:', err);
-      setError(err?.message || 'An error occurred while activating the license');
+      setError(errorMessage);
       setActivationStatus('idle');
     }
   };
@@ -334,12 +333,16 @@ const LicensePage = () => {
             
             // Check if all licenses are activated
             const allActivated = data.licenses.every((l: LicenseInfo) => l.activated);
+            setAllLicensesActivated(allActivated);
             const hasAnyActivated = data.licenses.some((l: LicenseInfo) => l.activated);
             
             if (allActivated) {
               // All licenses activated - show success with dropdown
+              setAllLicensesActivated(true);
               setActivationStatus('success');
               setSuccessMessage('All licenses are activated.');
+              // Notify parent component that licenses are activated
+              window.dispatchEvent(new CustomEvent('licensesActivated'));
               
               // Set selected product's license info
               const selectedLicense = data.licenses.find((l: LicenseInfo) => l.productName === selectedProduct);
@@ -395,7 +398,7 @@ const LicensePage = () => {
     };
 
     initializeAndCheckLicense();
-  }, [navigate, tenantId]);
+  }, [navigate, tenantId, selectedProduct]);
 
   // Handler to navigate to dashboard
   const handleGoToDashboard = () => {
@@ -423,33 +426,38 @@ const LicensePage = () => {
       : '0 25px 50px -12px rgba(148, 163, 184, 0.15)'
   };
 
+  // Determine if we should render in full-page mode (when licenses are not all activated)
+  const isFullPage = !allLicensesActivated;
+
   return (
     <div
-      className="relative h-screen w-full overflow-hidden flex flex-col"
+      className={`relative ${isFullPage ? 'h-screen w-full overflow-hidden' : 'w-full min-h-full'} flex flex-col ${isFullPage ? '' : 'justify-center items-center'}`}
       style={{
         backgroundColor: themeConfig.bg,
         color: themeConfig.text,
         fontFamily: "'Space Grotesk', sans-serif"
       }}
     >
-      {/* Theme Toggle - Top Right */}
-      <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
-        <Sun className={`w-4 h-4 transition-colors ${isDarkMode ? "text-zinc-600" : "text-amber-500"}`} />
-        <button
-          onClick={toggleTheme}
-          className={`relative inline-flex h-6 w-11 rounded-full transition-all duration-300 shadow-inner ${
-            isDarkMode ? "bg-zinc-700 shadow-zinc-900/50" : "bg-slate-200 shadow-slate-300/50"
-          }`}
-          aria-label="Toggle theme"
-        >
-          <span
-            className={`absolute top-0.5 h-5 w-5 rounded-full transition-all duration-300 shadow-md ${
-              isDarkMode ? "bg-gradient-to-br from-blue-500 to-cyan-500 right-0.5" : "bg-white left-0.5"
+      {/* Theme Toggle - Only show in full-page mode */}
+      {isFullPage && (
+        <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
+          <Sun className={`w-4 h-4 transition-colors ${isDarkMode ? "text-zinc-600" : "text-amber-500"}`} />
+          <button
+            onClick={() => setMode(isDarkMode ? 'light' : 'dark')}
+            className={`relative inline-flex h-6 w-11 rounded-full transition-all duration-300 shadow-inner ${
+              isDarkMode ? "bg-zinc-700 shadow-zinc-900/50" : "bg-slate-200 shadow-slate-300/50"
             }`}
-          />
-        </button>
-        <Moon className={`w-4 h-4 transition-colors ${isDarkMode ? "text-blue-400" : "text-zinc-400"}`} />
-      </div>
+            aria-label="Toggle theme"
+          >
+            <span
+              className={`absolute top-0.5 h-5 w-5 rounded-full transition-all duration-300 shadow-md ${
+                isDarkMode ? "bg-gradient-to-br from-blue-500 to-cyan-500 right-0.5" : "bg-white left-0.5"
+              }`}
+            />
+          </button>
+          <Moon className={`w-4 h-4 transition-colors ${isDarkMode ? "text-blue-400" : "text-zinc-400"}`} />
+        </div>
+      )}
       <style>{`
         /* OVERRIDE GLOBAL SCROLLBAR */
         ::-webkit-scrollbar {
@@ -566,7 +574,7 @@ const LicensePage = () => {
         <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] contrast-150 brightness-100 mix-blend-multiply" />
       </div>
 
-      <div className="relative z-10 h-full flex flex-col items-center justify-center px-4 md:px-6 py-4 min-h-0 overflow-hidden">
+      <div className={`relative z-10 ${isFullPage ? 'h-full' : 'w-full'} flex flex-col items-center ${isFullPage ? 'justify-center px-4 md:px-6 py-4 min-h-0 overflow-hidden' : 'justify-center px-4 md:px-6 py-4'}`}>
 
         {/* Main Card */}
         <div className="w-full max-w-3xl flex flex-col items-center justify-center flex-shrink-0">
@@ -679,7 +687,6 @@ const LicensePage = () => {
                             onKeyDown={(e) => handleKeyDown(index, e)}
                             onPaste={(e) => handlePaste(index, e)}
                             onFocus={(e) => {
-                              setActiveInput(index);
                               e.currentTarget.style.backgroundColor = themeConfig.inputFocusBg;
                               e.currentTarget.style.borderColor = isDarkMode ? '#60a5fa' : '#3b82f6';
                               e.currentTarget.style.boxShadow = isDarkMode 
@@ -1034,4 +1041,3 @@ const LicensePage = () => {
 };
 
 export default LicensePage;
-
