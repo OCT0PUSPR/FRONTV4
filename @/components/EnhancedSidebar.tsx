@@ -48,6 +48,7 @@ import {
   Activity,
   FileSpreadsheet,
   ChartBar,
+  Copyright,
   type LucideIcon,
 } from "lucide-react"
 import { useState, useCallback, useMemo, useRef, useEffect } from "react"
@@ -162,7 +163,7 @@ const menuItems: MenuItem[] = [
       { title: "Field Management", icon: ListChecks, url: "/field-management" },
       { title: "Field Layout Editor", icon: LayoutGrid, url: "/field-layout-editor" },
       { title: "Integrations", icon: Settings, url: "/integrations" },
-      { title: "License", icon: Ruler, url: "/license" },
+      { title: "License", icon: Copyright, url: "/license" },
 
     ],
   },
