@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useTheme } from '../../../context/theme';
 import { Vehicle, Order } from './types';
 import { Navigation, CheckCircle, Clock, MapPin, Truck, ChevronRight, ChevronLeft, Package, X, Weight, Box } from 'lucide-react';
 
@@ -25,6 +26,9 @@ interface ModalData {
 }
 
 const RouteView: React.FC<Props> = ({ vehicle }) => {
+  const { mode, colors } = useTheme();
+  const isDarkMode = mode === "dark";
+
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const routeLayerRef = useRef<any>(null);
@@ -372,13 +376,13 @@ const RouteView: React.FC<Props> = ({ vehicle }) => {
   };
 
   return (
-    <div className="h-full flex flex-col md:flex-row bg-zinc-900 relative">
+    <div className="h-full flex flex-col md:flex-row relative" style={{ backgroundColor: isDarkMode ? '#09090b' : '#f4f4f5' }}>
       
       {/* Loading Overlay */}
       {loading && (
-          <div className="absolute inset-0 z-[1000] bg-zinc-900/80 backdrop-blur-sm flex items-center justify-center">
+          <div className="absolute inset-0 z-[1000] flex items-center justify-center" style={{ backgroundColor: isDarkMode ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.8)', backdropFilter: 'blur(4px)' }}>
               <div className="flex flex-col items-center gap-3">
-                  <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-8 h-8 border-4 rounded-full animate-spin" style={{ borderColor: colors.action, borderTopColor: 'transparent' }}></div>
               </div>
           </div>
       )}
@@ -386,18 +390,18 @@ const RouteView: React.FC<Props> = ({ vehicle }) => {
       {/* Map Layer */}
       <div className="flex-1 h-full relative z-0">
          <div ref={mapContainerRef} className="w-full h-full"></div>
-         <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-zinc-900/80 to-transparent pointer-events-none z-[400]"></div>
+         <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b pointer-events-none z-[400]" style={{ background: isDarkMode ? 'linear-gradient(to bottom, rgba(9,9,11,0.95), transparent)' : 'linear-gradient(to bottom, rgba(244,244,245,0.8), transparent)' }}></div>
       </div>
 
       {/* Interactive Modal Overlay */}
       {modal.type && (
-          <div className="absolute inset-0 z-[2000] bg-black/20 backdrop-blur-[2px] flex items-center justify-center p-4 animate-enter" onClick={() => setModal({type: null, data: null})}>
-              <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex justify-between items-center p-4 border-b border-zinc-100 bg-zinc-50/50">
-                      <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+          <div className="absolute inset-0 z-[2000] flex items-center justify-center p-4 animate-enter" style={{ backgroundColor: isDarkMode ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.2)', backdropFilter: 'blur(2px)' }} onClick={() => setModal({type: null, data: null})}>
+              <div className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]" onClick={(e) => e.stopPropagation()} style={{ backgroundColor: colors.card }}>
+                  <div className="flex justify-between items-center p-4" style={{ borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.mutedBg }}>
+                      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textSecondary }}>
                           {modal.type === 'TRUCK' ? 'Vehicle Manifest' : 'Stop Details'}
                       </span>
-                      <button onClick={() => setModal({type: null, data: null})} className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600 transition-colors">
+                      <button onClick={() => setModal({type: null, data: null})} className="w-8 h-8 rounded-full flex items-center justify-center transition-colors" style={{ backgroundColor: colors.mutedBg, color: colors.textSecondary }} hover={{ backgroundColor: colors.border }}>
                           <X size={16} />
                       </button>
                   </div>
@@ -411,26 +415,38 @@ const RouteView: React.FC<Props> = ({ vehicle }) => {
 
       {/* Floating Right Panel (Manifest Summary) */}
       <div className={`absolute top-4 bottom-4 right-4 z-[500] flex transition-all duration-300 pointer-events-none ${isPanelOpen ? 'translate-x-0' : 'translate-x-[calc(100%-20px)]'}`}>
-        
+
         {/* Toggle Handle */}
-        <button 
+        <button
             onClick={() => setIsPanelOpen(!isPanelOpen)}
-            className="pointer-events-auto h-12 w-8 bg-white text-zinc-600 rounded-l-xl shadow-lg flex items-center justify-center mt-6 border-y border-l border-zinc-200 hover:bg-zinc-50"
+            className="pointer-events-auto h-12 w-8 rounded-l-xl shadow-lg flex items-center justify-center mt-6"
+            style={{
+              backgroundColor: colors.card,
+              color: colors.textSecondary,
+              borderTop: `1px solid ${colors.border}`,
+              borderLeft: `1px solid ${colors.border}`,
+              borderBottom: `1px solid ${colors.border}`
+            }}
+            hover={{ backgroundColor: colors.mutedBg }}
         >
             {isPanelOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
 
         {/* Panel Content */}
-        <div className="pointer-events-auto w-96 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden flex flex-col">
-            <div className="p-5 border-b border-zinc-100 bg-white/50">
+        <div className="pointer-events-auto w-96 rounded-2xl shadow-2xl border overflow-hidden flex flex-col" style={{
+          backgroundColor: isDarkMode ? 'rgba(24, 24, 27, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(16px)',
+          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.2)'
+        }}>
+            <div className="p-5" style={{ borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.mutedBg }}>
                 <div className="flex justify-between items-start">
                     <div>
-                        <h2 className="text-lg font-bold text-zinc-900">Active Route</h2>
-                        <p className="text-xs text-zinc-500 font-medium mt-1 flex items-center gap-1">
+                        <h2 className="text-lg font-bold" style={{ color: colors.textPrimary }}>Active Route</h2>
+                        <p className="text-xs font-medium mt-1 flex items-center gap-1" style={{ color: colors.textSecondary }}>
                             <Navigation size={12} /> {routeStats?.distanceText || '...'} • {vehicle.loadedOrders.length} Stops
                         </p>
                     </div>
-                    <div className="bg-indigo-50 text-indigo-600 px-2 py-1 rounded text-xs font-bold font-mono">
+                    <div className="px-2 py-1 rounded text-xs font-bold font-mono" style={{ backgroundColor: `${colors.action}10`, color: colors.action }}>
                         {vehicle.plate}
                     </div>
                 </div>

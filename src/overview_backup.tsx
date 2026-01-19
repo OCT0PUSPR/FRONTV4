@@ -73,7 +73,7 @@ const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme, toggleTheme }
     const spacingZ = 25;      // Depth of a pallet slot
     const aisleWidth = 60;    // Width between racks for robots
 
-    // Calculate Grid Offsets to center warehouse
+    // Calculate Grid Offsets to center the warehouse
     // A "Row" consists of 2 racks back-to-back + 1 aisle
     const rowUnitWidth = (spacingX * 2) + aisleWidth;
     const totalWidth = (rackRows * rowUnitWidth) - aisleWidth; 
@@ -130,7 +130,7 @@ const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme, toggleTheme }
                 }
             }
             
-            // Generate Robots in Aisle (to right of double rack)
+            // Generate Robots in the Aisle (to the right of the double rack)
             if (r < rackRows - 1) { // Don't put aisle after last rack if we want symmetry? Actually usually aisles are between.
                  const aisleX = rowStartX + (spacingX * 2) + (aisleWidth / 2);
                  // Spawn 1-2 robots per aisle
@@ -240,7 +240,7 @@ const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme, toggleTheme }
                     } else if (p.colorVar > 0.90) {
                          color = isDark ? `rgba(251, 191, 36, ${alpha})` : `rgba(245, 158, 11, ${alpha})`; // Amber
                     } else {
-                        color = `rgba(${palletColorBase.r}, ${palletColorBase.g}, ${palletColorBase.b}, ${alpha})`;
+                         color = `rgba(${palletColorBase.r}, ${palletColorBase.g}, ${palletColorBase.b}, ${alpha})`;
                     }
                 }
 
@@ -379,7 +379,7 @@ const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme, toggleTheme }
       }}
     >
 
-        {/* Left Content - Scrolls naturally with page */}
+        {/* Left Content - Scrolls naturally with the page */}
         <div className="w-full lg:w-1/2 pt-8 pb-12 px-12 lg:pt-8 lg:pb-16 lg:px-16 flex flex-col relative z-20">
             
             {/* Main Hero */}
@@ -393,7 +393,7 @@ const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme, toggleTheme }
                     <div className="text-xs font-medium tracking-widest uppercase" style={{ color: colors.textSecondary }}>{t('Enterprise Edition')}</div>
                 </div>
 
-                <div
+                <div 
                     className="inline-flex items-center gap-2 px-3 py-1 rounded-full border w-fit mb-8 animate-enter"
                     style={{
                         animationDelay: '0.05s',
@@ -404,7 +404,7 @@ const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme, toggleTheme }
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span className="text-xs font-medium" style={{ color: colors.textSecondary }}>{t('System Operational • v12.4.0')}</span>
                 </div>
-
+                
                 <h1 className="text-6xl lg:text-7xl font-extrabold tracking-tighter leading-[1.1] mb-8 animate-enter" style={{animationDelay: '0.1s', color: colors.textPrimary}}>
                     {t('Next-Gen')} <br />
                     <span style={{ 
@@ -414,13 +414,14 @@ const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme, toggleTheme }
                         backgroundClip: 'text'
                     }}>{t('Warehouse MS.')}</span>
                 </h1>
-
+                
                 <p className="text-lg lg:text-xl mb-12 leading-relaxed animate-enter" style={{animationDelay: '0.2s', color: colors.textSecondary}}>
-                    {t('Orchestrate your entire inventory lifecycle. From automated put-away and smart binning to predictive picking and fleet loading. Experience future of fulfillment.')}
+                    Orchestrate your entire inventory lifecycle. From automated put-away and smart binning to predictive picking and fleet loading. 
+                    Experience the future of fulfillment.
                 </p>
 
                 <div className="flex gap-4 animate-enter" style={{animationDelay: '0.3s'}}>
-                    <button
+                    <button 
                         onClick={handleEnter}
                         className="group font-bold py-4 px-10 rounded-full flex items-center gap-3 transition-all active:scale-95 shadow-lg"
                         style={{
@@ -435,7 +436,7 @@ const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme, toggleTheme }
                                 e.currentTarget.style.backgroundColor = '#f4f4f5';
                                 e.currentTarget.style.color = '#000000';
                             } else {
-                                // Darken button color on hover in light mode (use a darker shade)
+                                // Darken the button color on hover in light mode (use a darker shade)
                                 const baseColor = colors.textPrimary || '#1a1a1a';
                                 // Simple darkening: reduce RGB values by 20
                                 if (baseColor.startsWith('#')) {
@@ -563,4 +564,3 @@ const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme, toggleTheme }
 };
 
 export default LandingPage;
-

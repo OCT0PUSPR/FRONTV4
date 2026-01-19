@@ -1,8 +1,9 @@
 "use client"
 
-import { Package, DollarSign, Layers, Tag, CheckCircle2, XCircle } from "lucide-react"
+import { Package, Layers, Tag, CheckCircle2, XCircle } from "lucide-react"
 import { useTheme } from "../../context/theme"
 import { useTranslation } from "react-i18next"
+import { useAuth } from "../../context/auth"
 
 interface ProductRecordCardProps {
   product: {
@@ -22,6 +23,7 @@ interface ProductRecordCardProps {
 export function ProductRecordCard({ product, onClick, index }: ProductRecordCardProps) {
   const { colors } = useTheme()
   const { t, i18n } = useTranslation()
+  const { currencySymbol } = useAuth()
   const isRTL = i18n?.dir() === "rtl"
 
   // Status gradient based on availability
@@ -119,7 +121,7 @@ export function ProductRecordCard({ product, onClick, index }: ProductRecordCard
                 {t("Price")}
               </span>
               <p className="text-sm font-medium" style={{ color: colors.textPrimary, textAlign: isRTL ? "right" : "left" }}>
-                ${product.list_price.toFixed(2)}
+                {currencySymbol}{product.list_price.toFixed(2)}
               </p>
             </div>
 
@@ -157,9 +159,8 @@ export function ProductRecordCard({ product, onClick, index }: ProductRecordCard
                 </span>
               </div>
               <div className="flex items-center" style={{ color: colors.textSecondary, flexDirection: isRTL ? "row-reverse" : "row" }}>
-                <DollarSign className="w-4 h-4" />
                 <span className="text-xs font-medium">
-                  {(product.list_price * product.qty_available).toLocaleString()}
+                  {currencySymbol}{(product.list_price * product.qty_available).toLocaleString()}
                 </span>
               </div>
             </div>

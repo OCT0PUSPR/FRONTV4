@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Package, DollarSign, Layers, TrendingUp, RefreshCcw, Plus } from "lucide-react"
+import { Package, DollarSign, Layers, TrendingUp, RefreshCcw, Plus, Banknote } from "lucide-react"
 import { StatCard } from "./StatCard"
 import { ProductRecordCard } from "./ProductRecordCard"
 import { Skeleton } from "@mui/material"
@@ -10,6 +10,7 @@ import { useTheme } from "../../context/theme"
 import { useCasl } from "../../context/casl"
 import { TransferFiltersBar } from "./TransferFiltersBar"
 import { Button } from "../../@/components/ui/button"
+import { useAuth } from "../../context/auth"
 
 interface Product {
   id: number
@@ -40,6 +41,7 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
   const isRTL = i18n.dir() === "rtl"
   const { colors } = useTheme()
   const { canCreatePage, canEditPage } = useCasl()
+  const { currencySymbol } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [statusFilter, setStatusFilter] = useState<string[]>([])
@@ -64,10 +66,10 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
   
   // Format price range options for display
   const formattedPriceRangeOptions = priceRangeOptions.map((range) => {
-    if (range === "0-50") return "$0 - $50"
-    if (range === "50-100") return "$50 - $100"
-    if (range === "100-500") return "$100 - $500"
-    if (range === "500+") return "$500+"
+    if (range === "0-50") return `${currencySymbol}0 - ${currencySymbol}50`
+    if (range === "50-100") return `${currencySymbol}50 - ${currencySymbol}100`
+    if (range === "100-500") return `${currencySymbol}100 - ${currencySymbol}500`
+    if (range === "500+") return `${currencySymbol}500+`
     return range
   })
   
@@ -267,8 +269,8 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
           />
           <StatCard
             label={t("Total Value")}
-            value={`$${totalValue.toLocaleString()}`}
-            icon={DollarSign}
+            value={`${currencySymbol}${totalValue.toLocaleString()}`}
+            icon={Banknote}
             gradient="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
             delay={3}
           />

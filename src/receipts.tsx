@@ -675,21 +675,21 @@ export default function TransferReceiptsPage() {
               label={t("Total Receipts")}
               value={totalReceipts}
               icon={Package}
-              gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+              gradient="linear-gradient(135deg, #e91e63 0%, #fbbf24 100%)"
               delay={0}
             />
             <StatCard
               label={t("Draft Receipts")}
               value={draftReceipts}
               icon={FileText}
-              gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+              gradient="linear-gradient(135deg, #ec4899 0%, #ef4444 100%)"
               delay={1}
             />
             <StatCard
               label={t("Scheduled Today")}
               value={scheduledToday}
               icon={Clock}
-              gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
+              gradient="linear-gradient(135deg, #f59e0b 0%, #f97316 100%)"
               delay={2}
             />
             <StatCard
@@ -909,17 +909,17 @@ export default function TransferReceiptsPage() {
                 const getStatusIcon = (s: string) => {
                   switch (s.toLowerCase()) {
                     case "done":
-                      return { icon: CheckCircle2, gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)" }
+                      return { icon: CheckCircle2, gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)" }
                     case "ready":
-                      return { icon: Clock, gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" }
+                      return { icon: Clock, gradient: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)" }
                     case "cancelled":
-                      return { icon: XCircle, gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" }
+                      return { icon: XCircle, gradient: "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)" }
                     case "draft":
-                      return { icon: FileText, gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)" }
+                      return { icon: FileText, gradient: "linear-gradient(135deg, #e91e63 0%, #fbbf24 100%)" }
                     case "waiting":
-                      return { icon: Clock, gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" }
+                      return { icon: Clock, gradient: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)" }
                     default:
-                      return { icon: AlertCircle, gradient: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)" }
+                      return { icon: AlertCircle, gradient: "linear-gradient(135deg, #fbbf24 0%, #a8a29e 100%)" }
                   }
                 }
                 return getStatusIcon(status)

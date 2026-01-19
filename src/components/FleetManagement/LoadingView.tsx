@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTheme } from '../../../context/theme';
 import { Vehicle, Order } from './types';
-import { ArrowRight, Minus, Plus, Box, ArrowDown, ArrowUp, Zap, Map } from 'lucide-react';
+import { ArrowRight, Minus, Plus, Box, ArrowDown, ArrowUp, Zap, Map, Truck, Weight, MapPin, Package } from 'lucide-react';
 
 interface Props {
   vehicle: Vehicle;
@@ -10,8 +10,11 @@ interface Props {
 }
 
 const LoadingView: React.FC<Props> = ({ vehicle, poolOrders, onUpdateLoad }) => {
+  const { mode, colors } = useTheme();
+  const isDarkMode = mode === "dark";
+  
   // We manage a local route order state. 
-  // Initial state is the order in which they appear in vehicle.loadedOrders
+  // Initial state is order in which they appear in vehicle.loadedOrders
   const [routeOrder, setRouteOrder] = useState<(string | number)[]>([]);
 
   // Normalize vehicle properties
@@ -41,7 +44,7 @@ const LoadingView: React.FC<Props> = ({ vehicle, poolOrders, onUpdateLoad }) => 
   // Loading Logic: First Out (First Delivery) -> Last In (Loaded near door)
   // Therefore: Last Out (Last Delivery) -> First In (Loaded deep in truck)
   const loadingInstructions = useMemo(() => {
-     // The delivery route is the 'routeOrder'.
+     // The delivery route is 'routeOrder'.
      // 1. First Stop
      // 2. Second Stop
      // 3. Last Stop
@@ -117,62 +120,78 @@ const LoadingView: React.FC<Props> = ({ vehicle, poolOrders, onUpdateLoad }) => 
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#F8FAFC]">
+    <div className="h-full flex flex-col" style={{ backgroundColor: colors.background }}>
       {/* Top Section: Vehicle Viz & Capacity */}
-      <div className="bg-white border-b border-zinc-200 px-8 py-8 shadow-sm z-10">
-        <div className="flex flex-col md:flex-row items-center gap-12 max-w-7xl mx-auto">
-             
+      <div className="px-6 py-6 shadow-sm z-10" style={{ backgroundColor: colors.card, borderBottom: `1px solid ${colors.border}` }}>
+        <div className="flex flex-col lg:flex-row items-stretch gap-6 max-w-7xl mx-auto">
+
              {/* Truck Visual */}
-             <div className="relative w-full md:w-1/2 h-64 flex items-center justify-center bg-zinc-50 rounded-3xl border border-zinc-100 overflow-hidden">
+             <div className="relative w-full lg:w-1/2 h-72 flex items-center justify-center rounded-3xl overflow-hidden shadow-lg" style={{ backgroundColor: colors.mutedBg, border: `1px solid ${colors.border}` }}>
                 {vehicleImage ? (
-                    <img 
-                        src={vehicleImage} 
-                        className="w-full h-full object-contain p-4 z-10 relative animate-enter" 
+                    <img
+                        src={vehicleImage}
+                        className="w-full h-full object-contain p-6 z-10 relative animate-enter"
                         alt="Truck Visualization"
                     />
                 ) : (
                     <div className="flex flex-col items-center gap-2 z-10 relative opacity-50">
-                        <div className="w-12 h-12 border-4 border-zinc-300 border-t-indigo-500 rounded-full animate-spin"></div>
+                        <Truck size={48} style={{ color: colors.textSecondary }} />
                     </div>
                 )}
-                
+
                 {/* Capacity Overlay */}
                 <div className="absolute inset-0 z-0">
-                    <div className="absolute bottom-0 left-0 w-full bg-indigo-50/50 transition-all duration-700" style={{ height: `${capacityPct}%` }} />
+                    <div className="absolute bottom-0 left-0 w-full transition-all duration-700" style={{ height: `${capacityPct}%`, backgroundColor: `${colors.action}15` }} />
                 </div>
 
-                <div className="absolute top-6 right-6 text-right z-20">
-                    <div className="text-5xl font-extrabold text-zinc-900 tracking-tight">
-                        {Math.round(capacityPct)}<span className="text-2xl text-zinc-400">%</span>
+                <div className="absolute top-4 right-4 text-right z-20">
+                    <div className="text-4xl font-extrabold tracking-tight" style={{ color: colors.textPrimary }}>
+                        {Math.round(capacityPct)}<span className="text-xl" style={{ color: colors.textSecondary }}>%</span>
                     </div>
-                    <div className="text-sm font-medium text-zinc-500 uppercase tracking-wide mt-1">Loaded</div>
-                    <div className="text-xs font-mono text-zinc-400 mt-1">{currentLoad}kg / {capacityKg}kg</div>
+                    <div className="text-xs font-bold uppercase tracking-wide mt-1" style={{ color: colors.textSecondary }}>Loaded</div>
+                    <div className="text-xs font-mono mt-1" style={{ color: colors.textSecondary }}>{currentLoad}kg / {capacityKg}kg</div>
                 </div>
              </div>
 
              {/* Vehicle Info */}
-             <div className="w-full md:w-1/2 space-y-6">
-                <div>
-                    <h1 className="text-3xl font-bold text-zinc-900 mb-1">{vehicle.id}</h1>
-                    <p className="text-zinc-500 font-medium text-lg">{vehicle.name} <span className="text-zinc-300 mx-2">|</span> {vehicle.model}</p>
-                </div>
+             <div className="w-full lg:w-1/2 flex flex-col justify-center space-y-4">
+                <div className="p-6 rounded-2xl" style={{ backgroundColor: colors.mutedBg, border: `1px solid ${colors.border}` }}>
+                    <h1 className="text-3xl font-bold mb-2" style={{ color: colors.textPrimary }}>{vehicle.id}</h1>
+                    <p className="font-medium text-lg mb-4" style={{ color: colors.textSecondary }}>{vehicle.name} <span className="mx-2" style={{ color: colors.textSecondary }}>|</span> {vehicle.model}</p>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
-                        <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Location</div>
-                        <div className="font-semibold text-zinc-800 flex items-center gap-2">
-                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                             {vehicle.location}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 rounded-xl" style={{ backgroundColor: colors.card, border: `1px solid ${colors.border}` }}>
+                            <div className="flex items-center gap-2 mb-2">
+                                <MapPin size={14} style={{ color: colors.action }} />
+                                <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: colors.textSecondary }}>Location</div>
+                            </div>
+                            <div className="font-semibold text-sm flex items-center gap-2" style={{ color: colors.textPrimary }}>
+                                 <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: colors.success }}></div>
+                                 {vehicle.location}
+                            </div>
                         </div>
-                    </div>
-                    <div className="p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
-                         <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 flex justify-between">
-                            Loading Strategy
-                         </div>
-                         <div className="font-semibold text-indigo-700 flex items-center gap-2">
-                             <ArrowUp size={16} /> First Out, Last In (LIFO)
-                         </div>
-                         <div className="text-[10px] text-zinc-400 mt-1">Based on Route Order</div>
+                        <div className="p-3 rounded-xl" style={{ backgroundColor: colors.card, border: `1px solid ${colors.border}` }}>
+                            <div className="flex items-center gap-2 mb-2">
+                                <Weight size={14} style={{ color: colors.action }} />
+                                <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: colors.textSecondary }}>Capacity</div>
+                            </div>
+                            <div className="font-semibold text-sm" style={{ color: colors.textPrimary }}>{capacityKg.toLocaleString()} kg</div>
+                        </div>
+                        <div className="p-3 rounded-xl" style={{ backgroundColor: colors.card, border: `1px solid ${colors.border}` }}>
+                            <div className="flex items-center gap-2 mb-2">
+                                <Package size={14} style={{ color: colors.action }} />
+                                <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: colors.textSecondary }}>Load</div>
+                            </div>
+                            <div className="font-semibold text-sm" style={{ color: colors.textPrimary }}>{currentLoad.toLocaleString()} kg</div>
+                        </div>
+                        <div className="p-3 rounded-xl" style={{ backgroundColor: colors.card, border: `1px solid ${colors.border}` }}>
+                            <div className="flex items-center gap-2 mb-2">
+                                <ArrowUp size={14} style={{ color: colors.action }} />
+                                <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: colors.textSecondary }}>Strategy</div>
+                            </div>
+                            <div className="font-semibold text-xs" style={{ color: colors.textPrimary }}>LIFO</div>
+                            <div className="text-[10px]" style={{ color: colors.textSecondary }}>First Out, Last In</div>
+                        </div>
                     </div>
                 </div>
              </div>
@@ -180,51 +199,56 @@ const LoadingView: React.FC<Props> = ({ vehicle, poolOrders, onUpdateLoad }) => 
       </div>
 
       <div className="flex-1 overflow-hidden flex max-w-7xl mx-auto w-full">
-         
+
          {/* Left: Global Inventory */}
-         <div className="flex-1 overflow-hidden flex flex-col border-r border-zinc-200">
-             <div className="px-6 py-4 border-b border-zinc-100 flex justify-between items-center bg-white sticky top-0 z-10">
-                <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-                    Available Orders <span className="bg-zinc-100 text-zinc-500 px-2 py-0.5 rounded-full text-xs">Global Inventory</span>
+         <div className="flex-1 overflow-hidden flex flex-col" style={{ borderRight: `1px solid ${colors.border}` }}>
+             <div className="px-6 py-4 flex justify-between items-center sticky top-0 z-10" style={{ backgroundColor: colors.card, borderBottom: `1px solid ${colors.border}` }}>
+                <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: colors.textPrimary }}>
+                    Available Orders <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: colors.mutedBg, color: colors.textSecondary }}>Global Inventory</span>
                 </h2>
              </div>
 
              <div className="flex-1 overflow-y-auto px-6 py-4 pb-40 custom-scrollbar space-y-4">
                 {poolOrders.map((order) => (
-                    <div key={order.id} className="bg-white rounded-xl border border-zinc-100 shadow-sm overflow-hidden group hover:border-indigo-200 transition-colors">
-                        <div className="bg-zinc-50/50 px-4 py-2 border-b border-zinc-100 flex justify-between items-center">
+                    <div key={order.id} className="rounded-xl shadow-sm overflow-hidden group transition-colors" style={{ backgroundColor: colors.card, border: `1px solid ${colors.border}` }}>
+                        <div className="px-4 py-3 flex justify-between items-center" style={{ backgroundColor: colors.mutedBg, borderBottom: `1px solid ${colors.border}` }}>
                             <div>
-                                <span className="font-bold text-sm text-zinc-900 block">{order.destination}</span>
-                                <span className="text-[10px] text-zinc-400 font-mono">Order: {order.id}</span>
+                                <span className="font-bold text-sm block" style={{ color: colors.textPrimary }}>{order.destination}</span>
+                                <span className="text-[10px] font-mono" style={{ color: colors.textSecondary }}>Order: {order.id}</span>
                             </div>
-                            <span className="text-xs font-medium text-zinc-500">{order.items.length} Items</span>
+                            <span className="text-xs font-medium" style={{ color: colors.textSecondary }}>{order.items.length} Items</span>
                         </div>
-                        <div className="divide-y divide-zinc-50">
+                        <div className="divide-y" style={{ borderColor: colors.border }}>
                             {order.items.map((item) => {
                                 const isFullyLoaded = item.quantityLoaded >= item.quantityAvailable;
                                 return (
                                     <div key={item.id} className="grid grid-cols-12 gap-2 px-4 py-3 items-center">
                                         <div className="col-span-6">
-                                            <div className="font-medium text-zinc-800 text-sm">{item.name}</div>
-                                            <div className="text-[10px] text-zinc-400">{item.weightKg} kg • {item.size}</div>
+                                            <div className="font-medium text-sm" style={{ color: colors.textPrimary }}>{item.name}</div>
+                                            <div className="text-[10px]" style={{ color: colors.textSecondary }}>{item.weightKg} kg • {item.size}</div>
                                         </div>
                                         <div className="col-span-6 flex justify-end">
-                                            <div className={`flex items-center gap-1 p-1 rounded-lg border ${item.quantityLoaded > 0 ? 'bg-indigo-50 border-indigo-100' : 'bg-white border-zinc-200'}`}>
-                                                <button 
+                                            <div className="flex items-center gap-1 p-1 rounded-lg border" style={{
+                                              backgroundColor: item.quantityLoaded > 0 ? `${colors.action}10` : colors.card,
+                                              borderColor: item.quantityLoaded > 0 ? colors.action : colors.border
+                                            }}>
+                                                <button
                                                     onClick={() => onUpdateLoad(vehicle.id, order.id, item.id, item.quantityLoaded - 1)}
                                                     disabled={item.quantityLoaded <= 0}
-                                                    className="w-6 h-6 flex items-center justify-center rounded hover:bg-white text-zinc-500 disabled:opacity-30"
+                                                    className="w-6 h-6 flex items-center justify-center rounded disabled:opacity-30"
+                                                    style={{ color: colors.textSecondary }}
                                                 >
                                                     <Minus size={12} />
                                                 </button>
                                                 <div className="w-12 text-center">
-                                                    <span className={`text-sm font-bold ${item.quantityLoaded > 0 ? 'text-indigo-600' : 'text-zinc-900'}`}>{item.quantityLoaded}</span>
-                                                    <span className="text-[10px] text-zinc-400 ml-1">/ {item.quantityAvailable}</span>
+                                                    <span className="text-sm font-bold" style={{ color: item.quantityLoaded > 0 ? colors.action : colors.textPrimary }}>{item.quantityLoaded}</span>
+                                                    <span className="text-[10px] ml-1" style={{ color: colors.textSecondary }}>/ {item.quantityAvailable}</span>
                                                 </div>
-                                                <button 
+                                                <button
                                                     onClick={() => onUpdateLoad(vehicle.id, order.id, item.id, item.quantityLoaded + 1)}
                                                     disabled={isFullyLoaded}
-                                                    className="w-6 h-6 flex items-center justify-center rounded hover:bg-white text-zinc-500 disabled:opacity-30"
+                                                    className="w-6 h-6 flex items-center justify-center rounded disabled:opacity-30"
+                                                    style={{ color: colors.textSecondary }}
                                                 >
                                                     <Plus size={12} />
                                                 </button>
@@ -239,38 +263,38 @@ const LoadingView: React.FC<Props> = ({ vehicle, poolOrders, onUpdateLoad }) => 
              </div>
          </div>
 
-         {/* Right: Route & Loading Plan */}
-         <div className="w-96 bg-zinc-50 flex flex-col border-l border-zinc-200">
-             
+         {/* Right: Route & Loading Plan - Fixed width container */}
+         <div className="w-96 flex flex-col relative" style={{ backgroundColor: colors.mutedBg, borderLeft: `1px solid ${colors.border}` }}>
+
              {/* 1. Route Sequence */}
-             <div className="p-4 border-b border-zinc-200">
+             <div className="p-4" style={{ borderBottom: `1px solid ${colors.border}` }}>
                  <div className="flex justify-between items-center mb-3">
-                     <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                     <h3 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: colors.textSecondary }}>
                          <Map size={12} /> Delivery Route
                      </h3>
-                     <button onClick={optimizeRoute} className="text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded flex items-center gap-1 transition-colors">
+                     <button onClick={optimizeRoute} className="text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 transition-colors" style={{ color: colors.action, backgroundColor: `${colors.action}10` }}>
                          <Zap size={10} /> Auto-Optimize
                      </button>
                  </div>
-                 
+
                  {routeOrder.length === 0 ? (
-                     <div className="text-sm text-zinc-400 italic text-center py-4">Add items to create route</div>
+                     <div className="text-sm italic text-center py-4" style={{ color: colors.textSecondary }}>Add items to create route</div>
                  ) : (
                      <div className="space-y-2">
                          {routeOrder.map((orderId, idx) => {
                              const order = vehicle.loadedOrders.find(o => o.id === orderId);
                              if(!order) return null;
                              return (
-                                 <div key={orderId} className="bg-white p-2 rounded-lg border border-zinc-200 shadow-sm flex items-center gap-3">
-                                     <div className="w-5 h-5 rounded-full bg-zinc-100 flex items-center justify-center text-[10px] font-bold text-zinc-500">
+                                 <div key={orderId} className="p-2 rounded-lg shadow-sm flex items-center gap-3" style={{ backgroundColor: colors.card, border: `1px solid ${colors.border}` }}>
+                                     <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: colors.mutedBg, color: colors.textSecondary }}>
                                          {idx + 1}
                                      </div>
                                      <div className="flex-1 min-w-0">
-                                         <div className="text-xs font-bold text-zinc-800 truncate">{order.destination}</div>
+                                         <div className="text-xs font-bold truncate" style={{ color: colors.textPrimary }}>{order.destination}</div>
                                      </div>
                                      <div className="flex flex-col gap-0.5">
-                                         <button onClick={() => moveStop(idx, 'up')} disabled={idx === 0} className="text-zinc-400 hover:text-indigo-600 disabled:opacity-20"><ArrowUp size={10} /></button>
-                                         <button onClick={() => moveStop(idx, 'down')} disabled={idx === routeOrder.length - 1} className="text-zinc-400 hover:text-indigo-600 disabled:opacity-20"><ArrowDown size={10} /></button>
+                                         <button onClick={() => moveStop(idx, 'up')} disabled={idx === 0} style={{ color: colors.textSecondary }} className="w-6 h-6 flex items-center justify-center rounded opacity-20 disabled:opacity-100 hover:opacity-40"><ArrowUp size={10} /></button>
+                                         <button onClick={() => moveStop(idx, 'down')} disabled={idx === routeOrder.length - 1} style={{ color: colors.textSecondary }} className="w-6 h-6 flex items-center justify-center rounded opacity-20 disabled:opacity-100 hover:opacity-40"><ArrowDown size={10} /></button>
                                      </div>
                                  </div>
                              );
@@ -280,27 +304,27 @@ const LoadingView: React.FC<Props> = ({ vehicle, poolOrders, onUpdateLoad }) => 
              </div>
 
              {/* 2. Loading Instructions */}
-             <div className="flex-1 overflow-y-auto p-4 pb-40 custom-scrollbar">
-                 <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+             <div className="flex-1 overflow-y-auto p-4 pb-24 custom-scrollbar">
+                 <h3 className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: colors.textSecondary }}>
                      <Box size={12} /> Loading Plan (LIFO)
                  </h3>
-                 
-                 <div className="relative border-l-2 border-indigo-100 ml-2 space-y-6 pl-4 py-2">
+
+                 <div className="relative border-l-2 ml-2 space-y-6 pl-4 py-2" style={{ borderColor: colors.action }}>
                     {loadingInstructions.map((step, idx) => (
                         <div key={idx} className="relative animate-enter" style={{ animationDelay: `${idx * 0.1}s` }}>
-                            <div className="absolute -left-[21px] top-0 w-3 h-3 rounded-full bg-indigo-600 border-2 border-white shadow-sm"></div>
-                            
-                            <div className="bg-white p-3 rounded-xl border border-zinc-200 shadow-sm">
+                            <div className="absolute -left-[21px] top-0 w-3 h-3 rounded-full border-2 shadow-sm" style={{ backgroundColor: colors.action, borderColor: colors.card }}></div>
+
+                            <div className="p-3 rounded-xl shadow-sm" style={{ backgroundColor: colors.card, border: `1px solid ${colors.border}` }}>
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Step {step?.step}</span>
-                                    <span className="text-[10px] text-zinc-400 font-mono">Order {String(step?.orderId).split('-')[1] || step?.orderId}</span>
+                                    <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ color: colors.action, backgroundColor: `${colors.action}10` }}>Step {step?.step}</span>
+                                    <span className="text-[10px] font-mono" style={{ color: colors.textSecondary }}>Order {String(step?.orderId).split('-')[1] || step?.orderId}</span>
                                 </div>
-                                <div className="font-bold text-sm text-zinc-900 mb-1">{step?.destination}</div>
-                                <div className="text-xs font-medium text-amber-600 mb-2">{step?.instruction}</div>
-                                
+                                <div className="font-bold text-sm mb-1" style={{ color: colors.textPrimary }}>{step?.destination}</div>
+                                <div className="text-xs font-medium mb-2" style={{ color: '#f59e0b' }}>{step?.instruction}</div>
+
                                 <div className="space-y-1">
                                     {step?.items.map((item, i) => (
-                                        <div key={i} className="flex justify-between text-xs text-zinc-500 bg-zinc-50 px-2 py-1 rounded">
+                                        <div key={i} className="flex justify-between text-xs px-2 py-1 rounded" style={{ color: colors.textSecondary, backgroundColor: colors.mutedBg }}>
                                             <span>{item.quantityLoaded}x {item.name}</span>
                                             <span>{item.weightKg}kg</span>
                                         </div>
@@ -310,25 +334,25 @@ const LoadingView: React.FC<Props> = ({ vehicle, poolOrders, onUpdateLoad }) => 
                         </div>
                     ))}
                     {loadingInstructions.length === 0 && (
-                        <div className="text-sm text-zinc-400 italic">No items loaded.</div>
+                        <div className="text-sm italic" style={{ color: colors.textSecondary }}>No items loaded.</div>
                     )}
                  </div>
              </div>
 
-         </div>
-      </div>
+             {/* Footer - Within Right Panel */}
+             <div className="absolute bottom-0 left-0 right-0 px-4 py-3 z-50 flex justify-between items-center" style={{ backgroundColor: colors.card, borderTop: `1px solid ${colors.border}` }}>
+                 <div>
+                    <div className="text-xs font-medium uppercase" style={{ color: colors.textSecondary }}>Loading Sequence</div>
+                    <div className="font-bold" style={{ color: colors.textPrimary }}>
+                        {routeOrder.length > 0 ? "Optimized by Route Order" : "Pending Route Selection"}
+                    </div>
+                 </div>
+                 <button className="font-bold py-2 px-4 rounded-xl transition-all active:scale-95 flex items-center gap-2 text-sm text-white" style={{ background: colors.action, boxShadow: '0 4px 12px rgba(79, 172, 254, 0.4)' }}>
+                    Confirm Load & Start <ArrowRight size={14} />
+                 </button>
+             </div>
 
-      {/* Footer */}
-      <div className="fixed bottom-0 left-80 right-0 bg-white/80 backdrop-blur-xl border-t border-indigo-100 px-8 py-4 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] flex justify-between items-center">
-         <div>
-            <div className="text-xs text-zinc-400 font-medium uppercase">Loading Sequence</div>
-            <div className="font-bold text-zinc-900">
-                {routeOrder.length > 0 ? "Optimized by Route Order" : "Pending Route Selection"}
-            </div>
          </div>
-         <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center gap-2">
-            Confirm Load & Start <ArrowRight size={18} />
-         </button>
       </div>
     </div>
   );

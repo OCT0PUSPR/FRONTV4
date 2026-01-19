@@ -21,6 +21,7 @@ import {
   Archive,
   MapPin,
   History,
+  Clock,
   TrendingUp,
   DollarSign,
   Warehouse,
@@ -49,6 +50,10 @@ import {
   FileSpreadsheet,
   ChartBar,
   Copyright,
+  FileText,
+  Layers as LayersIcon,
+  Database,
+  Zap,
   type LucideIcon,
 } from "lucide-react"
 import { useState, useCallback, useMemo, useRef, useEffect } from "react"
@@ -135,8 +140,20 @@ const menuItems: MenuItem[] = [
       { title: "Moves History", icon: History, url: "/moves-history" },
       { title: "Valuation", icon: DollarSign, url: "/valuation" },
       { title: "Report Templates", icon: FileSpreadsheet, url: "/report-templates" },
+      { title: "Headers", icon: FileText, url: "/report-headers" },
+      { title: "Footers", icon: FileText, url: "/report-footers" },
+      { title: "Export Reports", icon: FileSpreadsheet, url: "/report-export" },
+      { title: "Transfer Reports", icon: Truck, url: "/report-transfer" },
       { title: "Generated Reports", icon: FileSpreadsheet, url: "/generated-reports" },
       { title: "Auto Rules", icon: Activity, url: "/report-rules" },
+    ],
+  },
+  {
+    title: "Smart Reports",
+    icon: FileText,
+    items: [
+      { title: "Templates", icon: FileSpreadsheet, url: "/smart-reports" },
+      { title: "Template Builder", icon: LayersIcon, url: "/smart-reports/builder" },
     ],
   },
   {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTheme } from '../../../context/theme';
 import { Vehicle, VehicleStatus } from './types';
 import { Truck } from 'lucide-react';
 
@@ -9,6 +10,8 @@ interface Props {
 }
 
 const VehicleCard: React.FC<Props> = ({ vehicle, isSelected, onClick }) => {
+  const { mode, colors } = useTheme();
+  const isDarkMode = mode === "dark";
   // Normalize properties for both API and legacy formats
   const vehicleId = vehicle.vehicle_id || vehicle.id;
   const capacityKg = vehicle.capacityKg || vehicle.capacity_kg || 0;
@@ -20,56 +23,72 @@ const VehicleCard: React.FC<Props> = ({ vehicle, isSelected, onClick }) => {
     <button
       onClick={onClick}
       className={`w-full text-left p-4 mb-3 rounded-2xl transition-all duration-300 relative group border
-        ${isSelected 
-          ? 'bg-white border-indigo-200 shadow-xl shadow-indigo-100/50 scale-[1.02]' 
-          : 'bg-white border-transparent hover:border-zinc-200 hover:shadow-md bg-transparent'
+        ${isSelected
+          ? 'shadow-xl scale-[1.02]'
+          : 'hover:shadow-md bg-transparent'
         }
       `}
+      style={{
+        backgroundColor: colors.card,
+        borderColor: isSelected ? colors.action : colors.border,
+        boxShadow: isSelected ? `0 8px 24px ${colors.action}20` : 'none'
+      }}
     >
-      <div className="flex items-center gap-5">
-        {/* Vehicle Thumbnail - BIGGER */}
-        <div className={`w-28 h-28 rounded-2xl flex items-center justify-center flex-shrink-0 transition-colors overflow-hidden bg-zinc-100 border border-zinc-100
-            ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}
-        `}>
+      <div className="flex items-start gap-4">
+        {/* Vehicle Thumbnail */}
+        <div className={`w-20 h-20 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors overflow-hidden border
+            ${isSelected ? 'ring-2 ring-offset-2' : ''}
+        `}
+        style={{
+          backgroundColor: colors.mutedBg,
+          borderColor: colors.border,
+          ringColor: isSelected ? colors.action : 'transparent'
+        }}
+        >
              {vehicleImage ? (
                  <img src={vehicleImage} alt={vehicle.name} className="w-full h-full object-cover" />
              ) : (
-                 <Truck className="text-zinc-300" size={40} />
+                 <Truck size={32} style={{ color: colors.textSecondary }} />
              )}
         </div>
 
-        <div className="flex-1 min-w-0 flex flex-col justify-between h-28 py-1">
-          <div>
+        <div className="flex-1 min-w-0 flex flex-col justify-between">
+          <div className="min-w-0">
             <div className="flex justify-between items-start mb-1">
-                <h3 className={`font-bold text-lg truncate ${isSelected ? 'text-indigo-900' : 'text-zinc-800'}`}>
+                <h3 className="font-bold text-base truncate" style={{ color: isSelected ? colors.action : colors.textPrimary }}>
                     {vehicleId}
                 </h3>
             </div>
-            
-            <p className="text-sm text-zinc-600 font-medium truncate">{vehicle.name}</p>
-            <p className="text-xs text-zinc-400 mt-0.5">{vehicle.model}</p>
+
+            <p className="text-sm font-medium truncate" style={{ color: colors.textSecondary }}>{vehicle.name}</p>
+            <p className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>{vehicle.model}</p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* Status Indicator */}
             <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border
-                    ${vehicle.status === VehicleStatus.IN_ROUTE 
-                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                        : 'bg-zinc-50 text-zinc-500 border-zinc-100'}
-                `}>
+                <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border"
+                    style={{
+                      backgroundColor: vehicle.status === VehicleStatus.IN_ROUTE ? colors.success + '20' : colors.mutedBg,
+                      color: vehicle.status === VehicleStatus.IN_ROUTE ? '#059669' : colors.textSecondary,
+                      borderColor: vehicle.status === VehicleStatus.IN_ROUTE ? colors.success : colors.border
+                    }}
+                >
                     {vehicle.status === VehicleStatus.IN_ROUTE ? 'In Transit' : 'Available'}
                 </span>
             </div>
 
-            <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-medium">
-                <div className={`flex-1 h-2 rounded-full overflow-hidden bg-zinc-100`}>
-                    <div 
-                        className={`h-full rounded-full ${loadPercent > 90 ? 'bg-red-500' : 'bg-indigo-500'}`} 
-                        style={{ width: `${Math.min(loadPercent, 100)}%` }}
+            <div className="flex items-center gap-2 text-[10px] font-medium" style={{ color: colors.textSecondary }}>
+                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: colors.mutedBg }}>
+                    <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.min(loadPercent, 100)}%`,
+                          backgroundColor: loadPercent > 90 ? '#ef4444' : colors.action
+                        }}
                     />
                 </div>
-                <span className="w-8 text-right">{loadPercent}%</span>
+                <span className="w-8 text-right shrink-0">{loadPercent}%</span>
             </div>
           </div>
         </div>

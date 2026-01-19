@@ -11,9 +11,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [sessionId, setSessionId] = useState<string>('');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [currencySymbol, setCurrencySymbol] = useState<string>('$');
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     console.log('[AUTH_PROVIDER] API_BASE_URL:', API_BASE_URL);
+
+    // Fetch company currency
+    const fetchCompanyCurrency = async (sessionIdToUse: string) => {
+        try {
+            const tenantId = localStorage.getItem('current_tenant_id');
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json',
+            };
+            if (tenantId) {
+                headers['X-Tenant-ID'] = tenantId;
+            }
+
+            const response = await fetch(`${API_BASE_URL}/currencies`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ sessionId: sessionIdToUse })
+            });
+            const data = await response.json();
+
+            if (data.success && Array.isArray(data.currencies)) {
+                // Find currency with id=1 (usually the company currency)
+                const defaultCurrency = data.currencies.find((c: any) => c.id === 1) || data.currencies[0];
+                if (defaultCurrency?.symbol) {
+                    setCurrencySymbol(defaultCurrency.symbol);
+                    console.log('[AUTH_PROVIDER] Company currency symbol set to:', defaultCurrency.symbol);
+                }
+            }
+        } catch (error) {
+            console.error('[AUTH_PROVIDER] Error fetching company currency:', error);
+            // Keep default $ symbol on error
+        }
+    };
 
     // Load session from localStorage
     useEffect(() => {
@@ -38,6 +71,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setPartnerId(storedPartnerId || '');
                 setName(storedName || '');
                 setIsAuthenticated(true);
+                // Fetch company currency
+                fetchCompanyCurrency(storedSessionId);
                 // Validate session with the backend
                 validateSession(storedSessionId);
             } else {
@@ -207,6 +242,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setPartnerId('');
         setName('');
         setSessionId('');
+        setCurrencySymbol('$');
         setIsAuthenticated(false);
         localStorage.removeItem('sessionId');
         localStorage.removeItem('uid');
@@ -215,7 +251,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ uid, partnerId, name, sessionId, isAuthenticated, isLoading, signIn, signOut, validateSession }}>
+        <AuthContext.Provider value={{ uid, partnerId, name, sessionId, isAuthenticated, isLoading, currencySymbol, signIn, signOut, validateSession }}>
             {children}
         </AuthContext.Provider>
     );

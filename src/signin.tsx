@@ -1,85 +1,22 @@
 "use client"
 
 import type React from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../context/auth"
-import { useState, useEffect } from "react"
 import { useTranslation } from "react-i18next"
-import { EmailIcon } from "./components/emailIcon"
-import { LockIcon } from "./components/LockIcon"
-import Toast from "./components/Toast"
-import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { ArrowRight, XIcon, Eye, EyeOff, Building2, ChevronDown, Check } from "lucide-react"
-import { Package, Truck, MapPin, BarChart3, ClipboardCheck, Boxes, Search, TrendingUp, Users, Settings } from "lucide-react"
-
-function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
-}
-
-function DialogPortal({ ...props }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
-  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
-}
-
-function DialogOverlay({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
-  return (
-    <DialogPrimitive.Overlay
-      data-slot="dialog-overlay"
-      className={`fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 ${className || ""}`}
-      {...props}
-    />
-  )
-}
-
-function DialogContent({
-  className,
-  children,
-  showCloseButton = true,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & {
-  showCloseButton?: boolean
-}) {
-  return (
-    <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay />
-      <DialogPrimitive.Content
-        data-slot="dialog-content"
-        className={`fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-2xl border p-6 shadow-lg duration-200 sm:max-w-lg bg-white data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 ${className || ""}`}
-        {...props}
-      >
-        {children}
-        {showCloseButton && (
-          <DialogPrimitive.Close
-            data-slot="dialog-close"
-            className="absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none"
-          >
-            <XIcon className="w-4 h-4" />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
-        )}
-      </DialogPrimitive.Content>
-    </DialogPortal>
-  )
-}
-
-function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="dialog-header"
-      className={`flex flex-col gap-2 text-center sm:text-left ${className || ""}`}
-      {...props}
-    />
-  )
-}
-
-function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
-  return (
-    <DialogPrimitive.Title
-      data-slot="dialog-title"
-      className={`text-3xl leading-none font-semibold ${className || ""}`}
-      {...props}
-    />
-  )
-}
+import {
+  Eye,
+  EyeOff,
+  Building2,
+  ChevronDown,
+  Check,
+  Mail,
+  Lock,
+  ArrowRight
+} from "lucide-react"
+import octLogo from "./assets/OCT.png"
+import animationVideo from "./assets/animation.mp4"
 
 interface Tenant {
   id: number
@@ -93,43 +30,39 @@ interface Tenant {
   lastSyncAt: string | null
 }
 
-function Signin() {
+const Signin: React.FC = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { signIn, isAuthenticated, isLoading: authLoading } = useAuth()
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [selectedTenantId, setSelectedTenantId] = useState<string>("")
   const [isFetchingTenants, setIsFetchingTenants] = useState(false)
   const [isTenantDropdownOpen, setIsTenantDropdownOpen] = useState(false)
-  const [toast, setToast] = useState<{ text: string; state: "success" | "error" } | null>(null)
-  const { signIn, isAuthenticated, isLoading: authLoading } = useAuth()
-  const navigate = useNavigate()
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-  // Redirect to overview if already authenticated (but only if we're not in the middle of a sign-in attempt)
+  // Cast import.meta to any to bypass environment-specific type missing error
+  const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL
+
   useEffect(() => {
     if (!authLoading && isAuthenticated && !isLoading) {
       navigate('/overview', { replace: true })
     }
   }, [isAuthenticated, authLoading, isLoading, navigate])
 
-  // Fetch tenants when modal opens
   useEffect(() => {
-    if (isModalOpen) {
-      fetchTenants()
-      // Load previously selected tenant from localStorage
-      const storedTenantId = localStorage.getItem('current_tenant_id')
-      if (storedTenantId) {
-        setSelectedTenantId(storedTenantId)
-      }
+    fetchTenants()
+    const storedTenantId = localStorage.getItem('current_tenant_id')
+    if (storedTenantId) {
+      setSelectedTenantId(storedTenantId)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isModalOpen])
+  }, [])
 
-  // Auto-select tenant if there's only one
   useEffect(() => {
     if (tenants.length === 1 && !selectedTenantId) {
       const singleTenantId = tenants[0].id.toString()
@@ -137,24 +70,6 @@ function Signin() {
       localStorage.setItem('current_tenant_id', singleTenantId)
     }
   }, [tenants, selectedTenantId])
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (isTenantDropdownOpen && !target.closest('.tenant-dropdown-container')) {
-        setIsTenantDropdownOpen(false)
-      }
-    }
-
-    if (isTenantDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isTenantDropdownOpen])
 
   const fetchTenants = async () => {
     setIsFetchingTenants(true)
@@ -183,412 +98,239 @@ function Signin() {
     }
   }
 
-  const selectedTenant = tenants.find(t => t.id.toString() === selectedTenantId)
-  const selectedTenantDisplay = selectedTenant 
-    ? `${selectedTenant.instanceName}${selectedTenant.companyName ? ` (${selectedTenant.companyName})` : ''}`
-    : "Select a tenant instance"
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setToast(null) // Clear any previous toast
+    setErrorMsg(null)
     setIsLoading(true)
-    
+
     try {
       const result = await signIn(email, password)
-      
-      // Always wait for the sign-in to complete before any navigation
+
       if (!result.success) {
-        // Sign-in failed - show toast error message and stay on page
-        const defaultErrorMessage = "Invalid email or password. Please check your credentials and try again."
-        const errorMessage = result.error || defaultErrorMessage
-        // Translate the error message if it matches our known error message
-        const translatedError = errorMessage === defaultErrorMessage 
-          ? t(defaultErrorMessage)
-          : errorMessage
-        setToast({ text: translatedError, state: "error" })
+        const defaultErrorMessage = "Invalid email or password. Please check your credentials."
+        setErrorMsg(result.error || t(defaultErrorMessage))
         setIsLoading(false)
-        return // Don't navigate, stay on signin page
+        return
       }
-      
-      // Sign-in successful - check if setup is required
+
       if (result.setupRequired || result.redirectTo === '/setup') {
         setIsLoading(false)
         navigate('/setup', { replace: true })
         return
       }
-      
-      // Sign-in successful - navigate to overview
+
       setIsLoading(false)
       navigate("/overview", { replace: true })
     } catch (err: unknown) {
-      // Handle unexpected errors - show toast error and stay on page
-      const errorMessage = err instanceof Error 
-        ? err.message 
-        : "An unexpected error occurred. Please try again."
-      setToast({ text: errorMessage, state: "error" })
+      setErrorMsg(err instanceof Error ? err.message : "An unexpected error occurred.")
       setIsLoading(false)
-      // Don't navigate on error - stay on signin page
     }
   }
 
-  const platformFeatures = [
-    {
-      title: "Inventory Management",
-      items: [
-        { icon: Package, label: "Stock Tracking" },
-        { icon: Boxes, label: "Multi-Location Warehouses" },
-        { icon: Search, label: "Real-Time Inventory Search" },
-        { icon: BarChart3, label: "Inventory Analytics" },
-      ],
-    },
-    {
-      title: "Operations",
-      items: [
-        { icon: Truck, label: "Receipts & Deliveries" },
-        { icon: MapPin, label: "Route Management" },
-        { icon: ClipboardCheck, label: "Putaway Rules" },
-        { icon: TrendingUp, label: "Stock Movements" },
-      ],
-    },
-    {
-      title: "System Features",
-      items: [
-        { icon: Users, label: "User Management" },
-        { icon: Settings, label: "Configuration" },
-        { icon: BarChart3, label: "Reports & Analytics" },
-      ],
-    },
-  ]
+  const selectedTenant = tenants.find(t => t.id.toString() === selectedTenantId)
+  const selectedTenantDisplay = selectedTenant
+    ? `${selectedTenant.instanceName}${selectedTenant.companyName ? ` (${selectedTenant.companyName})` : ''}`
+    : "Select Instance"
 
   return (
-    <div className="relative w-full min-h-screen overflow-y-auto">
-      {/* Background Image */}
-      <div
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: "url(/man.jpg)",
-        }}
-      />
-
-      {/* Content */}
-      <div className="relative z-10 flex items-start pt-8 sm:pt-12 md:pt-16 pb-8 px-4 sm:px-6 md:px-8">
-        <div className="w-full max-w-4xl mx-auto sm:ml-[3%]">
-          {/* Semi-transparent container for header and cards */}
-          <div
-            className="bg-[#0A1931]/30 backdrop-blur-sm rounded-3xl p-6 sm:p-8 md:p-10 lg:p-8 animate-fade-in-up"
-            style={{ animationDelay: "0.15s", animationFillMode: "both" }}
-          >
-            {/* Header */}
-            <div className="animate-fade-in-up text-center mb-6 sm:mb-8" style={{ animationDelay: "0.1s" }}>
-              <p className="text-[#FDD835] text-lg sm:text-xl md:text-xl font-bold tracking-wider">WAREHOUSE MANAGEMENT SYSTEM</p>
-            </div>
-
-            {/* Feature Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-4">
-              {platformFeatures.map((category, categoryIndex) => (
-                <div
-                  key={category.title}
-                  className="bg-[#1A3D63]/70 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-[#4A7FA7]/20 animate-slide-in-scale shadow-xl hover:shadow-2xl hover:scale-105 hover:-translate-y-2 transition-all duration-500 ease-out hover:border-[#4A7FA7]/50 hover:bg-[#1A3D63]/85 animate-float"
-                  style={{
-                    animationDelay: `${0.2 + categoryIndex * 0.15}s`,
-                    animationFillMode: "both",
-                  }}
-                >
-                  <p
-                    className="text-[#FDD835] text-base sm:text-lg lg:text-2xl font-bold mb-3 sm:mb-4 animate-fade-in"
-                    style={{ animationDelay: `${0.3 + categoryIndex * 0.15}s` }}
-                  >
-                    {category.title}
-                  </p>
-                  <div className="space-y-2 sm:space-y-3">
-                    {category.items.map((item, itemIndex) => {
-                      const Icon = item.icon
-                      return (
-                        <div
-                          key={itemIndex}
-                          className="flex items-center gap-2 sm:gap-3 text-white animate-fade-in-right hover:translate-x-1 transition-transform duration-300"
-                          style={{
-                            animationDelay: `${0.4 + categoryIndex * 0.15 + itemIndex * 0.1}s`,
-                            animationFillMode: "both",
-                          }}
-                        >
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#6B9DC4]/40 backdrop-blur-sm flex items-center justify-center flex-shrink-0 border border-[#4A7FA7]/30 hover:bg-[#6B9DC4]/60 hover:scale-110 transition-all duration-300">
-                            <Icon className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
-                          </div>
-                          <span className="text-sm sm:text-base lg:text-xl font-medium">{item.label}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Sign In Button */}
-          <div
-            className="animate-fade-in-up text-center mt-6 sm:mt-8"
-            style={{ animationDelay: "0.8s", animationFillMode: "both" }}
-          >
-            <button
-              onClick={() => {
-                setIsModalOpen(true)
-              }}
-              className="bg-[#4A7FA7] hover:bg-[#1A3D63] text-white font-semibold py-4 sm:py-5 px-6 sm:px-10 rounded-2xl text-base sm:text-lg transition-all duration-300 inline-flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl"
-            >
-              <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
-              Sign In to Platform
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Sign In Modal */}
-      <Dialog open={isModalOpen} onOpenChange={(open) => {
-        setIsModalOpen(open)
-        if (!open) {
-          setEmail("")
-          setPassword("")
-          setSelectedTenantId("")
-          setIsTenantDropdownOpen(false)
-          setToast(null)
+    <div className="flex flex-col md:flex-row h-screen w-full bg-white font-['Space_Grotesk'] overflow-hidden">
+      <style>{`
+        @keyframes blurIn {
+          0% { filter: blur(10px); opacity: 0; transform: translateY(10px); }
+          100% { filter: blur(0); opacity: 1; transform: translateY(0); }
         }
-      }}>
-        <DialogContent className="sm:max-w-md bg-white border-[#4A7FA7]/20 p-6 sm:p-8">
-          <DialogHeader>
-            <DialogTitle className="text-2xl sm:text-3xl font-bold text-[#0A1931] text-center mb-2">Sign In</DialogTitle>
-            <p className="text-xs sm:text-sm text-gray-500 text-center">Welcome back! Please enter your credentials</p>
-          </DialogHeader>
+        @keyframes slideUp {
+          0% { opacity: 0; transform: translateY(20px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideRight {
+          0% { opacity: 0; transform: translateX(-20px); }
+          100% { opacity: 1; transform: translateX(0); }
+        }
+        .animate-blur-in { animation: blurIn 1s cubic-bezier(0.19, 1, 0.22, 1) both; }
+        .animate-slide-up { animation: slideUp 0.8s cubic-bezier(0.19, 1, 0.22, 1) both; }
+        .animate-slide-right { animation: slideRight 0.8s cubic-bezier(0.19, 1, 0.22, 1) both; }
+        
+        .input-focus-effect:focus-within {
+          border-color: #000;
+          box-shadow: 0 0 0 1px #000;
+        }
+        .premium-button {
+          transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        .premium-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 20px -10px rgba(0,0,0,0.3);
+        }
+        .premium-button:active {
+          transform: translateY(0);
+        }
+      `}</style>
 
-          <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6 mt-4 sm:mt-6">
-            <div className="space-y-4 sm:space-y-5">
-              {/* Email Input */}
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-[#0A1931]">
+      {/* Left Section - Sign In Form (40%) */}
+      <div className="w-full md:w-[40%] bg-white p-8 sm:p-12 lg:p-20 flex flex-col justify-center relative z-10">
+        <div className="max-w-md w-full mx-auto">
+
+
+          <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
+            <h1 className="text-5xl font-['Space Grotesk'] font-bold mb-4 tracking-tight leading-none text-black">
+              Sign In
+            </h1>
+            <p className="text-gray-500 mb-8 font-medium">
+              Access your warehouse management dashboard.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Inline Error Message */}
+            {errorMsg && (
+              <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-semibold animate-blur-in">
+                {errorMsg}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {/* Email */}
+              <div className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
+                <label className="text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-1.5 block">
                   Email Address
                 </label>
-                <div className="relative">
-                  <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <EmailIcon color="#4A7FA7" width={18} height={18} />
+                <div className="relative input-focus-effect border-2 border-gray-100 rounded-xl transition-all bg-gray-50/50">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                    <Mail size={18} />
                   </div>
                   <input
                     type="email"
-                    id="email"
                     value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value)
-                    }}
-                    placeholder="Enter your email"
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@company.com"
+                    className="w-full pl-12 pr-4 py-4 bg-transparent outline-none text-black font-medium placeholder:text-gray-300"
                     required
                     disabled={isLoading}
-                    className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4A7FA7] focus:border-[#4A7FA7] transition-all bg-gray-50 hover:bg-white hover:border-[#4A7FA7]/40 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
 
-              {/* Password Input */}
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-[#0A1931]">
+              {/* Password */}
+              <div className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
+                <label className="text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-1.5 block">
                   Password
                 </label>
-                <div className="relative">
-                  <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <LockIcon color="#4A7FA7" width={18} height={18} />
+                <div className="relative input-focus-effect border-2 border-gray-100 rounded-xl transition-all bg-gray-50/50">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                    <Lock size={18} />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
-                    id="password"
                     value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value)
-                    }}
-                    placeholder="Enter your password"
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-12 pr-12 py-4 bg-transparent outline-none text-black font-medium placeholder:text-gray-300"
                     required
                     disabled={isLoading}
-                    className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 sm:py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4A7FA7] focus:border-[#4A7FA7] transition-all bg-gray-50 hover:bg-white hover:border-[#4A7FA7]/40 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
-                    className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-[#4A7FA7] hover:text-[#1A3D63] transition-colors disabled:opacity-50"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
 
-              {/* Tenant Selection - Only show if more than one tenant */}
+              {/* Tenant Selection */}
               {tenants.length > 1 && (
-                <div className="space-y-2">
-                  <label htmlFor="tenant" className="text-sm font-medium text-[#0A1931]">
-                    Tenant Instance
+                <div className="animate-slide-up" style={{ animationDelay: '0.5s' }}>
+                  <label className="text-[11px] uppercase tracking-widest font-bold text-gray-400 mb-1.5 block">
+                    Select Instance
                   </label>
-                  <div className="relative tenant-dropdown-container">
-                    <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
-                      <Building2 className="w-5 h-5 text-[#4A7FA7]" />
-                    </div>
+                  <div className="relative">
                     <button
                       type="button"
-                      onClick={() => !isLoading && !isFetchingTenants && setIsTenantDropdownOpen(!isTenantDropdownOpen)}
-                      disabled={isLoading || isFetchingTenants}
-                      className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 sm:py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4A7FA7] focus:border-[#4A7FA7] transition-all bg-gray-50 hover:bg-white hover:border-[#4A7FA7]/40 disabled:opacity-50 disabled:cursor-not-allowed text-left flex items-center justify-between"
+                      onClick={() => !isLoading && setIsTenantDropdownOpen(!isTenantDropdownOpen)}
+                      className="w-full flex items-center justify-between border-2 border-gray-100 rounded-xl bg-gray-50/50 px-4 py-4 text-left outline-none hover:border-gray-200 transition-all"
                     >
-                      <span className={`truncate ${!selectedTenantId ? 'text-gray-400' : 'text-[#0A1931]'}`}>
-                        {isFetchingTenants ? 'Loading tenants...' : selectedTenantDisplay}
-                      </span>
-                      <ChevronDown className={`w-4 h-4 text-[#4A7FA7] transition-transform ${isTenantDropdownOpen ? 'rotate-180' : ''}`} />
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <Building2 size={18} className="text-gray-400 shrink-0" />
+                        <span className="truncate font-medium text-black">
+                          {isFetchingTenants ? "Fetching..." : selectedTenantDisplay}
+                        </span>
+                      </div>
+                      <ChevronDown size={18} className={`text-gray-400 transition-transform ${isTenantDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
-                    
-                    {isTenantDropdownOpen && !isFetchingTenants && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-60 overflow-auto">
-                        <button
-                          type="button"
-                          onClick={() => handleTenantChange("")}
-                          className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center justify-between border-b border-gray-100"
-                        >
-                          <span className="text-gray-400">Select a tenant instance</span>
-                          {!selectedTenantId && <Check className="w-4 h-4 text-[#4A7FA7]" />}
-                        </button>
-                        {tenants.map((tenant) => (
-                          <button
-                            key={tenant.id}
-                            type="button"
-                            onClick={() => handleTenantChange(tenant.id.toString())}
-                            className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center justify-between"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-[#0A1931] truncate">{tenant.instanceName}</div>
-                              {tenant.companyName && (
-                                <div className="text-xs text-gray-500 truncate">{tenant.companyName}</div>
-                              )}
-                            </div>
-                            {selectedTenantId === tenant.id.toString() && (
-                              <Check className="w-4 h-4 text-[#4A7FA7] ml-2 flex-shrink-0" />
-                            )}
-                          </button>
-                        ))}
+
+                    {isTenantDropdownOpen && (
+                      <div className="absolute bottom-full mb-2 z-50 w-full bg-white border-2 border-gray-100 rounded-xl shadow-2xl overflow-hidden animate-blur-in">
+                        <div className="max-h-48 overflow-y-auto">
+                          {tenants.map((t) => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => handleTenantChange(t.id.toString())}
+                              className="w-full px-5 py-4 text-left hover:bg-gray-50 transition-colors flex items-center justify-between group"
+                            >
+                              <span className="font-semibold text-sm group-hover:text-black transition-colors">{t.instanceName}</span>
+                              {selectedTenantId === t.id.toString() && <Check size={16} className="text-black" />}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
               )}
-
             </div>
 
-            {/* Forgot Password Link */}
-            <div className="text-right">
+            <div className="pt-2 animate-slide-up" style={{ animationDelay: '0.6s' }}>
               <button
-                type="button"
-                className="text-xs sm:text-sm text-[#4A7FA7] hover:text-[#1A3D63] transition-colors font-medium"
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-black text-white font-bold py-5 rounded-xl flex items-center justify-center gap-3 premium-button group"
               >
-                Forgot password?
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <span className="uppercase tracking-widest text-sm">Log Into OCTOPUS</span>
+                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
               </button>
             </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-[#4A7FA7] hover:bg-[#1A3D63] text-white font-semibold py-3 sm:py-4 px-6 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            >
-              {isLoading ? "Signing in..." : "Log In"}
-            </button>
           </form>
-        </DialogContent>
-      </Dialog>
 
-      {/* Toast Notification */}
-      {toast && (
-        <Toast
-          text={toast.text}
-          state={toast.state}
-          onClose={() => setToast(null)}
-        />
-      )}
+          <div className="mt-12 pt-8 border-t border-gray-50 animate-slide-up" style={{ animationDelay: '0.7s' }}>
+            <p className="text-gray-400 text-xs text-center font-medium">
+              &copy; 2024 Octopus platform. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </div>
 
-      {/* CSS Animations */}
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
+      {/* Right Section - Video (60%) */}
+      <div className="hidden md:block md:w-[60%] bg-[#f5f5f5] relative overflow-hidden animate-blur-in">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src={animationVideo} type="video/mp4" />
+        </video>
+        {/* Subtle overlay for contrast */}
+        <div className="absolute inset-0 bg-black/5" />
 
-        @keyframes slideInScale {
-          from {
-            opacity: 0;
-            transform: translateX(-80px) scale(0.8);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0) scale(1);
-          }
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes fadeInRight {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-5px);
-          }
-        }
-
-        .animate-fade-in-up {
-          animation: fadeInUp 0.6s ease-out;
-        }
-
-        .animate-slide-in-scale {
-          animation: slideInScale 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .animate-fade-in {
-          animation: fadeIn 0.6s ease-out;
-          animation-fill-mode: both;
-        }
-
-        .animate-fade-in-right {
-          animation: fadeInRight 0.5s ease-out;
-        }
-
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-
-        .animate-float:nth-child(2) {
-          animation-delay: 0.5s;
-        }
-
-        .animate-float:nth-child(3) {
-          animation-delay: 1s;
-        }
-      `}</style>
+        {/* Floating Tagline with Glassmorphism */}
+        <div className="absolute bottom-12 right-12 animate-slide-up" style={{ animationDelay: '0.8s' }}>
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-2xl">
+            <p className="text-white font-['Syne'] font-extrabold text-xl leading-tight uppercase tracking-tighter drop-shadow-sm">
+              Optimizing<br />Operations<br />At Scale
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Copy, Check, Database, Layers, Code, Box, Filter } from "lucide-react"
+import { Search, Copy, Check, Database, Layers, Code, Box, Filter, List } from "lucide-react"
 import { useTheme } from "../context/theme"
 import { useAuth } from "../context/auth"
 import { API_CONFIG } from "./config/api"
@@ -45,6 +45,7 @@ export default function FieldsTesterPage() {
 
   // UI State
   const [copyAllSuccess, setCopyAllSuccess] = useState(false)
+  const [copyNamesSuccess, setCopyNamesSuccess] = useState(false)
   const [copyFieldSuccess, setCopyFieldSuccess] = useState(false)
 
   // Fetch Models on Mount
@@ -363,17 +364,30 @@ export default function FieldsTesterPage() {
                   </h2>
                 </div>
                 {selectedModel && (
-                  <button
-                    onClick={() => {
-                      if (meta) {
-                        copyToClipboard(JSON.stringify(meta, null, 2), setCopyAllSuccess)
-                      }
-                    }}
-                    className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-                    title="Copy all fields metadata JSON"
-                  >
-                    {copyAllSuccess ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="opacity-50" />}
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        if (fields.length > 0) {
+                          copyToClipboard(JSON.stringify(fields, null, 2), setCopyNamesSuccess)
+                        }
+                      }}
+                      className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                      title="Copy field names as JSON array"
+                    >
+                      {copyNamesSuccess ? <Check size={16} className="text-green-500" /> : <List size={16} className="opacity-50" />}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (meta) {
+                          copyToClipboard(JSON.stringify(meta, null, 2), setCopyAllSuccess)
+                        }
+                      }}
+                      className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                      title="Copy all fields metadata JSON"
+                    >
+                      {copyAllSuccess ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="opacity-50" />}
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -497,4 +511,3 @@ export default function FieldsTesterPage() {
     </div>
   )
 }
-

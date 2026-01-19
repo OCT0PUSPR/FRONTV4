@@ -62,6 +62,10 @@ const MENU_ITEMS = [
   { url: '/report-templates', pageId: 'report-templates' },
   { url: '/generated-reports', pageId: 'generated-reports' },
   { url: '/report-rules', pageId: 'report-rules' },
+  { url: '/report-headers', pageId: 'report-headers' },
+  { url: '/report-footers', pageId: 'report-footers' },
+  { url: '/report-export', pageId: 'report-export' },
+  { url: '/report-transfer', pageId: 'report-transfer' },
   { url: '/integrations', pageId: 'integrations' },
 ];
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTheme } from '../context/theme';
 import { MOCK_VEHICLES, MOCK_ORDERS_POOL } from './components/FleetManagement/contants';
 import { Vehicle, VehicleStatus, Order, normalizeVehicle, normalizeOrder } from './components/FleetManagement/types';
 import LoadingView from './components/FleetManagement/LoadingView';
@@ -113,6 +114,9 @@ const loadResource = (type: 'script' | 'style', src: string, id: string): Promis
 };
 
 const FleetManagementPage: React.FC = () => {
+  const { mode, colors } = useTheme();
+  const isDarkMode = mode === "dark";
+
   // State
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [ordersPool, setOrdersPool] = useState<Order[]>([]); // Global Inventory
@@ -413,9 +417,9 @@ const FleetManagementPage: React.FC = () => {
 
   if (!resourcesLoaded) {
       return (
-          <div className="flex flex-col items-center justify-center h-screen w-full bg-[#F8FAFC]">
-              <Loader2 className="animate-spin text-indigo-600 mb-4" size={40} />
-              <div className="text-zinc-400 font-medium">Initializing OctopusFleet...</div>
+          <div className="flex flex-col items-center justify-center h-screen w-full" style={{ backgroundColor: colors.background }}>
+              <Loader2 className="animate-spin mb-4" size={40} style={{ color: colors.action }} />
+              <div className="font-medium" style={{ color: colors.textSecondary }}>Initializing OctopusFleet...</div>
               <style>{GLOBAL_STYLES}</style>
           </div>
       );
@@ -424,56 +428,59 @@ const FleetManagementPage: React.FC = () => {
   return (
     <>
       <style>{GLOBAL_STYLES}</style>
-      <div className="flex h-screen w-full bg-[#F8FAFC] text-zinc-900 overflow-hidden font-sans">
-        
+      <div className="flex h-screen w-full overflow-hidden font-sans" style={{ backgroundColor: colors.background, color: colors.textPrimary }}>
+
         {/* Sidebar */}
-        <aside className="w-80 h-full bg-white border-r border-zinc-200 flex flex-col z-30 shadow-xl shadow-zinc-200/50">
+        <aside className="w-80 h-full flex flex-col z-30 shadow-xl" style={{ backgroundColor: colors.card, borderRight: `1px solid ${colors.border}`, boxShadow: isDarkMode ? '0 0 20px rgba(0,0,0,0.5)' : '0 4px 20px rgba(0,0,0,0.08)' }}>
           <div className="p-6 flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 text-white">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: colors.action, boxShadow: '0 4px 12px rgba(79, 172, 254, 0.4)' }}>
                   <LayoutGrid size={20} />
               </div>
               <div>
-                  <h1 className="text-xl font-bold tracking-tight text-zinc-900">Octopus<span className="text-indigo-600">Fleet</span></h1>
-                  <p className="text-xs text-zinc-400 font-medium tracking-wide">LOGISTICS OS v2.0</p>
+                  <h1 className="text-xl font-bold tracking-tight" style={{ color: colors.textPrimary }}>Octopus<span style={{ color: colors.action }}>Fleet</span></h1>
+                  <p className="text-xs font-medium tracking-wide" style={{ color: colors.textSecondary }}>LOGISTICS OS v2.0</p>
               </div>
           </div>
 
           <div className="px-6 mb-4">
               <div className="relative">
-                  <Search className="absolute left-3 top-2.5 text-zinc-400" size={16} />
-                  <input 
-                      type="text" 
-                      placeholder="Search fleet..." 
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  <Search className="absolute left-3 top-2.5" size={16} style={{ color: colors.textSecondary }} />
+                  <input
+                      type="text"
+                      placeholder="Search fleet..."
+                      className="w-full rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 transition-all"
+                      style={{ backgroundColor: colors.mutedBg, borderColor: colors.border, color: colors.textPrimary }}
                   />
               </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-1 custom-scrollbar">
-              <div className="px-2 mb-2 flex justify-between items-center text-xs font-bold text-zinc-400 uppercase tracking-wider">
+              <div className="px-2 mb-2 flex justify-between items-center text-xs font-bold uppercase tracking-wider" style={{ color: colors.textSecondary }}>
                   <span>Active Fleet</span>
-                  <span>{vehicles.length}</span>
+                  <span style={{ color: colors.textPrimary }}>{vehicles.length}</span>
               </div>
               {vehicles.map(vehicle => (
-                  <VehicleCard 
-                      key={String(vehicle.id)} 
-                      vehicle={vehicle} 
+                  <VehicleCard
+                      key={String(vehicle.id)}
+                      vehicle={vehicle}
                       isSelected={String(vehicle.id) === String(selectedVehicleId)}
                       onClick={() => setSelectedVehicleId(vehicle.id)}
                   />
               ))}
           </div>
-          
-          <div className="p-4 border-t border-zinc-100 bg-zinc-50/50 space-y-2">
-              <button 
+
+          <div className="p-4 border-t space-y-2" style={{ borderTop: `1px solid ${colors.border}`, backgroundColor: colors.mutedBg }}>
+              <button
                   onClick={() => setIsModalOpen(true)}
-                  className="w-full py-3 rounded-xl border border-dashed border-zinc-300 text-zinc-500 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 transition-all flex items-center justify-center gap-2 text-sm font-bold"
+                  className="w-full py-3 rounded-xl border border-dashed transition-all flex items-center justify-center gap-2 text-sm font-bold"
+                  style={{ borderColor: colors.border, color: colors.textSecondary }}
               >
                   <Plus size={16} /> Register New Vehicle
               </button>
-              <button 
+              <button
                   onClick={() => setIsOrderModalOpen(true)}
-                  className="w-full py-3 rounded-xl border border-dashed border-emerald-300 text-emerald-600 hover:text-emerald-700 hover:border-emerald-400 hover:bg-emerald-50 transition-all flex items-center justify-center gap-2 text-sm font-bold"
+                  className="w-full py-3 rounded-xl border border-dashed transition-all flex items-center justify-center gap-2 text-sm font-bold"
+                  style={{ borderColor: colors.success, color: colors.success }}
               >
                   <Plus size={16} /> Create New Order
               </button>
@@ -482,35 +489,6 @@ const FleetManagementPage: React.FC = () => {
 
         {/* Main Content Area */}
         <main className="flex-1 h-full relative overflow-hidden flex flex-col">
-          {/* Top Navigation */}
-          <header className="h-16 bg-white border-b border-zinc-200 flex items-center justify-between px-8 z-20">
-              <div className="flex items-center gap-2 text-sm text-zinc-500">
-                  <span className="hover:text-zinc-900 cursor-pointer">Logistics</span>
-                  <span>/</span>
-                  <span className="hover:text-zinc-900 cursor-pointer">Fleet Management</span>
-                  <span>/</span>
-                  <span className="font-bold text-indigo-600">{selectedVehicle.id}</span>
-              </div>
-              <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 text-xs font-medium text-zinc-500 cursor-pointer">
-                      <input 
-                          type="checkbox" 
-                          checked={useMockData} 
-                          onChange={(e) => setUseMockData(e.target.checked)}
-                          className="rounded border-zinc-300"
-                      />
-                      Demo Mode
-                  </label>
-                  <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 text-zinc-500 transition-colors">
-                      <Bell size={18} />
-                  </button>
-                  <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 text-zinc-500 transition-colors">
-                      <Settings size={18} />
-                  </button>
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 border-2 border-white shadow-md"></div>
-              </div>
-          </header>
-
           {/* View Content */}
           <div className="flex-1 overflow-hidden relative">
               {isLoading ? (
@@ -537,61 +515,62 @@ const FleetManagementPage: React.FC = () => {
         {/* Add Vehicle Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-enter">
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 transform transition-all max-h-[90vh] overflow-y-auto">
+              <div className="rounded-2xl shadow-2xl w-full max-w-md p-8 transform transition-all max-h-[90vh] overflow-y-auto" style={{ backgroundColor: colors.card }}>
                   <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-2xl font-bold text-zinc-900">Add Vehicle</h2>
-                      <button onClick={() => { setIsModalOpen(false); setImagePreview(''); setImageBase64(''); }} className="text-zinc-400 hover:text-zinc-900">
+                      <h2 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>Add Vehicle</h2>
+                      <button onClick={() => { setIsModalOpen(false); setImagePreview(''); setImageBase64(''); }} style={{ color: colors.textSecondary }}>
                           <X size={24} />
                       </button>
                   </div>
-                  
+
                   <form onSubmit={handleAddVehicle} className="space-y-4">
                       <div>
-                          <label className="block text-sm font-medium text-zinc-700 mb-1">Vehicle Name</label>
-                          <input name="name" required placeholder="e.g. Red Hauler" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                          <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Vehicle Name</label>
+                          <input name="name" required placeholder="e.g. Red Hauler" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                       </div>
                       <div>
-                          <label className="block text-sm font-medium text-zinc-700 mb-1">Model</label>
-                          <input name="model" required placeholder="e.g. Ford F-150" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                          <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Model</label>
+                          <input name="model" required placeholder="e.g. Ford F-150" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                           <div>
-                              <label className="block text-sm font-medium text-zinc-700 mb-1">Plate Number</label>
-                              <input name="plate" required placeholder="XYZ-123" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                              <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Plate Number</label>
+                              <input name="plate" required placeholder="XYZ-123" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                           </div>
                           <div>
-                              <label className="block text-sm font-medium text-zinc-700 mb-1">Capacity (kg)</label>
-                              <input name="capacity" type="number" required placeholder="3500" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                              <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Capacity (kg)</label>
+                              <input name="capacity" type="number" required placeholder="3500" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                           </div>
                       </div>
-                      
+
                       {/* Image Upload */}
                       <div>
-                          <label className="block text-sm font-medium text-zinc-700 mb-1">Vehicle Image</label>
+                          <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Vehicle Image</label>
                           <div className="flex items-center gap-4">
-                              <input 
+                              <input
                                   ref={fileInputRef}
-                                  type="file" 
-                                  accept="image/*" 
+                                  type="file"
+                                  accept="image/*"
                                   onChange={handleImageChange}
-                                  className="hidden" 
+                                  className="hidden"
                               />
-                              <button 
+                              <button
                                   type="button"
                                   onClick={() => fileInputRef.current?.click()}
-                                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-50 text-sm text-zinc-600"
+                                  className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm transition-colors"
+                                  style={{ borderColor: colors.border, color: colors.textSecondary }}
                               >
                                   <Upload size={16} /> Upload Image
                               </button>
                               {imagePreview && (
-                                  <div className="w-16 h-16 rounded-lg overflow-hidden border border-zinc-200">
+                                  <div className="w-16 h-16 rounded-lg overflow-hidden border" style={{ borderColor: colors.border }}>
                                       <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                                   </div>
                               )}
                           </div>
                       </div>
-                      
-                      <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl mt-4 hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
+
+                      <button type="submit" className="w-full font-bold py-3 rounded-xl mt-4 transition-colors shadow-lg text-white" style={{ background: colors.action, boxShadow: '0 4px 12px rgba(79, 172, 254, 0.4)' }}>
                           Add to Fleet
                       </button>
                   </form>
@@ -602,40 +581,40 @@ const FleetManagementPage: React.FC = () => {
         {/* Add Order Modal */}
         {isOrderModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-enter">
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 transform transition-all max-h-[90vh] overflow-y-auto">
+              <div className="rounded-2xl shadow-2xl w-full max-w-lg p-8 transform transition-all max-h-[90vh] overflow-y-auto" style={{ backgroundColor: colors.card }}>
                   <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-2xl font-bold text-zinc-900">Create Order</h2>
-                      <button onClick={() => setIsOrderModalOpen(false)} className="text-zinc-400 hover:text-zinc-900">
+                      <h2 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>Create Order</h2>
+                      <button onClick={() => setIsOrderModalOpen(false)} style={{ color: colors.textSecondary }}>
                           <X size={24} />
                       </button>
                   </div>
-                  
+
                   <form onSubmit={handleAddOrder} className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                           <div>
-                              <label className="block text-sm font-medium text-zinc-700 mb-1">Source</label>
-                              <input name="source" required placeholder="Central Warehouse" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none" />
+                              <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Source</label>
+                              <input name="source" required placeholder="Central Warehouse" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                           </div>
                           <div>
-                              <label className="block text-sm font-medium text-zinc-700 mb-1">Destination</label>
-                              <input name="destination" required placeholder="Sector 7 Retail" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                              <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Destination</label>
+                              <input name="destination" required placeholder="Sector 7 Retail" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                           </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                           <div>
-                              <label className="block text-sm font-medium text-zinc-700 mb-1">Latitude</label>
-                              <input name="latitude" type="number" step="any" placeholder="34.0522" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                              <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Latitude</label>
+                              <input name="latitude" type="number" step="any" placeholder="34.0522" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                           </div>
                           <div>
-                              <label className="block text-sm font-medium text-zinc-700 mb-1">Longitude</label>
-                              <input name="longitude" type="number" step="any" placeholder="-118.2437" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                              <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Longitude</label>
+                              <input name="longitude" type="number" step="any" placeholder="-118.2437" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                           </div>
                       </div>
 
                       <div>
-                          <label className="block text-sm font-medium text-zinc-700 mb-1">Priority</label>
-                          <select name="priority" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+                          <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Priority</label>
+                          <select name="priority" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }}>
                               <option value="LOW">Low</option>
                               <option value="NORMAL" selected>Normal</option>
                               <option value="HIGH">High</option>
@@ -643,54 +622,54 @@ const FleetManagementPage: React.FC = () => {
                           </select>
                       </div>
 
-                      <div className="border-t border-zinc-200 pt-4 mt-4">
-                          <h3 className="text-sm font-bold text-zinc-700 mb-3">Customer Info</h3>
+                      <div className="border-t pt-4 mt-4" style={{ borderTop: `1px solid ${colors.border}` }}>
+                          <h3 className="text-sm font-bold mb-3" style={{ color: colors.textPrimary }}>Customer Info</h3>
                           <div className="grid grid-cols-2 gap-4">
                               <div>
-                                  <label className="block text-sm font-medium text-zinc-700 mb-1">Name</label>
-                                  <input name="customer_name" placeholder="John Doe" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                  <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Name</label>
+                                  <input name="customer_name" placeholder="John Doe" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                               </div>
                               <div>
-                                  <label className="block text-sm font-medium text-zinc-700 mb-1">Phone</label>
-                                  <input name="customer_phone" placeholder="+1-555-0123" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                  <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Phone</label>
+                                  <input name="customer_phone" placeholder="+1-555-0123" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                               </div>
                           </div>
                           <div className="mt-4">
-                              <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
-                              <input name="customer_email" type="email" placeholder="customer@example.com" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                              <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Email</label>
+                              <input name="customer_email" type="email" placeholder="customer@example.com" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                           </div>
                       </div>
 
-                      <div className="border-t border-zinc-200 pt-4 mt-4">
-                          <h3 className="text-sm font-bold text-zinc-700 mb-3">Item Details</h3>
+                      <div className="border-t pt-4 mt-4" style={{ borderTop: `1px solid ${colors.border}` }}>
+                          <h3 className="text-sm font-bold mb-3" style={{ color: colors.textPrimary }}>Item Details</h3>
                           <div className="grid grid-cols-2 gap-4">
                               <div>
-                                  <label className="block text-sm font-medium text-zinc-700 mb-1">Item Name</label>
-                                  <input name="item_name" placeholder="Office Chair" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                  <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Item Name</label>
+                                  <input name="item_name" placeholder="Office Chair" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                               </div>
                               <div>
-                                  <label className="block text-sm font-medium text-zinc-700 mb-1">Size</label>
-                                  <input name="item_size" placeholder="Medium" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                  <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Size</label>
+                                  <input name="item_size" placeholder="Medium" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                               </div>
                           </div>
                           <div className="grid grid-cols-2 gap-4 mt-4">
                               <div>
-                                  <label className="block text-sm font-medium text-zinc-700 mb-1">Weight (kg)</label>
-                                  <input name="item_weight" type="number" step="0.1" placeholder="5.5" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                  <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Weight (kg)</label>
+                                  <input name="item_weight" type="number" step="0.1" placeholder="5.5" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                               </div>
                               <div>
-                                  <label className="block text-sm font-medium text-zinc-700 mb-1">Quantity</label>
-                                  <input name="item_quantity" type="number" placeholder="10" className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-emerald-500 outline-none" />
+                                  <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Quantity</label>
+                                  <input name="item_quantity" type="number" placeholder="10" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                               </div>
                           </div>
                       </div>
 
                       <div>
-                          <label className="block text-sm font-medium text-zinc-700 mb-1">Delivery Instructions</label>
-                          <textarea name="delivery_instructions" rows={2} placeholder="Special handling notes..." className="w-full px-4 py-2 rounded-lg border border-zinc-300 focus:ring-2 focus:ring-emerald-500 outline-none resize-none" />
+                          <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Delivery Instructions</label>
+                          <textarea name="delivery_instructions" rows={2} placeholder="Special handling notes..." className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 resize-none" style={{ borderColor: colors.border, color: colors.textPrimary }} />
                       </div>
-                      
-                      <button type="submit" className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl mt-4 hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200">
+
+                      <button type="submit" className="w-full font-bold py-3 rounded-xl mt-4 transition-colors shadow-lg text-white" style={{ background: colors.success, boxShadow: '0 4px 12px rgba(201, 245, 197, 0.5)' }}>
                           Create Order
                       </button>
                   </form>
