@@ -122,9 +122,26 @@ export default function GeneratedReportsPage() {
   }
 
   const handleView = async (report: GeneratedReport) => {
-    // Open in new tab
-    const url = `${API_CONFIG.BACKEND_BASE_URL}/reports/generated/${report.id}/view`
-    window.open(url, '_blank')
+    try {
+      // Fetch PDF with proper auth headers
+      const response = await fetch(
+        `${API_CONFIG.BACKEND_BASE_URL}/reports/generated/${report.id}/download`,
+        { headers: getHeaders() }
+      )
+
+      if (!response.ok) throw new Error('Failed to load PDF')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+
+      // Open PDF in new tab
+      window.open(url, '_blank')
+
+      // Clean up after a delay
+      setTimeout(() => window.URL.revokeObjectURL(url), 60000)
+    } catch {
+      showToast("Failed to view report", "error")
+    }
   }
 
   const handleDelete = async (id: number) => {

@@ -58,12 +58,7 @@ export const ROUTE_TO_PAGE_ID: Record<string, string> = {
   // Reports pages
   '/report-templates': 'report-templates',
   '/report-template-editor': 'report-template-editor',
-  '/report-headers': 'report-headers',
-  '/report-footers': 'report-footers',
-  '/report-export': 'report-export',
-  '/report-transfer': 'report-transfer',
   '/generated-reports': 'generated-reports',
-  '/report-rules': 'report-rules',
   // Integrations
   '/integrations': 'integrations',
   // Email

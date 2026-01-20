@@ -22,12 +22,21 @@ import {
   ShoppingCart,
   Package,
   Factory,
-  FileEdit
+  FileEdit,
+  Warehouse,
+  ClipboardList,
+  ArrowRightLeft,
+  BarChart3,
+  FileSpreadsheet,
+  ListChecks,
+  PackageSearch
 } from "lucide-react"
 import Toast from "../components/Toast"
 import { useNavigate } from "react-router-dom"
 import { useCasl } from "../../context/casl"
 import { ActionDropdown } from "../components/ActionDropdown"
+import { CustomReportsService, CustomReportConfig } from "../services/customReports.service"
+import ReportGenerateModal from "../components/reports/ReportGenerateModal"
 
 // Types
 interface ReportTemplate {
@@ -69,6 +78,32 @@ const reportTypeIcons: Record<string, any> = {
   custom: FileEdit
 }
 
+// Custom warehouse report icons
+const customReportIcons: Record<string, any> = {
+  delivery_note: Truck,
+  goods_receipt_note: Receipt,
+  stock_internal_transfer: ArrowRightLeft,
+  pick_list: ClipboardList,
+  stock_card: PackageSearch,
+  physical_count_sheet: ListChecks,
+  stock_summary: BarChart3,
+  stock_adjustments: FileSpreadsheet,
+  transfers_list: ArrowRightLeft
+}
+
+// Custom report icon colors (matching template card style)
+const customReportColors: Record<string, string> = {
+  delivery_note: "#2563eb",
+  goods_receipt_note: "#16a34a",
+  stock_internal_transfer: "#7c3aed",
+  pick_list: "#ea580c",
+  stock_card: "#0891b2",
+  physical_count_sheet: "#7c3aed",
+  stock_summary: "#0d9488",
+  stock_adjustments: "#dc2626",
+  transfers_list: "#2563eb"
+}
+
 // Nav tabs removed as per request
 
 export default function ReportTemplatesPage() {
@@ -86,9 +121,16 @@ export default function ReportTemplatesPage() {
   const [selectedType, setSelectedType] = useState<string>("all")
   const [toast, setToast] = useState<{ text: string; state: "success" | "error" } | null>(null)
 
+  // Custom Reports State
+  const [customReports, setCustomReports] = useState<CustomReportConfig[]>([])
+  const [customReportsLoading, setCustomReportsLoading] = useState(true)
+  const [selectedCustomReport, setSelectedCustomReport] = useState<CustomReportConfig | null>(null)
+  const [reportModalOpen, setReportModalOpen] = useState(false)
+
   useEffect(() => {
     loadTemplates()
     loadCategories()
+    loadCustomReports()
   }, [])
 
   const getHeaders = () => getTenantHeaders()
@@ -114,6 +156,28 @@ export default function ReportTemplatesPage() {
     } catch {
       console.error("Failed to load categories")
     }
+  }
+
+  const loadCustomReports = async () => {
+    setCustomReportsLoading(true)
+    try {
+      const reports = await CustomReportsService.listReports()
+      setCustomReports(reports)
+    } catch {
+      console.error("Failed to load custom reports")
+    } finally {
+      setCustomReportsLoading(false)
+    }
+  }
+
+  const handleOpenReportModal = (report: CustomReportConfig) => {
+    setSelectedCustomReport(report)
+    setReportModalOpen(true)
+  }
+
+  const handleCloseReportModal = () => {
+    setReportModalOpen(false)
+    setSelectedCustomReport(null)
   }
 
   const handleDeleteTemplate = async (id: number) => {
@@ -281,175 +345,105 @@ export default function ReportTemplatesPage() {
           </select>
         </div>
 
-        {/* Templates Grid */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" 
-              style={{ borderColor: colors.action, borderTopColor: 'transparent' }} />
+        {/* Warehouse Reports Section */}
+        <div className="mb-10 animate-enter" style={{ animationDelay: '150ms' }}>
+          <div className="flex items-center gap-3 mb-6">
+            <Warehouse className="w-6 h-6" style={{ color: colors.action }} />
+            <div>
+              <h2 className="text-xl font-bold tracking-tight">{t("Warehouse Reports")}</h2>
+              <p className="text-sm" style={{ color: colors.textSecondary }}>
+                {t("Generate warehouse documents and reports")}
+              </p>
+            </div>
           </div>
-        ) : filteredTemplates.length === 0 ? (
-          <div className="text-center py-20" style={{ color: colors.textSecondary }}>
-            <FileText className="w-16 h-16 mx-auto mb-4 opacity-30" />
-            <p className="text-lg">{t("No templates found")}</p>
-            <p className="text-sm mt-2">{t("Create your first template to get started")}</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
-            {filteredTemplates.map((template, index) => {
-              const TypeIcon = getReportTypeIcon(template.report_type)
-              
-              // Determine gradient based on type or status
-              const gradient = template.is_active 
-                ? "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" // Active blue
-                : "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" // Inactive red/pink
-              
-              return (
-                <div
-                  key={template.id}
-                  className="group relative w-full rounded-[24px] p-[2px] transition-all duration-300 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1"
-                  style={{ 
-                    animationDelay: `${index * 50}ms`,
-                    backgroundColor: colors.card
-                  }}
-                >
-                   {/* Gradient Border Effect */}
+
+          {customReportsLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin"
+                style={{ borderColor: colors.action, borderTopColor: 'transparent' }} />
+            </div>
+          ) : customReports.length === 0 ? (
+            <div className="text-center py-10 rounded-2xl" style={{ backgroundColor: colors.card, border: `1px solid ${colors.border}` }}>
+              <Warehouse className="w-12 h-12 mx-auto mb-3 opacity-30" style={{ color: colors.textSecondary }} />
+              <p className="text-sm" style={{ color: colors.textSecondary }}>{t("No warehouse reports available")}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+              {customReports.map((report, index) => {
+                const ReportIcon = customReportIcons[report.report_key] || FileText
+                const iconColor = customReportColors[report.report_key] || colors.action
+
+                return (
                   <div
-                    className="absolute inset-0 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                    style={{ background: gradient }}
-                  />
-
-                  <div 
-                    className="relative h-full rounded-[22px] overflow-hidden group-hover:border-transparent transition-colors p-6 flex flex-col"
-                    style={{ 
-                      backgroundColor: colors.card,
-                      border: `1px solid ${colors.border}`,
-                      cursor: canEditPage('report-templates') ? 'pointer' : 'default'
-                    }}
-                    onClick={() => {
-                      if (canEditPage('report-templates')) {
-                        navigate(`/report-template-editor/${template.id}`)
-                      }
-                    }}
+                    key={report.id}
+                    onClick={() => handleOpenReportModal(report)}
+                    className="group relative w-full rounded-[24px] p-[2px] transition-all duration-300 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1 cursor-pointer"
+                    style={{ backgroundColor: colors.card }}
                   >
-                    {/* Header - Icon and Name side by side */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div 
-                          className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0"
-                          style={{ background: gradient }}
+                    {/* Gradient Border Effect on Hover */}
+                    <div
+                      className="absolute inset-0 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                      style={{ background: `linear-gradient(135deg, ${iconColor} 0%, ${iconColor}99 100%)` }}
+                    />
+
+                    <div
+                      className="relative h-full rounded-[22px] overflow-hidden group-hover:border-transparent transition-colors p-5 flex flex-col"
+                      style={{
+                        backgroundColor: colors.card,
+                        border: `1px solid ${colors.border}`
+                      }}
+                    >
+                      {/* Header - Icon and Name */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: `${iconColor}15` }}
                         >
-                          <TypeIcon className="w-5 h-5 text-white" />
+                          <ReportIcon className="w-5 h-5" style={{ color: iconColor }} />
                         </div>
-                        <h3 
-                          className="text-base font-bold tracking-tight truncate transition-all"
-                          style={{ color: colors.textPrimary }}
-                        >
-                          {template.template_name}
-                        </h3>
+                        <h4 className="text-sm font-bold tracking-tight truncate" style={{ color: colors.textPrimary }}>
+                          {report.report_name}
+                        </h4>
                       </div>
 
-                      {/* Actions Dropdown */}
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <ActionDropdown
-                          actions={[
-                            {
-                              key: 'edit',
-                              label: t("Edit"),
-                              icon: Edit,
-                              onClick: () => navigate(`/report-template-editor/${template.id}`)
-                            },
-                            {
-                              key: 'clone',
-                              label: t("Clone"),
-                              icon: Copy,
-                              onClick: () => handleCloneTemplate(template.id, template.template_name)
-                            },
-                            ...(!template.is_system_template && canDeletePage('report-templates') ? [{
-                              key: 'delete',
-                              label: t("Delete"),
-                              icon: Trash2,
-                              onClick: () => handleDeleteTemplate(template.id),
-                              danger: true
-                            }] : [])
-                          ]}
-                          icon={MoreVertical}
-                          iconOnly={true}
-                          align="right"
-                          placement="bottom"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex-1 mb-4">
-                      {template.description && (
-                        <p className="text-sm line-clamp-2" style={{ color: colors.textSecondary }}>
-                          {template.description}
+                      {/* Description */}
+                      {report.description && (
+                        <p className="text-xs line-clamp-2 mb-3 flex-1" style={{ color: colors.textSecondary }}>
+                          {report.description}
                         </p>
                       )}
-                    </div>
 
-                    {/* Meta Info Tags */}
-                    <div className="flex flex-wrap gap-2 mb-6">
-                      <span 
-                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-opacity-10"
-                        style={{ backgroundColor: colors.mutedBg, color: colors.textSecondary }}
-                      >
-                        {template.source_model}
-                      </span>
-                      {template.category_name && (
-                        <span 
-                          className="px-2.5 py-1 rounded-lg text-xs font-medium"
-                          style={{ backgroundColor: colors.mutedBg, color: colors.textSecondary }}
+                      {/* Tags */}
+                      <div className="flex items-center gap-2 mt-auto">
+                        <span
+                          className="px-2.5 py-1 rounded-lg text-[10px] font-medium"
+                          style={{
+                            backgroundColor: colors.mutedBg,
+                            color: colors.textSecondary
+                          }}
                         >
-                          {template.category_name}
+                          {report.report_category === 'single_record' ? 'Single Record' : 'List Report'}
                         </span>
-                      )}
-                      {template.is_system_template && (
-                        <span 
-                          className="px-2.5 py-1 rounded-lg text-xs font-medium"
-                          style={{ backgroundColor: `${colors.pillInfoText}15`, color: colors.pillInfoText }}
-                        >
-                          System
-                        </span>
-                      )}
-                      {template.is_default && (
-                        <span 
-                          className="px-2.5 py-1 rounded-lg text-xs font-medium bg-green-500/15 text-green-500"
-                        >
-                          Default
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Footer */}
-                    <div className="flex items-center justify-between pt-4 border-t mt-auto" style={{ borderColor: colors.border }}>
-                      <div className="flex items-center gap-2">
-                        {template.is_active ? (
-                          <div className="flex items-center gap-1.5 text-green-500">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span className="text-xs font-bold">{t("Active")}</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 text-red-500">
-                            <XCircle className="w-4 h-4" />
-                            <span className="text-xs font-bold">{t("Inactive")}</span>
-                          </div>
-                        )}
                       </div>
-                      <span className="text-xs font-medium px-2 py-1 rounded-md" style={{ backgroundColor: colors.mutedBg, color: colors.textSecondary }}>
-                        v{template.version}
-                      </span>
                     </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+                )
+              })}
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* Toast */}
       {toast && <Toast text={toast.text} state={toast.state} onClose={() => setToast(null)} />}
+
+      {/* Report Generate Modal */}
+      <ReportGenerateModal
+        open={reportModalOpen}
+        onClose={handleCloseReportModal}
+        report={selectedCustomReport}
+      />
     </div>
   )
 }
