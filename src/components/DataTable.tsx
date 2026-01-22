@@ -8,6 +8,30 @@ import { ActionDropdown } from "./ActionDropdown"
 import { ColumnsSelector } from "./ColumnsSelector"
 import { LucideIcon, ArrowUpDown, Ellipsis, Download, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
 
+// Helper to extract the primary (darker) color from gradient string
+function extractPrimaryColor(gradient: string): string {
+  const matches = gradient.match(/#[a-fA-F0-9]{6}/g)
+  if (matches && matches.length >= 1) {
+    return matches[0]
+  }
+  return "#e91e63"
+}
+
+// Component to render icon with solid color
+function ColoredIcon({ icon: Icon, gradient, size }: { icon: LucideIcon; gradient: string; size: number }) {
+  const color = extractPrimaryColor(gradient)
+
+  return (
+    <Icon
+      size={size}
+      strokeWidth={2.5}
+      style={{
+        color: color,
+      }}
+    />
+  )
+}
+
 export interface ColumnDef<T> {
   id?: string
   accessorKey?: keyof T | string
@@ -211,14 +235,14 @@ export function DataTable<T extends { id: string | number }>({
               width: "40px",
               height: "40px",
               borderRadius: "0.75rem",
-              background: rowIcon.gradient,
+              background: colors.card,
+              border: `1px solid ${colors.border}`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#FFFFFF",
             }}
           >
-            <IconComponent size={20} />
+            <ColoredIcon icon={IconComponent} gradient={rowIcon.gradient} size={20} />
           </div>
         </div>
       )

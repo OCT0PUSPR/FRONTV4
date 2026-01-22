@@ -34,6 +34,7 @@ export const ROUTE_TO_PAGE_ID: Record<string, string> = {
   '/rules': 'rules',
   '/storage': 'storage',
   '/putaway': 'putaway',
+  '/warehouse-navigator': 'warehouse-navigator',
   '/uom-categories': 'uom-categories',
   '/delivery-methods': 'delivery-methods',
   '/package-types': 'package-types',

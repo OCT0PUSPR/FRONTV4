@@ -1,13 +1,9 @@
 "use client"
 
-import { Search, LayoutGrid, List } from "lucide-react"
-import { Input } from "../../@/components/ui/input"
-import { EnhancedSelect, SelectOption } from "../../@/components/ui/select"
-import { Card, CardContent } from "../../@/components/ui/card"
+import { Search, LayoutGrid, List, ChevronDown } from "lucide-react"
 import { useTheme } from "../../context/theme"
 import { useTranslation } from "react-i18next"
-import { RangeDatePicker } from "./RangeDatePicker"
-import { RangeSlider } from "./RangeSlider"
+import { SimpleDateRangePicker } from "./SimpleDateRangePicker"
 
 interface TransferFiltersBarProps {
   searchQuery: string
@@ -96,198 +92,320 @@ export function TransferFiltersBar({
   const { t, i18n } = useTranslation()
   const isRTL = i18n?.dir() === "rtl"
 
-  const statusOptionObjects: SelectOption[] = statusOptions.map((status) => ({
-    value: status,
-    label: statusLabelMap?.[status] || t(status.charAt(0).toUpperCase() + status.slice(1)),
-  }))
+  const hasActiveFilters = statusFilter.length > 0 || toFilter.length > 0 || fromFilter.length > 0 ||
+    (dateRange && (dateRange[0] || dateRange[1])) || searchQuery || rulesCountFilter.length > 0 ||
+    (rangeSliderValue && (rangeSliderValue[0] !== null || rangeSliderValue[1] !== null))
 
-  const toOptionObjects: SelectOption[] = toOptions.map((destination) => ({
-    value: destination,
-    label: toLabelMap?.[destination] || destination,
-  }))
+  const clearFilters = () => {
+    onSearchChange("")
+    onStatusChange([])
+    onToChange([])
+    onFromChange([])
+    if (onDateRangeChange) onDateRangeChange(null)
+    if (onRulesCountChange) onRulesCountChange([])
+    if (onRangeSliderChange) onRangeSliderChange(null)
+  }
 
-  const fromOptionObjects: SelectOption[] = fromOptions.map((source) => ({
-    value: source,
-    label: fromLabelMap?.[source] || source,
-  }))
-
-  const rulesCountOptionObjects: SelectOption[] = rulesCountOptions.map((option) => ({
-    value: option,
-    label: rulesCountLabelMap?.[option] || option,
-  }))
+  const selectStyle: React.CSSProperties = {
+    appearance: "none" as const,
+    padding: "0.5rem 2rem 0.5rem 0.75rem",
+    borderRadius: "0.75rem",
+    fontSize: "0.875rem",
+    fontWeight: 500,
+    backgroundColor: colors.card,
+    border: `1px solid ${colors.border}`,
+    color: colors.textPrimary,
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    minWidth: "120px",
+  }
 
   return (
-    <Card
+    <div
       style={{
-        marginBottom: "2rem",
-        border: "none",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-        background: colors.card,
-        borderRadius: "1rem",
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        gap: "0.75rem",
+        marginBottom: "1.5rem",
       }}
     >
-      <CardContent style={{ padding: isMobile ? "1rem" : "1.5rem" }}>
-        <div
+      {/* Search Input */}
+      <div style={{ position: "relative", flex: "1 1 180px", minWidth: "180px", maxWidth: isMobile ? "100%" : "280px" }}>
+        <Search
+          size={16}
           style={{
-            display: "flex",
-            flexDirection: isMobile ? "column" : "row",
-            gap: isMobile ? "0.75rem" : "1rem",
-            alignItems: isMobile ? "stretch" : "center",
-            flexWrap: "wrap",
+            position: "absolute",
+            [isRTL ? 'right' : 'left']: "0.75rem",
+            top: "50%",
+            transform: "translateY(-50%)",
+            color: colors.textSecondary
           }}
-        >
-          <div
-            style={{
-              position: "relative",
-              flex: "1 1 300px",
-              minWidth: "0",
-              width: isMobile ? "100%" : "auto",
-            }}
+        />
+        <input
+          type="text"
+          placeholder={searchPlaceholder}
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          style={{
+            width: "100%",
+            [isRTL ? 'paddingRight' : 'paddingLeft']: "2.25rem",
+            [isRTL ? 'paddingLeft' : 'paddingRight']: "0.75rem",
+            paddingTop: "0.5rem",
+            paddingBottom: "0.5rem",
+            borderRadius: "0.75rem",
+            fontSize: "0.875rem",
+            backgroundColor: colors.card,
+            border: `1px solid ${colors.border}`,
+            color: colors.textPrimary,
+            transition: "all 0.2s ease",
+            outline: "none",
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = colors.action
+            e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.action}20`
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = colors.border
+            e.currentTarget.style.boxShadow = "none"
+          }}
+        />
+      </div>
+
+      {/* Status Filter */}
+      {statusOptions.length > 0 && (
+        <div style={{ position: "relative" }}>
+          <select
+            value={statusFilter[0] || ""}
+            onChange={(e) => onStatusChange(e.target.value ? [e.target.value] : [])}
+            style={selectStyle}
           >
-            <Search
-              size={20}
-              style={{
-                position: "absolute",
-                [isRTL ? 'right' : 'left']: "1rem",
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: colors.textSecondary,
-              }}
-            />
-            <Input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = "#4facfe"
-                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(79, 172, 254, 0.15)"
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = colors.border
-                e.currentTarget.style.boxShadow = "none"
-              }}
-              style={{
-                [isRTL ? 'paddingRight' : 'paddingLeft']: "3rem",
-                [isRTL ? 'paddingLeft' : 'paddingRight']: "12px",
-                border: `2px solid ${colors.border}`,
-                borderRadius: "8px",
-                fontSize: isMobile ? "0.875rem" : "0.875rem",
-                background: colors.card,
-                color: colors.textPrimary,
-                height: "44px",
-                paddingTop: "8px",
-                paddingBottom: "8px",
-                transition: "all 0.2s ease",
-                width: "100%",
-                textAlign: isRTL ? "right" : "left",
-              }}
-            />
-          </div>
-
-          <div style={{ width: isMobile ? "100%" : "180px" }}>
-            <EnhancedSelect
-              mode="multiple"
-              options={statusOptionObjects}
-              placeholder={statusPlaceholder || t("Status")}
-              value={statusFilter}
-              onChange={onStatusChange}
-            />
-          </div>
-
-          {toOptions.length > 0 && (
-            <div style={{ width: isMobile ? "100%" : "180px" }}>
-              <EnhancedSelect
-                mode="multiple"
-                options={toOptionObjects}
-                placeholder={toPlaceholder || t("To")}
-                value={toFilter}
-                onChange={onToChange}
-              />
-            </div>
-          )}
-
-          {fromOptions.length > 0 && (
-            <div style={{ width: isMobile ? "100%" : "180px" }}>
-              <EnhancedSelect
-                mode="multiple"
-                options={fromOptionObjects}
-                placeholder={fromPlaceholder || t("From")}
-                value={fromFilter}
-                onChange={onFromChange}
-              />
-            </div>
-          )}
-
-          {showDateRange && onDateRangeChange && (
-            <div style={{ width: isMobile ? "100%" : "280px" }}>
-              <RangeDatePicker
-                value={dateRange || null}
-                onChange={onDateRangeChange}
-                placeholder={[t("Start date"), t("End date")]}
-              />
-            </div>
-          )}
-
-          {showRangeSlider && onRangeSliderChange && (
-            <div style={{ width: isMobile ? "100%" : "200px" }}>
-              <RangeSlider
-                value={rangeSliderValue || null}
-                onChange={onRangeSliderChange}
-                min={rangeSliderMin}
-                max={rangeSliderMax}
-                step={rangeSliderStep}
-                label={rangeSliderLabel}
-                placeholder={rangeSliderPlaceholder}
-              />
-            </div>
-          )}
-
-          {showRulesCountFilter && onRulesCountChange && rulesCountOptions.length > 0 && (
-            <div style={{ width: isMobile ? "100%" : "180px" }}>
-              <EnhancedSelect
-                mode="multiple"
-                options={rulesCountOptionObjects}
-                placeholder={rulesCountPlaceholder || t("Rules Count")}
-                value={rulesCountFilter}
-                onChange={onRulesCountChange}
-              />
-            </div>
-          )}
-
-          {showViewToggle && onViewModeChange && (
-            <button
-              onClick={() => onViewModeChange(viewMode === "cards" ? "table" : "cards")}
-              style={{
-                padding: "0.5rem",
-                borderRadius: "8px",
-                border: `1px solid ${colors.border}`,
-                background: colors.card,
-                color: colors.textPrimary,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "all 0.2s ease",
-                width: isMobile ? "44px" : "44px",
-                height: "44px",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = colors.mutedBg
-                e.currentTarget.style.borderColor = colors.action
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = colors.card
-                e.currentTarget.style.borderColor = colors.border
-              }}
-              title={viewMode === "cards" ? t("Switch to Table View") : t("Switch to Cards View")}
-            >
-              {viewMode === "cards" ? <List size={20} /> : <LayoutGrid size={20} />}
-            </button>
-          )}
+            <option value="">{statusPlaceholder || t("Status")}</option>
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>
+                {statusLabelMap?.[status] || t(status.charAt(0).toUpperCase() + status.slice(1))}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={14}
+            style={{
+              position: "absolute",
+              right: "0.625rem",
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              color: colors.textSecondary
+            }}
+          />
         </div>
-      </CardContent>
-    </Card>
+      )}
+
+      {/* To Filter */}
+      {toOptions.length > 0 && (
+        <div style={{ position: "relative" }}>
+          <select
+            value={toFilter[0] || ""}
+            onChange={(e) => onToChange(e.target.value ? [e.target.value] : [])}
+            style={selectStyle}
+          >
+            <option value="">{toPlaceholder || t("To")}</option>
+            {toOptions.map((destination) => (
+              <option key={destination} value={destination}>
+                {toLabelMap?.[destination] || destination}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={14}
+            style={{
+              position: "absolute",
+              right: "0.625rem",
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              color: colors.textSecondary
+            }}
+          />
+        </div>
+      )}
+
+      {/* From Filter */}
+      {fromOptions.length > 0 && (
+        <div style={{ position: "relative" }}>
+          <select
+            value={fromFilter[0] || ""}
+            onChange={(e) => onFromChange(e.target.value ? [e.target.value] : [])}
+            style={selectStyle}
+          >
+            <option value="">{fromPlaceholder || t("From")}</option>
+            {fromOptions.map((source) => (
+              <option key={source} value={source}>
+                {fromLabelMap?.[source] || source}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={14}
+            style={{
+              position: "absolute",
+              right: "0.625rem",
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              color: colors.textSecondary
+            }}
+          />
+        </div>
+      )}
+
+      {/* Date Range Picker */}
+      {showDateRange && onDateRangeChange && (
+        <div style={{ width: isMobile ? "100%" : "200px" }}>
+          <SimpleDateRangePicker
+            value={dateRange || null}
+            onChange={onDateRangeChange}
+            placeholder={[t("Start"), t("End")]}
+          />
+        </div>
+      )}
+
+      {/* Range Slider */}
+      {showRangeSlider && onRangeSliderChange && (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span style={{ fontSize: "0.75rem", color: colors.textSecondary, whiteSpace: "nowrap" }}>
+            {rangeSliderLabel || t("Range")}:
+          </span>
+          <input
+            type="number"
+            placeholder={t("Min")}
+            value={rangeSliderValue?.[0] ?? ""}
+            onChange={(e) => {
+              const val = e.target.value ? parseFloat(e.target.value) : null
+              onRangeSliderChange(val !== null ? [val, rangeSliderValue?.[1] ?? rangeSliderMax] : null)
+            }}
+            style={{
+              width: "70px",
+              padding: "0.5rem",
+              borderRadius: "0.75rem",
+              fontSize: "0.875rem",
+              backgroundColor: colors.card,
+              border: `1px solid ${colors.border}`,
+              color: colors.textPrimary,
+              outline: "none",
+            }}
+            min={rangeSliderMin}
+            max={rangeSliderMax}
+            step={rangeSliderStep}
+          />
+          <span style={{ color: colors.textSecondary }}>-</span>
+          <input
+            type="number"
+            placeholder={t("Max")}
+            value={rangeSliderValue?.[1] ?? ""}
+            onChange={(e) => {
+              const val = e.target.value ? parseFloat(e.target.value) : null
+              onRangeSliderChange(val !== null ? [rangeSliderValue?.[0] ?? rangeSliderMin, val] : null)
+            }}
+            style={{
+              width: "70px",
+              padding: "0.5rem",
+              borderRadius: "0.75rem",
+              fontSize: "0.875rem",
+              backgroundColor: colors.card,
+              border: `1px solid ${colors.border}`,
+              color: colors.textPrimary,
+              outline: "none",
+            }}
+            min={rangeSliderMin}
+            max={rangeSliderMax}
+            step={rangeSliderStep}
+          />
+        </div>
+      )}
+
+      {/* Rules Count Filter */}
+      {showRulesCountFilter && onRulesCountChange && rulesCountOptions.length > 0 && (
+        <div style={{ position: "relative" }}>
+          <select
+            value={rulesCountFilter[0] || ""}
+            onChange={(e) => onRulesCountChange(e.target.value ? [e.target.value] : [])}
+            style={selectStyle}
+          >
+            <option value="">{rulesCountPlaceholder || t("Rules Count")}</option>
+            {rulesCountOptions.map((option) => (
+              <option key={option} value={option}>
+                {rulesCountLabelMap?.[option] || option}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={14}
+            style={{
+              position: "absolute",
+              right: "0.625rem",
+              top: "50%",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              color: colors.textSecondary
+            }}
+          />
+        </div>
+      )}
+
+      {/* Clear Filters */}
+      {hasActiveFilters && (
+        <button
+          onClick={clearFilters}
+          style={{
+            padding: "0.5rem 0.75rem",
+            borderRadius: "0.75rem",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            background: "transparent",
+            border: "none",
+            color: colors.action,
+            cursor: "pointer",
+            transition: "opacity 0.2s ease",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.8" }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = "1" }}
+        >
+          {t("Clear")}
+        </button>
+      )}
+
+      {/* View Toggle */}
+      {showViewToggle && onViewModeChange && (
+        <button
+          onClick={() => onViewModeChange(viewMode === "cards" ? "table" : "cards")}
+          style={{
+            padding: "0.5rem",
+            borderRadius: "0.75rem",
+            border: `1px solid ${colors.border}`,
+            background: colors.card,
+            color: colors.textPrimary,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.2s ease",
+            marginLeft: "auto",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = colors.mutedBg
+            e.currentTarget.style.borderColor = colors.action
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = colors.card
+            e.currentTarget.style.borderColor = colors.border
+          }}
+          title={viewMode === "cards" ? t("Switch to Table View") : t("Switch to Cards View")}
+        >
+          {viewMode === "cards" ? <List size={18} /> : <LayoutGrid size={18} />}
+        </button>
+      )}
+    </div>
   )
 }
 

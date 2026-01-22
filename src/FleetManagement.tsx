@@ -526,20 +526,20 @@ const FleetManagementPage: React.FC = () => {
                   <form onSubmit={handleAddVehicle} className="space-y-4">
                       <div>
                           <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Vehicle Name</label>
-                          <input name="name" required placeholder="e.g. Red Hauler" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                          <input name="name" required placeholder="e.g. Red Hauler" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                       </div>
                       <div>
                           <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Model</label>
-                          <input name="model" required placeholder="e.g. Ford F-150" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                          <input name="model" required placeholder="e.g. Ford F-150" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                           <div>
                               <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Plate Number</label>
-                              <input name="plate" required placeholder="XYZ-123" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                              <input name="plate" required placeholder="XYZ-123" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                           </div>
                           <div>
                               <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Capacity (kg)</label>
-                              <input name="capacity" type="number" required placeholder="3500" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                              <input name="capacity" type="number" required placeholder="3500" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                           </div>
                       </div>
 
@@ -593,22 +593,22 @@ const FleetManagementPage: React.FC = () => {
                       <div className="grid grid-cols-2 gap-4">
                           <div>
                               <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Source</label>
-                              <input name="source" required placeholder="Central Warehouse" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                              <input name="source" required placeholder="Central Warehouse" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                           </div>
                           <div>
                               <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Destination</label>
-                              <input name="destination" required placeholder="Sector 7 Retail" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                              <input name="destination" required placeholder="Sector 7 Retail" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                           </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                           <div>
                               <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Latitude</label>
-                              <input name="latitude" type="number" step="any" placeholder="34.0522" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                              <input name="latitude" type="number" step="any" placeholder="34.0522" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                           </div>
                           <div>
                               <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Longitude</label>
-                              <input name="longitude" type="number" step="any" placeholder="-118.2437" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                              <input name="longitude" type="number" step="any" placeholder="-118.2437" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                           </div>
                       </div>
 
@@ -627,16 +627,16 @@ const FleetManagementPage: React.FC = () => {
                           <div className="grid grid-cols-2 gap-4">
                               <div>
                                   <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Name</label>
-                                  <input name="customer_name" placeholder="John Doe" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                                  <input name="customer_name" placeholder="John Doe" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                               </div>
                               <div>
                                   <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Phone</label>
-                                  <input name="customer_phone" placeholder="+1-555-0123" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                                  <input name="customer_phone" placeholder="+1-555-0123" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                               </div>
                           </div>
                           <div className="mt-4">
                               <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Email</label>
-                              <input name="customer_email" type="email" placeholder="customer@example.com" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                              <input name="customer_email" type="email" placeholder="customer@example.com" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                           </div>
                       </div>
 
@@ -645,28 +645,28 @@ const FleetManagementPage: React.FC = () => {
                           <div className="grid grid-cols-2 gap-4">
                               <div>
                                   <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Item Name</label>
-                                  <input name="item_name" placeholder="Office Chair" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                                  <input name="item_name" placeholder="Office Chair" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                               </div>
                               <div>
                                   <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Size</label>
-                                  <input name="item_size" placeholder="Medium" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                                  <input name="item_size" placeholder="Medium" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                               </div>
                           </div>
                           <div className="grid grid-cols-2 gap-4 mt-4">
                               <div>
                                   <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Weight (kg)</label>
-                                  <input name="item_weight" type="number" step="0.1" placeholder="5.5" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                                  <input name="item_weight" type="number" step="0.1" placeholder="5.5" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                               </div>
                               <div>
                                   <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Quantity</label>
-                                  <input name="item_quantity" type="number" placeholder="10" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                                  <input name="item_quantity" type="number" placeholder="10" className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                               </div>
                           </div>
                       </div>
 
                       <div>
                           <label className="block text-sm font-medium mb-1" style={{ color: colors.textSecondary }}>Delivery Instructions</label>
-                          <textarea name="delivery_instructions" rows={2} placeholder="Special handling notes..." className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 resize-none" style={{ borderColor: colors.border, color: colors.textPrimary }} />
+                          <textarea name="delivery_instructions" rows={2} placeholder="Special handling notes..." className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 resize-none" style={{ borderColor: colors.border, color: colors.textPrimary, backgroundColor: colors.mutedBg }} />
                       </div>
 
                       <button type="submit" className="w-full font-bold py-3 rounded-xl mt-4 transition-colors shadow-lg text-white" style={{ background: colors.success, boxShadow: '0 4px 12px rgba(201, 245, 197, 0.5)' }}>

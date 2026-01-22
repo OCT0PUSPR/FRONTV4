@@ -402,7 +402,7 @@ const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme, toggleTheme }
                     }}
                 >
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="text-xs font-medium" style={{ color: colors.textSecondary }}>{t('System Operational • v12.4.0')}</span>
+                    <span className="text-xs font-medium" style={{ color: colors.textSecondary }}>{t('System Operational • v14.1.0')}</span>
                 </div>
 
                 <h1 className="text-6xl lg:text-7xl font-extrabold tracking-tighter leading-[1.1] mb-8 animate-enter" style={{animationDelay: '0.1s', color: colors.textPrimary}}>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation, matchPath } from "react-router-dom"
 import { useTheme } from "../context/theme"
 import {
   Plus,
@@ -19,6 +19,8 @@ import {
   Printer,
   RotateCcw
 } from "lucide-react"
+import { TransferSidebar } from "./components/TransferSidebar"
+import { TransferRecordPage } from "./pages/TransferRecordPage"
 import { Skeleton } from "@mui/material"
 import { Button } from "../@/components/ui/button"
 import { useData } from "../context/data"
@@ -31,7 +33,7 @@ import { TransferFiltersBar } from "./components/TransferFiltersBar"
 
 import ExportModal, { ExportOptions } from "./components/ExportModal"
 import { useExport } from "./hooks/useExport"
-import { DataTable, ColumnDef } from "./components/DataTable"
+import { TransfersTable, ColumnDef } from "./components/TransfersTable"
 import Toast from "./components/Toast"
 import Alert from "./components/Alert"
 import { useSmartFieldRecords } from "./hooks/useSmartFieldRecords"
@@ -72,11 +74,20 @@ export default function InternalTransfersPage() {
   const { t, i18n } = useTranslation()
   const isRTL = i18n.dir() === "rtl"
   const navigate = useNavigate()
+  const location = useLocation()
   const { colors, mode } = useTheme()
   const { stockPickingTypes, partners, locations, products, uom, productPackaging, fetchData, loading } = useData()
   const { sessionId } = useAuth()
   const { canCreatePage, canEditPage, canExportPage, canDeletePage } = useCasl()
-  
+
+  // Detect if we're on a view/edit/create subroute for sidebar display
+  const viewMatch = matchPath('/internal/view/:id', location.pathname)
+  const editMatch = matchPath('/internal/edit/:id', location.pathname)
+  const createMatch = matchPath('/internal/create', location.pathname)
+  const sidebarRecordId = viewMatch?.params?.id || editMatch?.params?.id
+  const isCreating = !!createMatch
+  const isSidebarOpen = !!sidebarRecordId || isCreating
+
   // Fetch records using SmartFieldSelector
   const { records: smartFieldRecords, fields: smartFields, columns: availableColumns, loading: smartFieldLoading, refetch: refetchSmartFields } = useSmartFieldRecords({
     modelName: 'stock.picking',
@@ -104,43 +115,35 @@ export default function InternalTransfersPage() {
   // Update visible columns when available columns change
   useEffect(() => {
     if (availableColumns.length > 0 && visibleColumns.length === 0) {
-      // Set default visible columns with proper ordering:
-      // 1. id first
-      // 2. display_name or reference or default_code second
-      // 3. status/state last (if available)
-      // 4. Other columns in between
+      // Set sensible default columns for stock.picking
+      // Order: id, name (reference), location_id (from), location_dest_id (to), scheduled_date, state (status)
+      const stockPickingPriorityFields = [
+        'id',
+        'name',
+        'location_id',
+        'location_dest_id',
+        'scheduled_date',
+        'state'
+      ]
+
       const defaultCols: string[] = []
-      
-      // 1. Add id first if available
-      if (availableColumns.some(col => col.id === 'id')) {
-        defaultCols.push('id')
-      }
-      
-      // 2. Add display_name, reference, or default_code second (in priority order)
-      const nameFields = ['display_name', 'reference', 'default_code']
-      for (const field of nameFields) {
-        if (availableColumns.some(col => col.id === field) && !defaultCols.includes(field)) {
+
+      // Add priority fields in order if they exist
+      for (const field of stockPickingPriorityFields) {
+        if (availableColumns.some(col => col.id === field)) {
           defaultCols.push(field)
-          break // Only add the first available one
         }
       }
-      
-      // 3. Add other columns (excluding status/state)
-      const statusFields = ['status', 'state']
-      availableColumns.forEach(col => {
-        if (!defaultCols.includes(col.id) && !statusFields.includes(col.id) && defaultCols.length < 6) {
-          defaultCols.push(col.id)
-        }
-      })
-      
-      // 4. Add status/state last if available
-      for (const field of statusFields) {
-        if (availableColumns.some(col => col.id === field) && !defaultCols.includes(field)) {
-          defaultCols.push(field)
-          break // Only add the first available one
-        }
+
+      // If we have fewer than 6 columns, add more from available columns
+      if (defaultCols.length < 6) {
+        availableColumns.forEach(col => {
+          if (!defaultCols.includes(col.id) && defaultCols.length < 6) {
+            defaultCols.push(col.id)
+          }
+        })
       }
-      
+
       setVisibleColumns(defaultCols)
     }
   }, [availableColumns, visibleColumns.length])
@@ -199,27 +202,35 @@ export default function InternalTransfersPage() {
     return generateColumnsFromFields(smartFields, colors, t)
   }, [smartFields, colors, t, i18n?.language || 'en'])
 
-  const filteredTransfers = transfers.filter((transfer) => {
-    const matchesSearch =
-      transfer.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.to.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.sourceDocument.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredTransfers = useMemo(() => {
+    return transfers.filter((transfer) => {
+      const matchesSearch =
+        transfer.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        transfer.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        transfer.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        transfer.to.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        transfer.sourceDocument.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const matchesStatus = statusFilter.length === 0 || statusFilter.includes(transfer.status)
-    const matchesTo = toFilter.length === 0 || toFilter.includes(transfer.to)
-    const matchesFrom = fromFilter.length === 0 || fromFilter.includes(transfer.from)
+      const matchesStatus = statusFilter.length === 0 || statusFilter.includes(transfer.status)
+      const matchesTo = toFilter.length === 0 || toFilter.includes(transfer.to)
+      const matchesFrom = fromFilter.length === 0 || fromFilter.includes(transfer.from)
 
-    // Date range filter
-    let matchesDateRange = true
-    if (dateRange && dateRange[0] && dateRange[1] && transfer.scheduledDate) {
-      const transferDate = transfer.scheduledDate.slice(0, 10) // Get YYYY-MM-DD format
-      matchesDateRange = transferDate >= dateRange[0] && transferDate <= dateRange[1]
-    }
+      // Date range filter
+      let matchesDateRange = true
+      if (dateRange && dateRange[0] && dateRange[1] && transfer.scheduledDate) {
+        const transferDate = transfer.scheduledDate.slice(0, 10) // Get YYYY-MM-DD format
+        matchesDateRange = transferDate >= dateRange[0] && transferDate <= dateRange[1]
+      }
 
-    return matchesSearch && matchesStatus && matchesTo && matchesFrom && matchesDateRange
-  })
+      return matchesSearch && matchesStatus && matchesTo && matchesFrom && matchesDateRange
+    })
+  }, [transfers, searchQuery, statusFilter, toFilter, fromFilter, dateRange])
+
+  // Filter smartFieldRecords to match filteredTransfers for DataTable
+  const filteredSmartFieldRecords = useMemo(() => {
+    const filteredIds = new Set(filteredTransfers.map(t => t.id))
+    return smartFieldRecords.filter((r: any) => filteredIds.has(r.id))
+  }, [smartFieldRecords, filteredTransfers])
 
   // Pagination
   const totalPages = Math.ceil(filteredTransfers.length / itemsPerPage) || 1
@@ -454,6 +465,12 @@ export default function InternalTransfersPage() {
     setIsModalOpen(false)
     setSelectedPickingId(null)
     // Refresh SmartFieldSelector data after modal closes
+    refetchSmartFields()
+  }
+
+  const handleCloseSidebar = () => {
+    navigate('/internal')
+    // Refresh data when sidebar closes
     refetchSmartFields()
   }
 
@@ -721,8 +738,8 @@ export default function InternalTransfersPage() {
             )
           ) : (
             <>
-              <DataTable
-                data={smartFieldRecords}
+              <TransfersTable
+                data={filteredSmartFieldRecords}
                 rowSelection={rowSelection}
                 onRowSelectionChange={setRowSelection}
                 onSelectAllChange={setIsSelectAll}
@@ -868,6 +885,24 @@ export default function InternalTransfersPage() {
         confirmLabel={t("Delete")}
         cancelLabel={t("Cancel")}
       />
+
+      {/* Transfer Record Sidebar */}
+      <TransferSidebar
+        isOpen={isSidebarOpen}
+        onClose={handleCloseSidebar}
+        backRoute="/internal"
+      >
+        {(sidebarRecordId || isCreating) && (
+          <TransferRecordPage
+            transferType="internal"
+            pageTitle="Internal Transfer"
+            backRoute="/internal"
+            recordId={sidebarRecordId ? parseInt(sidebarRecordId) : undefined}
+            isSidebar={true}
+            onClose={handleCloseSidebar}
+          />
+        )}
+      </TransferSidebar>
     </div>
   )
 }

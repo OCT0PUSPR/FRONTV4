@@ -1,45 +1,32 @@
 "use client"
 
-import { useId } from "react"
+import * as React from "react"
 import type { LucideIcon } from "lucide-react"
 import { useTheme } from "../../context/theme"
 import { useTranslation } from "react-i18next"
 
-// Helper to extract hex colors from gradient string
-function extractGradientColors(gradient: string): [string, string] {
+// Helper to extract the primary (darker) color from gradient string
+function extractPrimaryColor(gradient: string): string {
   const matches = gradient.match(/#[a-fA-F0-9]{6}/g)
-  if (matches && matches.length >= 2) {
-    return [matches[0], matches[1]]
+  if (matches && matches.length >= 1) {
+    // Return the first color which is typically the primary/darker one
+    return matches[0]
   }
-  // Use darker, more visible colors as fallback
-  return ["#e91e63", "#fbbf24"]
+  return "#e91e63"
 }
 
-// Component to render icon with gradient stroke using SVG gradient definition
-function GradientIcon({ icon: Icon, gradient, size }: { icon: LucideIcon; gradient: string; size: number }) {
-  const gradientId = useId()
-  const [color1, color2] = extractGradientColors(gradient)
-  
+// Component to render icon with solid color
+function ColoredIcon({ icon: Icon, gradient, size }: { icon: LucideIcon; gradient: string; size: number }) {
+  const color = extractPrimaryColor(gradient)
+
   return (
-    <div style={{ position: "relative", width: size, height: size }}>
-      {/* Hidden SVG with gradient definition */}
-      <svg width="0" height="0" style={{ position: "absolute" }}>
-        <defs>
-          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={color1} />
-            <stop offset="100%" stopColor={color2} />
-          </linearGradient>
-        </defs>
-      </svg>
-      {/* Icon with gradient stroke */}
-      <Icon 
-        size={size} 
-        strokeWidth={2.5} 
-        style={{ 
-          stroke: `url(#${gradientId})`,
-        }} 
-      />
-    </div>
+    <Icon
+      size={size}
+      strokeWidth={2.5}
+      style={{
+        color: color,
+      }}
+    />
   )
 }
 
@@ -96,14 +83,15 @@ export function StatCard({ label, value, icon: Icon, gradient, delay = 0 }: Stat
           width: "3rem",
           height: "3rem",
           borderRadius: "0.75rem",
-          background: "#ffffff",
+          background: colors.card,
+          border: `1px solid ${colors.border}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           flexShrink: 0,
         }}
       >
-        <GradientIcon icon={Icon} gradient={gradient} size={28} />
+        <ColoredIcon icon={Icon} gradient={gradient} size={28} />
       </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div

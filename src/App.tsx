@@ -99,6 +99,8 @@ import IntegrationsPage from './pages/IntegrationsPage'
 import EmailTemplatesPage from './pages/EmailTemplatesPage'
 import EmailTemplateEditorPage from './pages/EmailTemplateEditorPage'
 import SendEmailPage from './pages/SendEmailPage'
+import { TransferRecordPage } from './pages/TransferRecordPage'
+import WarehouseNavigator from './pages/WarehouseNavigator'
 
 // Wrapper component for License page that conditionally renders layout
 function LicensePageWrapper() {
@@ -252,6 +254,7 @@ function AppContent() {
     '/manufacturing': 'Manufacturing',
     '/scrap': 'Scrap Orders',
     '/warehouse-view': 'Warehouse View',
+    '/warehouse-navigator': 'Warehouse Navigator',
     '/landed-costs': 'Landed Costs',
     '/warehouse-locations': 'Warehouse Locations',
     '/reporting-location': 'Reporting Location',
@@ -459,17 +462,17 @@ function AppContent() {
                       <Route path="/overview" element={<ProtectedRoute pageId={getPageIdFromRoute('/overview') || 'overview'}><LandingPage /></ProtectedRoute>} />
                       <Route path="/stocks" element={<ProtectedRoute pageId={getPageIdFromRoute('/stocks') || 'stocks'}><Stocks /></ProtectedRoute>} />
                       <Route path="/receipts" element={<ProtectedRoute pageId={getPageIdFromRoute('/receipts') || 'receipts'}><TransferReceiptsPage /></ProtectedRoute>} />
-                      <Route path="/receipts/edit/:id" element={<ProtectedRoute pageId="receipts"><DynamicRecordPage modelName="stock.picking" pageTitle="Receipt" backRoute="/receipts" /></ProtectedRoute>} />
-                      <Route path="/receipts/view/:id" element={<ProtectedRoute pageId="receipts"><DynamicRecordPage modelName="stock.picking" pageTitle="Receipt" backRoute="/receipts" /></ProtectedRoute>} />
-                      <Route path="/receipts/create" element={<ProtectedRoute pageId="receipts"><DynamicRecordPage modelName="stock.picking" pageTitle="Receipt" backRoute="/receipts" /></ProtectedRoute>} />
+                      <Route path="/receipts/view/:id" element={<ProtectedRoute pageId="receipts"><TransferReceiptsPage /></ProtectedRoute>} />
+                      <Route path="/receipts/edit/:id" element={<ProtectedRoute pageId="receipts"><TransferReceiptsPage /></ProtectedRoute>} />
+                      <Route path="/receipts/create" element={<ProtectedRoute pageId="receipts"><TransferReceiptsPage /></ProtectedRoute>} />
                       <Route path="/deliveries" element={<ProtectedRoute pageId="deliveries"><TransferDeliveriesPage /></ProtectedRoute>} />
-                      <Route path="/deliveries/edit/:id" element={<ProtectedRoute pageId="deliveries"><DynamicRecordPage modelName="stock.picking" pageTitle="Delivery" backRoute="/deliveries" /></ProtectedRoute>} />
-                      <Route path="/deliveries/view/:id" element={<ProtectedRoute pageId="deliveries"><DynamicRecordPage modelName="stock.picking" pageTitle="Delivery" backRoute="/deliveries" /></ProtectedRoute>} />
-                      <Route path="/deliveries/create" element={<ProtectedRoute pageId="deliveries"><DynamicRecordPage modelName="stock.picking" pageTitle="Delivery" backRoute="/deliveries" /></ProtectedRoute>} />
+                      <Route path="/deliveries/view/:id" element={<ProtectedRoute pageId="deliveries"><TransferDeliveriesPage /></ProtectedRoute>} />
+                      <Route path="/deliveries/edit/:id" element={<ProtectedRoute pageId="deliveries"><TransferDeliveriesPage /></ProtectedRoute>} />
+                      <Route path="/deliveries/create" element={<ProtectedRoute pageId="deliveries"><TransferDeliveriesPage /></ProtectedRoute>} />
                       <Route path="/internal" element={<ProtectedRoute pageId="internal"><InternalTransfersPage /></ProtectedRoute>} />
-                      <Route path="/internal/edit/:id" element={<ProtectedRoute pageId="internal"><DynamicRecordPage modelName="stock.picking" pageTitle="Internal Transfer" backRoute="/internal" /></ProtectedRoute>} />
-                      <Route path="/internal/view/:id" element={<ProtectedRoute pageId="internal"><DynamicRecordPage modelName="stock.picking" pageTitle="Internal Transfer" backRoute="/internal" /></ProtectedRoute>} />
-                      <Route path="/internal/create" element={<ProtectedRoute pageId="internal"><DynamicRecordPage modelName="stock.picking" pageTitle="Internal Transfer" backRoute="/internal" /></ProtectedRoute>} />
+                      <Route path="/internal/view/:id" element={<ProtectedRoute pageId="internal"><InternalTransfersPage /></ProtectedRoute>} />
+                      <Route path="/internal/edit/:id" element={<ProtectedRoute pageId="internal"><InternalTransfersPage /></ProtectedRoute>} />
+                      <Route path="/internal/create" element={<ProtectedRoute pageId="internal"><InternalTransfersPage /></ProtectedRoute>} />
                       <Route path="/dropships" element={<ProtectedRoute pageId="dropship"><DropshipsPage /></ProtectedRoute>} />
                       <Route path="/dropships/edit/:id" element={<ProtectedRoute pageId="dropship"><DynamicRecordPage modelName="stock.picking" pageTitle="Dropship" backRoute="/dropships" /></ProtectedRoute>} />
                       <Route path="/dropships/view/:id" element={<ProtectedRoute pageId="dropship"><DynamicRecordPage modelName="stock.picking" pageTitle="Dropship" backRoute="/dropships" /></ProtectedRoute>} />
@@ -550,6 +553,7 @@ function AppContent() {
                       <Route path="/landed-costs/edit/:id" element={<ProtectedRoute pageId="landed-costs"><DynamicRecordPage modelName="stock.landed.cost" pageTitle="Landed Cost" backRoute="/landed-costs" /></ProtectedRoute>} />
                       <Route path="/landed-costs/create" element={<ProtectedRoute pageId="landed-costs"><DynamicRecordPage modelName="stock.landed.cost" pageTitle="Landed Cost" backRoute="/landed-costs" /></ProtectedRoute>} />
                       <Route path="/warehouse-view" element={<ProtectedRoute pageId={getPageIdFromRoute('/warehouse-view') || 'warehouse-view'}><WarehouseManager /></ProtectedRoute>} />
+                                      <Route path="/warehouse-navigator" element={<ProtectedRoute pageId="warehouse-navigator"><WarehouseNavigator /></ProtectedRoute>} />
                       <Route path="/warehouse-locations" element={<ProtectedRoute pageId={getPageIdFromRoute('/warehouse-locations') || 'warehouse-locations'}><WarehousesPage /></ProtectedRoute>} />
                       <Route path="/reporting-location" element={<ProtectedRoute pageId={getPageIdFromRoute('/reporting-location') || 'reporting-location'}><ReportingLocationConst /></ProtectedRoute>} />
                       <Route path="/reporting-location/view/:id" element={<ProtectedRoute pageId="reporting-location"><DynamicRecordPage modelName="stock.quant" pageTitle="Reporting Location" backRoute="/reporting-location" /></ProtectedRoute>} />

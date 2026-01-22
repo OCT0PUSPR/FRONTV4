@@ -2,9 +2,11 @@
 
 import { useMemo, useState, useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation, useParams, matchPath } from "react-router-dom"
 import { useTheme } from "../context/theme"
 import { Plus, Package, Clock, CheckCircle2, FileText, AlertCircle, XCircle, RefreshCcw, Edit, Printer, RotateCcw, Trash2, Eye } from "lucide-react"
+import { TransferSidebar } from "./components/TransferSidebar"
+import { TransferRecordPage } from "./pages/TransferRecordPage"
 import { Card, CardContent } from "../@/components/ui/card"
 import { Button } from "../@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../@/components/ui/select"
@@ -19,7 +21,7 @@ import ExportModal, { ExportOptions } from "./components/ExportModal"
 import { useExport } from "./hooks/useExport"
 import { Skeleton } from "@mui/material"
 import { TransferFiltersBar } from "./components/TransferFiltersBar"
-import { DataTable, ColumnDef } from "./components/DataTable"
+import { TransfersTable, ColumnDef } from "./components/TransfersTable"
 import Toast from "./components/Toast"
 import Alert from "./components/Alert"
 import { useSmartFieldRecords } from "./hooks/useSmartFieldRecords"
@@ -58,6 +60,7 @@ function mapPickingToReceiptCard(p: any) {
 export default function TransferReceiptsPage() {
   const { t, i18n } = useTranslation()
   const { colors, mode } = useTheme()
+  const location = useLocation()
   const {
     stockPickingTypes,
     partners,
@@ -71,7 +74,15 @@ export default function TransferReceiptsPage() {
   } = useData()
   const { sessionId, uid } = useAuth()
   const { canCreatePage, canEditPage, canExportPage, canDeletePage } = useCasl()
-  
+
+  // Detect if we're on a view/edit/create subroute for sidebar display
+  const viewMatch = matchPath('/receipts/view/:id', location.pathname)
+  const editMatch = matchPath('/receipts/edit/:id', location.pathname)
+  const createMatch = matchPath('/receipts/create', location.pathname)
+  const sidebarRecordId = viewMatch?.params?.id || editMatch?.params?.id
+  const isCreating = !!createMatch
+  const isSidebarOpen = !!sidebarRecordId || isCreating
+
   // Fetch records using SmartFieldSelector
   const { records: smartFieldRecords, fields: smartFields, columns: availableColumns, loading: smartFieldLoading, refetch: refetchSmartFields } = useSmartFieldRecords({
     modelName: 'stock.picking',
@@ -110,43 +121,35 @@ export default function TransferReceiptsPage() {
   // Update visible columns when available columns change
   useEffect(() => {
     if (availableColumns.length > 0 && visibleColumns.length === 0) {
-      // Set default visible columns with proper ordering:
-      // 1. id first
-      // 2. display_name or reference or default_code second
-      // 3. status/state last (if available)
-      // 4. Other columns in between
+      // Set sensible default columns for stock.picking
+      // Order: id, name (reference), location_id (from), location_dest_id (to), scheduled_date, state (status)
+      const stockPickingPriorityFields = [
+        'id',
+        'name',
+        'location_id',
+        'location_dest_id',
+        'scheduled_date',
+        'state'
+      ]
+
       const defaultCols: string[] = []
-      
-      // 1. Add id first if available
-      if (availableColumns.some(col => col.id === 'id')) {
-        defaultCols.push('id')
-      }
-      
-      // 2. Add display_name, reference, or default_code second (in priority order)
-      const nameFields = ['display_name', 'reference', 'default_code']
-      for (const field of nameFields) {
-        if (availableColumns.some(col => col.id === field) && !defaultCols.includes(field)) {
+
+      // Add priority fields in order if they exist
+      for (const field of stockPickingPriorityFields) {
+        if (availableColumns.some(col => col.id === field)) {
           defaultCols.push(field)
-          break // Only add the first available one
         }
       }
-      
-      // 3. Add other columns (excluding status/state)
-      const statusFields = ['status', 'state']
-      availableColumns.forEach(col => {
-        if (!defaultCols.includes(col.id) && !statusFields.includes(col.id) && defaultCols.length < 6) {
-          defaultCols.push(col.id)
-        }
-      })
-      
-      // 4. Add status/state last if available
-      for (const field of statusFields) {
-        if (availableColumns.some(col => col.id === field) && !defaultCols.includes(field)) {
-          defaultCols.push(field)
-          break // Only add the first available one
-        }
+
+      // If we have fewer than 6 columns, add more from available columns
+      if (defaultCols.length < 6) {
+        availableColumns.forEach(col => {
+          if (!defaultCols.includes(col.id) && defaultCols.length < 6) {
+            defaultCols.push(col.id)
+          }
+        })
       }
-      
+
       setVisibleColumns(defaultCols)
     }
   }, [availableColumns, visibleColumns.length])
@@ -255,6 +258,12 @@ export default function TransferReceiptsPage() {
     })
   }, [receipts, searchQuery, statusFilter, toFilter, fromFilter, dateRange])
 
+  // Filter smartFieldRecords to match filteredReceipts for DataTable
+  const filteredSmartFieldRecords = useMemo(() => {
+    const filteredIds = new Set(filteredReceipts.map(r => r.id))
+    return smartFieldRecords.filter((r: any) => filteredIds.has(r.id))
+  }, [smartFieldRecords, filteredReceipts])
+
   // Pagination for cards view
   const totalPages = Math.ceil(filteredReceipts.length / itemsPerPage)
   const paginatedReceipts = useMemo(() => {
@@ -310,6 +319,12 @@ export default function TransferReceiptsPage() {
     setSelectedPickingId(null)
     // Refresh pickings data after modal closes
     fetchData("pickings")
+  }
+
+  const handleCloseSidebar = () => {
+    navigate('/receipts')
+    // Refresh data when sidebar closes
+    refetchSmartFields()
   }
 
   // Get Odoo headers from localStorage
@@ -833,8 +848,8 @@ export default function TransferReceiptsPage() {
               </>
             )
           ) : (
-            <DataTable
-              data={smartFieldRecords}
+            <TransfersTable
+              data={filteredSmartFieldRecords}
               rowSelection={rowSelection}
               onRowSelectionChange={setRowSelection}
               onSelectAllChange={setIsSelectAll}
@@ -845,9 +860,8 @@ export default function TransferReceiptsPage() {
               columns={tableColumns}
               actions={canEditPage("receipts") ? ((receipt) => {
                 const receiptId = (receipt as any).id
-                // Get current status from smartFieldRecords (use original state, not mapped status)
-                const currentPicking = smartFieldRecords.find((p: any) => p.id === receiptId)
-                const currentStatus = currentPicking?.state || "draft"
+                // Get current status from raw data (use original state, not mapped status)
+                const currentStatus = (receipt as any).state || "draft"
                 const isDone = currentStatus === "done"
 
                 const actions = [
@@ -905,24 +919,28 @@ export default function TransferReceiptsPage() {
               actionsLabel={t("Actions")}
               isRTL={isRTL}
               getRowIcon={(receipt) => {
-                const status = (receipt as any).status || "draft"
+                // Use state field from raw data (not mapped status)
+                const state = (receipt as any).state || "draft"
                 const getStatusIcon = (s: string) => {
                   switch (s.toLowerCase()) {
                     case "done":
                       return { icon: CheckCircle2, gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)" }
+                    case "assigned":
                     case "ready":
                       return { icon: Clock, gradient: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)" }
+                    case "cancel":
                     case "cancelled":
                       return { icon: XCircle, gradient: "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)" }
                     case "draft":
                       return { icon: FileText, gradient: "linear-gradient(135deg, #e91e63 0%, #fbbf24 100%)" }
                     case "waiting":
+                    case "confirmed":
                       return { icon: Clock, gradient: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)" }
                     default:
                       return { icon: AlertCircle, gradient: "linear-gradient(135deg, #fbbf24 0%, #a8a29e 100%)" }
                   }
                 }
-                return getStatusIcon(status)
+                return getStatusIcon(state)
               }}
               showPagination={true}
               defaultItemsPerPage={10}
@@ -1007,6 +1025,24 @@ export default function TransferReceiptsPage() {
             confirmLabel={t("Delete")}
             cancelLabel={t("Cancel")}
           />
+
+          {/* Transfer Record Sidebar */}
+          <TransferSidebar
+            isOpen={isSidebarOpen}
+            onClose={handleCloseSidebar}
+            backRoute="/receipts"
+          >
+            {(sidebarRecordId || isCreating) && (
+              <TransferRecordPage
+                transferType="incoming"
+                pageTitle="Receipt"
+                backRoute="/receipts"
+                recordId={sidebarRecordId ? parseInt(sidebarRecordId) : undefined}
+                isSidebar={true}
+                onClose={handleCloseSidebar}
+              />
+            )}
+          </TransferSidebar>
         </div>
       </div>
     </div>

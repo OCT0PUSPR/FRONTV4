@@ -59,6 +59,7 @@ const MENU_ITEMS = [
   { url: '/org-chart', pageId: 'org-chart' },
   { url: '/fleet-management', pageId: 'fleet-management' },
   { url: '/all-vehicles', pageId: 'all-vehicles' },
+  { url: '/warehouse-navigator', pageId: 'warehouse-navigator' },
   { url: '/report-templates', pageId: 'report-templates' },
   { url: '/generated-reports', pageId: 'generated-reports' },
   { url: '/report-rules', pageId: 'report-rules' },

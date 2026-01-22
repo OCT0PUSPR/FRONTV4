@@ -2,9 +2,11 @@
 
 import { useMemo, useState, useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation, matchPath } from "react-router-dom"
 import { useTheme } from "../context/theme"
 import { Plus, Truck, Clock, CheckCircle2, FileText, AlertCircle, XCircle, RefreshCcw, Edit, Printer, RotateCcw, Trash2, Eye, type LucideIcon } from "lucide-react"
+import { TransferSidebar } from "./components/TransferSidebar"
+import { TransferRecordPage } from "./pages/TransferRecordPage"
 import { Button } from "../@/components/ui/button"
 import { useData } from "../context/data"
 import { useAuth } from "../context/auth"
@@ -17,7 +19,7 @@ import { Skeleton } from "@mui/material"
 import { StatCard } from "./components/StatCard"
 import { DeliveryCard } from "./components/DeliveryCard"
 import { TransferFiltersBar } from "./components/TransferFiltersBar"
-import { DataTable, ColumnDef, type ActionItem } from "./components/DataTable"
+import { TransfersTable, ColumnDef, type ActionItem } from "./components/TransfersTable"
 import Toast from "./components/Toast"
 import Alert from "./components/Alert"
 import { useSmartFieldRecords } from "./hooks/useSmartFieldRecords"
@@ -54,6 +56,7 @@ export default function TransferDeliveriesPage() {
   const { t, i18n } = useTranslation()
   const isRTL = i18n.dir() === "rtl"
   const navigate = useNavigate()
+  const location = useLocation()
   const { colors, mode } = useTheme()
   const {
     stockPickingTypes,
@@ -67,7 +70,15 @@ export default function TransferDeliveriesPage() {
     loading,
   } = useData()
   const { sessionId } = useAuth()
-  
+
+  // Detect if we're on a view/edit subroute for sidebar display
+  const viewMatch = matchPath('/deliveries/view/:id', location.pathname)
+  const editMatch = matchPath('/deliveries/edit/:id', location.pathname)
+  const createMatch = matchPath('/deliveries/create', location.pathname)
+  const sidebarRecordId = viewMatch?.params?.id || editMatch?.params?.id
+  const isSidebarCreateMode = !!createMatch
+  const isSidebarOpen = !!sidebarRecordId || isSidebarCreateMode
+
   // Fetch records using SmartFieldSelector
   const { records: smartFieldRecords, fields: smartFields, columns: availableColumns, loading: smartFieldLoading, refetch: refetchSmartFields } = useSmartFieldRecords({
     modelName: 'stock.picking',
@@ -98,43 +109,35 @@ export default function TransferDeliveriesPage() {
   // Update visible columns when available columns change
   useEffect(() => {
     if (availableColumns.length > 0 && visibleColumns.length === 0) {
-      // Set default visible columns with proper ordering:
-      // 1. id first
-      // 2. display_name or reference or default_code second
-      // 3. status/state last (if available)
-      // 4. Other columns in between
+      // Set sensible default columns for stock.picking
+      // Order: id, name (reference), location_id (from), location_dest_id (to), scheduled_date, state (status)
+      const stockPickingPriorityFields = [
+        'id',
+        'name',
+        'location_id',
+        'location_dest_id',
+        'scheduled_date',
+        'state'
+      ]
+
       const defaultCols: string[] = []
-      
-      // 1. Add id first if available
-      if (availableColumns.some(col => col.id === 'id')) {
-        defaultCols.push('id')
-      }
-      
-      // 2. Add display_name, reference, or default_code second (in priority order)
-      const nameFields = ['display_name', 'reference', 'default_code']
-      for (const field of nameFields) {
-        if (availableColumns.some(col => col.id === field) && !defaultCols.includes(field)) {
+
+      // Add priority fields in order if they exist
+      for (const field of stockPickingPriorityFields) {
+        if (availableColumns.some(col => col.id === field)) {
           defaultCols.push(field)
-          break // Only add the first available one
         }
       }
-      
-      // 3. Add other columns (excluding status/state)
-      const statusFields = ['status', 'state']
-      availableColumns.forEach(col => {
-        if (!defaultCols.includes(col.id) && !statusFields.includes(col.id) && defaultCols.length < 6) {
-          defaultCols.push(col.id)
-        }
-      })
-      
-      // 4. Add status/state last if available
-      for (const field of statusFields) {
-        if (availableColumns.some(col => col.id === field) && !defaultCols.includes(field)) {
-          defaultCols.push(field)
-          break // Only add the first available one
-        }
+
+      // If we have fewer than 6 columns, add more from available columns
+      if (defaultCols.length < 6) {
+        availableColumns.forEach(col => {
+          if (!defaultCols.includes(col.id) && defaultCols.length < 6) {
+            defaultCols.push(col.id)
+          }
+        })
       }
-      
+
       setVisibleColumns(defaultCols)
     }
   }, [availableColumns, visibleColumns.length])
@@ -188,28 +191,36 @@ export default function TransferDeliveriesPage() {
     return generateColumnsFromFields(smartFields, colors, t)
   }, [smartFields, colors, t, i18n?.language || 'en'])
 
-  const filteredDeliveries = deliveries.filter((delivery) => {
-    const matchesSearch =
-      delivery.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      delivery.deliveryAddress.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      delivery.sourceLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      delivery.sourceDocument.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredDeliveries = useMemo(() => {
+    return deliveries.filter((delivery) => {
+      const matchesSearch =
+        delivery.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        delivery.deliveryAddress.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        delivery.sourceLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        delivery.sourceDocument.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const matchesStatus = statusFilter.length === 0 || statusFilter.includes(delivery.status)
-    const matchesTo =
-      toFilter.length === 0 || (delivery.deliveryAddress && toFilter.includes(delivery.deliveryAddress))
-    const matchesFrom =
-      fromFilter.length === 0 || (delivery.sourceLocation && fromFilter.includes(delivery.sourceLocation))
+      const matchesStatus = statusFilter.length === 0 || statusFilter.includes(delivery.status)
+      const matchesTo =
+        toFilter.length === 0 || (delivery.deliveryAddress && toFilter.includes(delivery.deliveryAddress))
+      const matchesFrom =
+        fromFilter.length === 0 || (delivery.sourceLocation && fromFilter.includes(delivery.sourceLocation))
 
-    // Date range filter
-    let matchesDateRange = true
-    if (dateRange && dateRange[0] && dateRange[1] && delivery.scheduledDate) {
-      const deliveryDate = delivery.scheduledDate.slice(0, 10) // Get YYYY-MM-DD format
-      matchesDateRange = deliveryDate >= dateRange[0] && deliveryDate <= dateRange[1]
-    }
+      // Date range filter
+      let matchesDateRange = true
+      if (dateRange && dateRange[0] && dateRange[1] && delivery.scheduledDate) {
+        const deliveryDate = delivery.scheduledDate.slice(0, 10) // Get YYYY-MM-DD format
+        matchesDateRange = deliveryDate >= dateRange[0] && deliveryDate <= dateRange[1]
+      }
 
-    return matchesSearch && matchesStatus && matchesTo && matchesFrom && matchesDateRange
-  })
+      return matchesSearch && matchesStatus && matchesTo && matchesFrom && matchesDateRange
+    })
+  }, [deliveries, searchQuery, statusFilter, toFilter, fromFilter, dateRange])
+
+  // Filter smartFieldRecords to match filteredDeliveries for DataTable
+  const filteredSmartFieldRecords = useMemo(() => {
+    const filteredIds = new Set(filteredDeliveries.map(d => d.id))
+    return smartFieldRecords.filter((r: any) => filteredIds.has(r.id))
+  }, [smartFieldRecords, filteredDeliveries])
 
   // Pagination
   const totalPages = Math.ceil(filteredDeliveries.length / itemsPerPage) || 1
@@ -382,6 +393,12 @@ export default function TransferDeliveriesPage() {
     setSelectedPickingId(null)
     setIsCreating(false)
     setDirty(false)
+  }
+
+  const handleCloseSidebar = () => {
+    navigate('/deliveries')
+    // Refresh data when sidebar closes
+    refetchSmartFields()
   }
 
   const onChange = (updates: Partial<typeof form>) => {
@@ -870,8 +887,8 @@ export default function TransferDeliveriesPage() {
               </>
             )
           ) : (
-            <DataTable
-              data={smartFieldRecords}
+            <TransfersTable
+              data={filteredSmartFieldRecords}
               rowSelection={rowSelection}
               onRowSelectionChange={setRowSelection}
               onSelectAllChange={setIsSelectAll}
@@ -1062,6 +1079,24 @@ export default function TransferDeliveriesPage() {
         confirmLabel={t("Delete")}
         cancelLabel={t("Cancel")}
       />
+
+      {/* Transfer Record Sidebar */}
+      <TransferSidebar
+        isOpen={isSidebarOpen}
+        onClose={handleCloseSidebar}
+        backRoute="/deliveries"
+      >
+        {(sidebarRecordId || isSidebarCreateMode) && (
+          <TransferRecordPage
+            transferType="outgoing"
+            pageTitle="Delivery"
+            backRoute="/deliveries"
+            recordId={sidebarRecordId ? parseInt(sidebarRecordId) : undefined}
+            isSidebar={true}
+            onClose={handleCloseSidebar}
+          />
+        )}
+      </TransferSidebar>
     </div>
   )
 }

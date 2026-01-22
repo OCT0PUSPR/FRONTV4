@@ -1,0 +1,226 @@
+// Location Tree Component - Hierarchical tree view of locations
+
+import { useCallback, useMemo } from 'react';
+import { ChevronRight, ChevronDown, Package, Layers, Grid3X3, Box } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../../../context/theme';
+import { LocationNode, LocationType } from '../types';
+
+interface LocationTreeProps {
+  locations: LocationNode[];
+  selectedId: number | null;
+  expandedNodes: Set<number>;
+  onSelect: (id: number) => void;
+  onToggle: (id: number) => void;
+  onDoubleClick?: (id: number) => void;
+}
+
+// Icon for each location type
+function LocationIcon({ type, hasStock }: { type: LocationType; hasStock: boolean }) {
+  const iconClass = `h-4 w-4 ${hasStock ? 'text-orange-500' : 'text-gray-400 dark:text-zinc-500'}`;
+
+  switch (type) {
+    case 'row':
+      return <Layers className={iconClass} />;
+    case 'bay':
+      return <Grid3X3 className={iconClass} />;
+    case 'level':
+      return <Layers className={iconClass} />;
+    case 'bin':
+      return hasStock ? <Package className={iconClass} /> : <Box className={iconClass} />;
+    default:
+      return <Box className={iconClass} />;
+  }
+}
+
+interface TreeNodeProps {
+  node: LocationNode;
+  selectedId: number | null;
+  expandedNodes: Set<number>;
+  onSelect: (id: number) => void;
+  onToggle: (id: number) => void;
+  onDoubleClick?: (id: number) => void;
+  depth: number;
+}
+
+function TreeNode({
+  node,
+  selectedId,
+  expandedNodes,
+  onSelect,
+  onToggle,
+  onDoubleClick,
+  depth,
+}: TreeNodeProps) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+
+  const isSelected = node.id === selectedId;
+  const isExpanded = expandedNodes.has(node.id);
+  const hasChildren = node.children.length > 0;
+
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect(node.id);
+  }, [node.id, onSelect]);
+
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDoubleClick?.(node.id);
+  }, [node.id, onDoubleClick]);
+
+  const handleToggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggle(node.id);
+  }, [node.id, onToggle]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      onSelect(node.id);
+    } else if (e.key === ' ') {
+      e.preventDefault();
+      if (hasChildren) {
+        onToggle(node.id);
+      }
+    }
+  }, [node.id, hasChildren, onSelect, onToggle]);
+
+  // Format the summary text
+  const summaryText = useMemo(() => {
+    if (node.itemCount === 0) return '';
+    const items = t('warehouse_navigator.items', '{{count}} items', { count: node.itemCount });
+    const qty = t('warehouse_navigator.total_qty', '{{qty}} qty', { qty: Math.round(node.totalQty) });
+    return `${items} | ${qty}`;
+  }, [node.itemCount, node.totalQty, t]);
+
+  return (
+    <div>
+      <div
+        className={`
+          flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer
+          transition-colors duration-100
+          ${isSelected
+            ? 'bg-orange-100 dark:bg-orange-900/30'
+            : 'hover:bg-gray-100 dark:hover:bg-zinc-800'
+          }
+        `}
+        style={{ paddingLeft: `${depth * 16 + 8}px` }}
+        onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+        role="treeitem"
+        aria-expanded={hasChildren ? isExpanded : undefined}
+        aria-selected={isSelected}
+      >
+        {/* Expand/Collapse toggle */}
+        {hasChildren ? (
+          <button
+            onClick={handleToggle}
+            className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-zinc-700"
+            aria-label={isExpanded ? 'Collapse' : 'Expand'}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-3.5 w-3.5 text-gray-500 dark:text-zinc-400" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5 text-gray-500 dark:text-zinc-400" />
+            )}
+          </button>
+        ) : (
+          <span className="w-4" /> // Spacer for alignment
+        )}
+
+        {/* Icon */}
+        <LocationIcon type={node.type} hasStock={node.hasStock} />
+
+        {/* Name */}
+        <span
+          className={`
+            flex-1 text-sm truncate
+            ${isSelected ? 'font-medium text-orange-700 dark:text-orange-400' : ''}
+          `}
+          style={{ color: isSelected ? undefined : colors.textPrimary }}
+        >
+          {node.name}
+        </span>
+
+        {/* Stock indicator */}
+        {node.hasStock && (
+          <span className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0" />
+        )}
+      </div>
+
+      {/* Summary line */}
+      {summaryText && isExpanded && (
+        <div
+          className="text-xs pl-10 pb-1"
+          style={{
+            paddingLeft: `${depth * 16 + 32}px`,
+            color: colors.textSecondary,
+          }}
+        >
+          {summaryText}
+        </div>
+      )}
+
+      {/* Children */}
+      {hasChildren && isExpanded && (
+        <div role="group">
+          {node.children.map((child) => (
+            <TreeNode
+              key={child.id}
+              node={child}
+              selectedId={selectedId}
+              expandedNodes={expandedNodes}
+              onSelect={onSelect}
+              onToggle={onToggle}
+              onDoubleClick={onDoubleClick}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function LocationTree({
+  locations,
+  selectedId,
+  expandedNodes,
+  onSelect,
+  onToggle,
+  onDoubleClick,
+}: LocationTreeProps) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+
+  if (locations.length === 0) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center py-8 text-center"
+        style={{ color: colors.textSecondary }}
+      >
+        <Box className="h-8 w-8 mb-2 opacity-50" />
+        <p className="text-sm">{t('warehouse_navigator.no_results', 'No locations found')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-0.5" role="tree" aria-label="Location tree">
+      {locations.map((node) => (
+        <TreeNode
+          key={node.id}
+          node={node}
+          selectedId={selectedId}
+          expandedNodes={expandedNodes}
+          onSelect={onSelect}
+          onToggle={onToggle}
+          onDoubleClick={onDoubleClick}
+          depth={0}
+        />
+      ))}
+    </div>
+  );
+}

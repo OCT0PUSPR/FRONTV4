@@ -28,18 +28,42 @@ export const getCurrentTenantId = (): string | null => {
 }
 
 /**
+ * Get the current user ID from localStorage
+ */
+export const getCurrentUserId = (): string | null => {
+  return localStorage.getItem('uid');
+}
+
+/**
+ * Get the current user name from localStorage
+ */
+export const getCurrentUserName = (): string | null => {
+  return localStorage.getItem('name');
+}
+
+/**
  * Get headers with tenant ID included
  */
 export const getTenantHeaders = (): Record<string, string> => {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  
+
   const tenantId = getCurrentTenantId();
   if (tenantId) {
     headers['X-Tenant-ID'] = tenantId;
   }
-  
+
+  const userId = getCurrentUserId();
+  if (userId) {
+    headers['X-User-ID'] = userId;
+  }
+
+  const userName = getCurrentUserName();
+  if (userName) {
+    headers['X-User-Name'] = userName;
+  }
+
   return headers;
 }
 

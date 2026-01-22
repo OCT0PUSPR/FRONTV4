@@ -41,8 +41,7 @@ const VehicleCard: React.FC<Props> = ({ vehicle, isSelected, onClick }) => {
         `}
         style={{
           backgroundColor: colors.mutedBg,
-          borderColor: colors.border,
-          ringColor: isSelected ? colors.action : 'transparent'
+          borderColor: colors.border
         }}
         >
              {vehicleImage ? (
