@@ -137,28 +137,74 @@ export function Warehouse({
         />
       ))}
 
-      {/* Ambient lighting */}
-      <ambientLight intensity={0.5} />
+      {/* Ambient lighting - base illumination */}
+      <ambientLight intensity={0.6} />
 
-      {/* Directional light for shadows */}
+      {/* Hemisphere light for natural sky/ground lighting */}
+      <hemisphereLight
+        args={['#87CEEB', '#404040', 0.5]}
+        position={[0, 50, 0]}
+      />
+
+      {/* Main directional light (sun-like) */}
       <directionalLight
-        position={[10, 20, 10]}
+        position={[warehouseDimensions.width / 2, 30, warehouseDimensions.depth / 2]}
         intensity={0.8}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-far={50}
-        shadow-camera-left={-30}
-        shadow-camera-right={30}
-        shadow-camera-top={30}
-        shadow-camera-bottom={-30}
+        shadow-mapSize-width={4096}
+        shadow-mapSize-height={4096}
+        shadow-camera-far={100}
+        shadow-camera-left={-warehouseDimensions.width - 10}
+        shadow-camera-right={warehouseDimensions.width + 10}
+        shadow-camera-top={warehouseDimensions.depth + 10}
+        shadow-camera-bottom={-warehouseDimensions.depth - 10}
       />
 
       {/* Fill light from opposite side */}
       <directionalLight
-        position={[-10, 10, -10]}
+        position={[-warehouseDimensions.width, 15, -warehouseDimensions.depth]}
         intensity={0.3}
+      />
+
+      {/* Point lights for interior warehouse lighting (overhead) */}
+      <WarehouseLighting
+        width={warehouseDimensions.width}
+        depth={warehouseDimensions.depth}
+        height={warehouseDimensions.height}
       />
     </group>
   );
+}
+
+// Interior warehouse lighting component
+interface WarehouseLightingProps {
+  width: number;
+  depth: number;
+  height: number;
+}
+
+function WarehouseLighting({ width, depth, height }: WarehouseLightingProps) {
+  // Calculate number of lights based on warehouse size
+  const lightsX = Math.max(2, Math.ceil(width / 8));
+  const lightsZ = Math.max(2, Math.ceil(depth / 8));
+  const lightHeight = height + 3;
+
+  const lights = [];
+  for (let i = 0; i < lightsX; i++) {
+    for (let j = 0; j < lightsZ; j++) {
+      const x = (width / (lightsX + 1)) * (i + 1);
+      const z = (depth / (lightsZ + 1)) * (j + 1);
+      lights.push(
+        <pointLight
+          key={`light-${i}-${j}`}
+          position={[x, lightHeight, z]}
+          intensity={0.4}
+          distance={20}
+          decay={2}
+        />
+      );
+    }
+  }
+
+  return <>{lights}</>;
 }

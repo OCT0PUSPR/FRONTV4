@@ -3,9 +3,23 @@
 
 import React, { useMemo } from 'react';
 import { Vector3 } from 'three';
-import { LocationNode } from '../types';
+import { Text } from '@react-three/drei';
+import { useTheme } from '../../../../context/theme';
+import { LocationNode, LEVEL_CODES } from '../types';
 import { LAYOUT, getRowIndex } from '../utils/positionCalculator';
 import { Rack } from './Rack';
+
+// Row label colors
+const ROW_LABEL_COLORS = {
+  light: '#1a3a5a',
+  dark: '#a0c0e0',
+};
+
+// Level label colors
+const LEVEL_LABEL_COLORS = {
+  light: '#2a4a6a',
+  dark: '#8ab4d4',
+};
 
 interface RackRowProps {
   row: string;
@@ -29,7 +43,13 @@ export function RackRow({
   onBinClick,
   visibleLevels,
 }: RackRowProps) {
-  const { BAY_WIDTH, ROW_SPACING, BACK_TO_BACK_GAP, BIN_DEPTH } = LAYOUT;
+  const { mode } = useTheme();
+  const isDark = mode === 'dark';
+  const rowLabelColor = isDark ? ROW_LABEL_COLORS.dark : ROW_LABEL_COLORS.light;
+  const levelLabelColor = isDark ? LEVEL_LABEL_COLORS.dark : LEVEL_LABEL_COLORS.light;
+
+  const { BAY_WIDTH, ROW_SPACING, BIN_DEPTH, LEVEL_HEIGHT } = LAYOUT;
+  const beamHeight = 0.12;
 
   // Calculate Z position based on row index (0-based position)
   const rowIndex = getRowIndex(row);
@@ -61,6 +81,12 @@ export function RackRow({
             bayNode: child,
             bins: bayBins,
           });
+
+          console.log(`[RackRow] Bay ${bayNum} bins:`, bayBins.map(b => ({
+            name: b.name,
+            type: b.type,
+            parsed: b.parsed,
+          })));
         }
       }
     });
@@ -68,10 +94,38 @@ export function RackRow({
     // Sort bays by number
     bays.sort((a, b) => a.bayNumber - b.bayNumber);
 
-    console.log(`[RackRow] Row ${row}: Found ${bays.length} bays`, bays.map(b => b.bayNumber));
+    console.log(`[RackRow] Row ${row}: Found ${bays.length} bays with total bins:`,
+      bays.reduce((sum, b) => sum + b.bins.length, 0));
 
     return bays;
   }, [rowNode, row]);
+
+  // Collect all unique levels from all bins in this row
+  const uniqueLevels = useMemo(() => {
+    const levelSet = new Set<string>();
+
+    baysData.forEach(bayData => {
+      bayData.bins.forEach(bin => {
+        let levelCode: string | null = null;
+        if (bin.parsed) {
+          levelCode = bin.parsed.level;
+        } else if (LEVEL_CODES.includes(bin.name as typeof LEVEL_CODES[number])) {
+          levelCode = bin.name;
+        }
+        if (levelCode) {
+          levelSet.add(levelCode);
+        }
+      });
+    });
+
+    // Convert to array with indices and sort by level index
+    const levels = Array.from(levelSet).map(code => ({
+      code,
+      index: LEVEL_CODES.indexOf(code as typeof LEVEL_CODES[number]),
+    })).filter(l => l.index >= 0).sort((a, b) => a.index - b.index);
+
+    return levels;
+  }, [baysData]);
 
   // Generate racks only for actual bays in the data
   const racks = useMemo(() => {
@@ -100,5 +154,42 @@ export function RackRow({
     });
   }, [row, baseZ, baysData, selectedBinId, onBinClick, visibleLevels, BAY_WIDTH]);
 
-  return <group>{racks}</group>;
+  return (
+    <group>
+      {/* Row label on the floor at the beginning of the row */}
+      <Text
+        position={[-0.8, 0.02, baseZ + BIN_DEPTH / 2]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        fontSize={0.4}
+        color={rowLabelColor}
+        anchorX="center"
+        anchorY="middle"
+        fontWeight="bold"
+      >
+        {row}
+      </Text>
+
+      {/* Level labels at the beginning of the row - vertical standing labels */}
+      {uniqueLevels.map(level => {
+        const levelY = level.index * LEVEL_HEIGHT + LEVEL_HEIGHT / 2 + beamHeight;
+        return (
+          <Text
+            key={`level-label-${level.code}`}
+            position={[-0.5, levelY, baseZ + BIN_DEPTH + 0.2]}
+            rotation={[0, 0, 0]}
+            fontSize={0.2}
+            color={levelLabelColor}
+            anchorX="center"
+            anchorY="middle"
+            fontWeight="bold"
+          >
+            {level.code}
+          </Text>
+        );
+      })}
+
+      {/* Racks in this row */}
+      {racks}
+    </group>
+  );
 }

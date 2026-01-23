@@ -1,11 +1,30 @@
-// Bin Component - Individual storage bin mesh
+// Bin Component - Individual storage bin (solid box)
+// Grey when empty, Orange/Yellow when has items
 
 import { useRef, useState, useMemo } from 'react';
 import { Mesh, Vector3 } from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useTheme } from '../../../../context/theme';
-import { getTheme, hexToNumber } from '../utils/colorTheme';
+import { hexToNumber } from '../utils/colorTheme';
 import { LAYOUT } from '../utils/positionCalculator';
+
+// Bin colors
+const BIN_COLORS = {
+  light: {
+    empty: '#8A8A8A',         // Grey for empty bins
+    emptyHover: '#A0A0A0',    // Lighter grey on hover
+    occupied: '#E8A030',      // Orange/Yellow for occupied
+    occupiedHover: '#FFB840', // Brighter on hover
+    selected: '#FFD700',      // Gold when selected
+  },
+  dark: {
+    empty: '#606060',         // Dark grey for empty bins
+    emptyHover: '#787878',    // Lighter grey on hover
+    occupied: '#D08020',      // Orange for occupied
+    occupiedHover: '#E89030', // Brighter on hover
+    selected: '#FFD700',      // Gold when selected
+  },
+};
 
 interface BinProps {
   position: Vector3;
@@ -28,14 +47,14 @@ export function Bin({
   const [hovered, setHovered] = useState(false);
   const { mode } = useTheme();
   const isDark = mode === 'dark';
-  const theme = getTheme(isDark);
+  const colors = isDark ? BIN_COLORS.dark : BIN_COLORS.light;
 
   const { BIN_WIDTH, BIN_DEPTH, LEVEL_HEIGHT } = LAYOUT;
 
-  // Bin dimensions (slightly smaller than slot for spacing)
-  const binWidth = BIN_WIDTH * 0.9;
-  const binDepth = BIN_DEPTH * 0.9;
-  const binHeight = LEVEL_HEIGHT * 0.85;
+  // Bin dimensions - sized to fit on shelf
+  const binWidth = BIN_WIDTH * 0.85;
+  const binDepth = BIN_DEPTH * 0.75;
+  const binHeight = LEVEL_HEIGHT * 0.7;
 
   // Animation for selection highlight
   const pulseRef = useRef(0);
@@ -44,7 +63,7 @@ export function Bin({
     if (isSelected || isHighlighted) {
       pulseRef.current += delta * 3;
       if (meshRef.current) {
-        const scale = 1 + Math.sin(pulseRef.current) * 0.05;
+        const scale = 1 + Math.sin(pulseRef.current) * 0.03;
         meshRef.current.scale.setScalar(scale);
       }
     } else {
@@ -55,21 +74,21 @@ export function Bin({
     }
   });
 
-  // Calculate color based on state
+  // Calculate color based on state - ALL SOLID, no wireframe
   const color = useMemo(() => {
     if (isSelected) {
-      return hexToNumber(theme.selectionHighlight);
+      return hexToNumber(colors.selected);
     }
     if (hovered) {
-      return hexToNumber(isOccupied ? '#FF9030' : '#C0B099');
+      return hexToNumber(isOccupied ? colors.occupiedHover : colors.emptyHover);
     }
-    return hexToNumber(isOccupied ? theme.binOccupied : theme.binEmpty);
-  }, [isSelected, hovered, isOccupied, theme]);
+    return hexToNumber(isOccupied ? colors.occupied : colors.empty);
+  }, [isSelected, hovered, isOccupied, colors]);
 
   return (
     <mesh
       ref={meshRef}
-      position={[position.x, position.y + binHeight / 2, position.z]}
+      position={[position.x + binWidth / 2, position.y + binHeight / 2, position.z + binDepth / 2]}
       onClick={(e) => {
         e.stopPropagation();
         onClick?.();
@@ -86,30 +105,15 @@ export function Bin({
       castShadow
       receiveShadow
     >
-      {isOccupied ? (
-        // Solid box for occupied bins
-        <>
-          <boxGeometry args={[binWidth, binHeight, binDepth]} />
-          <meshStandardMaterial
-            color={color}
-            roughness={0.6}
-            metalness={0.2}
-            emissive={isSelected || isHighlighted ? color : 0}
-            emissiveIntensity={isSelected || isHighlighted ? 0.3 : 0}
-          />
-        </>
-      ) : (
-        // Wireframe for empty bins
-        <>
-          <boxGeometry args={[binWidth, binHeight, binDepth]} />
-          <meshStandardMaterial
-            color={color}
-            wireframe={true}
-            transparent
-            opacity={hovered ? 0.8 : 0.4}
-          />
-        </>
-      )}
+      {/* Always solid box - grey for empty, orange for occupied */}
+      <boxGeometry args={[binWidth, binHeight, binDepth]} />
+      <meshStandardMaterial
+        color={color}
+        roughness={0.7}
+        metalness={0.1}
+        emissive={isSelected || isHighlighted ? color : 0}
+        emissiveIntensity={isSelected || isHighlighted ? 0.2 : 0}
+      />
     </mesh>
   );
 }

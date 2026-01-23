@@ -20,6 +20,7 @@ import { Sidebar } from './components/Sidebar';
 import { Toolbar } from './components/Toolbar';
 import { Breadcrumbs } from './components/Breadcrumbs';
 import { BinModal } from './components/BinModal';
+import { BinDetailsSidebar } from './components/BinDetailsSidebar';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { HelpTour } from './components/HelpTour';
 import { EmptyState } from './components/EmptyState';
@@ -58,6 +59,11 @@ export function WarehouseNavigator() {
   const [binModalOpen, setBinModalOpen] = useState(false);
   const [binModalLocationId, setBinModalLocationId] = useState<number | null>(null);
   const [binStockItems, setBinStockItems] = useState<StockItem[]>([]);
+
+  // Sidebar state for bin details
+  const [binSidebarOpen, setBinSidebarOpen] = useState(false);
+  const [binSidebarLocationId, setBinSidebarLocationId] = useState<number | null>(null);
+  const [binSidebarStockItems, setBinSidebarStockItems] = useState<StockItem[]>([]);
 
   // WebSocket for real-time updates
   const { status: wsStatus } = useWebSocket({
@@ -106,8 +112,8 @@ export function WarehouseNavigator() {
     setSelectedWarehouseId(id);
   }, []);
 
-  // Handle location selection
-  const handleLocationSelect = useCallback((id: number) => {
+  // Handle location selection - fly camera based on location type
+  const handleLocationSelect = useCallback(async (id: number) => {
     setSelectedLocationId(id);
 
     // Add to navigation history
@@ -125,22 +131,78 @@ export function WarehouseNavigator() {
       });
     }
 
-    // Fly camera to location
+    // Fly camera to location based on type
     const node = findNodeById(locations, id);
-    if (node?.parsed) {
-      const position = calculatePosition(node.parsed);
-      const cameraPosition = new Vector3(
-        position.x,
-        position.y + 3,
-        position.z + 5
-      );
-      setCameraTarget({
-        position: cameraPosition,
-        lookAt: position,
-        duration: 800,
+    if (!node) return;
+
+    let targetPosition: Vector3;
+    let cameraPosition: Vector3;
+
+    if (node.type === 'row') {
+      // Row view - look at the row from the front
+      const rowIndex = locations.indexOf(node);
+      targetPosition = new Vector3(5, 2, rowIndex * 4);
+      cameraPosition = new Vector3(15, 8, rowIndex * 4 + 10);
+      // Close sidebar when navigating to non-bin
+      setBinSidebarOpen(false);
+    } else if (node.type === 'bay') {
+      // Rack/Bay view - look at the specific rack
+      const bayNum = parseInt(node.name, 10) || 1;
+      const parentRow = locations.find(r => r.children.some(c => c.id === id));
+      const rowIndex = parentRow ? locations.indexOf(parentRow) : 0;
+      targetPosition = new Vector3(bayNum * 1.2, 2, rowIndex * 4);
+      cameraPosition = new Vector3(bayNum * 1.2 + 3, 5, rowIndex * 4 + 6);
+      // Close sidebar when navigating to non-bin
+      setBinSidebarOpen(false);
+    } else if (node.type === 'level') {
+      // Level view - look at the specific level of a rack
+      const levelIndex = ['AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG'].indexOf(node.name);
+      const levelY = levelIndex >= 0 ? levelIndex * 0.8 : 0;
+      // Find parent bay and row
+      let bayNum = 1;
+      let rowIndex = 0;
+      locations.forEach((row, ri) => {
+        row.children.forEach(bay => {
+          if (bay.children.some(lvl => lvl.id === id)) {
+            bayNum = parseInt(bay.name, 10) || 1;
+            rowIndex = ri;
+          }
+        });
       });
+      targetPosition = new Vector3(bayNum * 1.2, levelY + 0.4, rowIndex * 4);
+      cameraPosition = new Vector3(bayNum * 1.2 + 2, levelY + 2, rowIndex * 4 + 4);
+      // Close sidebar when navigating to non-bin
+      setBinSidebarOpen(false);
+    } else if (node.type === 'bin' && node.parsed) {
+      // Bin view - zoom to specific bin
+      targetPosition = calculatePosition(node.parsed);
+      cameraPosition = new Vector3(
+        targetPosition.x + 1.5,
+        targetPosition.y + 1,
+        targetPosition.z + 2
+      );
+
+      // Open sidebar with bin details
+      setBinSidebarLocationId(id);
+      setBinSidebarOpen(true);
+
+      // Fetch stock for this bin
+      const items = await fetchStockForLocation(id);
+      setBinSidebarStockItems(items);
+    } else {
+      // Fallback for any other type
+      targetPosition = new Vector3(5, 2, 0);
+      cameraPosition = new Vector3(10, 8, 10);
+      // Close sidebar when navigating to non-bin
+      setBinSidebarOpen(false);
     }
-  }, [locations, selectedLocationId]);
+
+    setCameraTarget({
+      position: cameraPosition,
+      lookAt: targetPosition,
+      duration: 800,
+    });
+  }, [locations, selectedLocationId, fetchStockForLocation]);
 
   // Handle bin click in 3D scene
   const handleBinClick = useCallback((id: number) => {
@@ -270,6 +332,13 @@ export function WarehouseNavigator() {
     setBinStockItems([]);
   }, []);
 
+  // Close bin sidebar
+  const handleCloseBinSidebar = useCallback(() => {
+    setBinSidebarOpen(false);
+    setBinSidebarLocationId(null);
+    setBinSidebarStockItems([]);
+  }, []);
+
   // Handle configure click (empty state)
   const handleConfigureClick = useCallback(() => {
     navigate('/warehouse');
@@ -387,6 +456,16 @@ export function WarehouseNavigator() {
       <HelpTour
         isOpen={showHelpTour}
         onClose={() => setShowHelpTour(false)}
+      />
+
+      {/* Bin details sidebar */}
+      <BinDetailsSidebar
+        isOpen={binSidebarOpen}
+        onClose={handleCloseBinSidebar}
+        locationId={binSidebarLocationId}
+        locations={locations}
+        stockItems={binSidebarStockItems}
+        isLoading={isLoadingStock}
       />
     </div>
   );

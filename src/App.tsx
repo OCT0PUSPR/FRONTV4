@@ -74,12 +74,6 @@ import { API_CONFIG } from './config/api';
 import OrgChart from './orgChart.tsx'
 import FleetManagementPage from './FleetManagement.tsx'
 import AllVehicles from './AllVehicles.tsx'
-// Smart Reports pages
-import SmartReportsPage from './smartReports.tsx'
-import SmartReportsBuilderPage from './smartReportsBuilder.tsx'
-import SmartReportsDataSourcesPage from './smartReportsDataSources.tsx'
-import SmartReportsHistoryPage from './smartReportsHistory.tsx'
-import SmartReportsScheduledPage from './smartReportsScheduled.tsx'
 import { ProtectedRoute } from './components/ProtectedRoute.tsx'
 import { ROUTE_TO_PAGE_ID, getPageIdFromRoute } from './config/pageRoutes'
 import Error500Page from './error500.tsx'
@@ -90,16 +84,12 @@ import { WarehouseConfigurationPage } from './pages/WarehouseConfigurationPage'
 import ReportTemplatesPage from './pages/ReportTemplatesPage'
 import ReportTemplateEditorPage from './pages/ReportTemplateEditorPage'
 import GeneratedReportsPage from './pages/GeneratedReportsPage'
-import ReportRulesPage from './pages/ReportRulesPage'
-import ReportHeadersPage from './pages/ReportHeadersPage'
-import ReportFootersPage from './pages/ReportFootersPage'
 import ReportExportPage from './pages/ReportExportPage'
 import ReportTransferPage from './pages/ReportTransferPage'
 import IntegrationsPage from './pages/IntegrationsPage'
 import EmailTemplatesPage from './pages/EmailTemplatesPage'
 import EmailTemplateEditorPage from './pages/EmailTemplateEditorPage'
 import SendEmailPage from './pages/SendEmailPage'
-import { TransferRecordPage } from './pages/TransferRecordPage'
 import WarehouseNavigator from './pages/WarehouseNavigator'
 
 // Wrapper component for License page that conditionally renders layout
@@ -572,13 +562,7 @@ function AppContent() {
                       <Route path='/org-chart' element={<ProtectedRoute pageId="org-chart"><OrgChart /></ProtectedRoute>} />
                       <Route path='/fleet-management' element={<ProtectedRoute pageId="fleet-management"><FleetManagementPage /></ProtectedRoute>} />
                       <Route path='/all-vehicles' element={<ProtectedRoute pageId="all-vehicles"><AllVehicles onBack={() => window.history.back()} onSelectVehicle={(id) => console.log('Selected vehicle:', id)} /></ProtectedRoute>} />
-                      {/* Smart Reports routes */}
-                      <Route path='/smart-reports' element={<ProtectedRoute pageId={getPageIdFromRoute('/smart-reports') || 'smart-reports'}><SmartReportsPage /></ProtectedRoute>} />
-                      <Route path='/smart-reports/builder' element={<ProtectedRoute pageId="smart-reports-builder"><SmartReportsBuilderPage /></ProtectedRoute>} />
-                      <Route path='/smart-reports/builder/:id' element={<ProtectedRoute pageId="smart-reports-builder"><SmartReportsBuilderPage /></ProtectedRoute>} />
-                      <Route path='/smart-reports/data-sources' element={<ProtectedRoute pageId="smart-reports-data-sources"><SmartReportsDataSourcesPage /></ProtectedRoute>} />
-                      <Route path='/smart-reports/history' element={<ProtectedRoute pageId="smart-reports-history"><SmartReportsHistoryPage /></ProtectedRoute>} />
-                      <Route path='/smart-reports/scheduled' element={<ProtectedRoute pageId="smart-reports-scheduled"><SmartReportsScheduledPage /></ProtectedRoute>} />
+              
                       <Route path='/field-management' element={<ProtectedRoute pageId="field-management"><FieldManagement /></ProtectedRoute>} />
                       <Route path='/field-layout-editor' element={<ProtectedRoute pageId="field-layout-editor"><FieldLayoutEditor /></ProtectedRoute>} />
                       <Route path='/warehouse-configuration/:warehouseId' element={<ProtectedRoute pageId="warehouse-configuration"><WarehouseConfigurationPage /></ProtectedRoute>} />
@@ -586,19 +570,16 @@ function AppContent() {
                       <Route path='/report-templates' element={<ProtectedRoute pageId="report-templates"><ReportTemplatesPage /></ProtectedRoute>} />
                       <Route path='/report-template-editor' element={<ProtectedRoute pageId="report-templates"><ReportTemplateEditorPage /></ProtectedRoute>} />
                       <Route path='/report-template-editor/:id' element={<ProtectedRoute pageId="report-templates"><ReportTemplateEditorPage /></ProtectedRoute>} />
-                      <Route path='/report-headers' element={<ProtectedRoute pageId="report-headers"><ReportHeadersPage /></ProtectedRoute>} />
-                      <Route path='/report-footers' element={<ProtectedRoute pageId="report-footers"><ReportFootersPage /></ProtectedRoute>} />
                       <Route path='/report-export' element={<ProtectedRoute pageId="report-export"><ReportExportPage /></ProtectedRoute>} />
                       <Route path='/report-transfer' element={<ProtectedRoute pageId="report-transfer"><ReportTransferPage /></ProtectedRoute>} />
                       <Route path='/generated-reports' element={<ProtectedRoute pageId="generated-reports"><GeneratedReportsPage /></ProtectedRoute>} />
-                      <Route path='/report-rules' element={<ProtectedRoute pageId="report-rules"><ReportRulesPage /></ProtectedRoute>} />
                       {/* Email Templates Routes */}
                       <Route path='/email-templates' element={<ProtectedRoute pageId="email-templates"><EmailTemplatesPage /></ProtectedRoute>} />
                       <Route path='/email-templates/create' element={<ProtectedRoute pageId="email-templates"><EmailTemplateEditorPage /></ProtectedRoute>} />
                       <Route path='/email-templates/:id' element={<ProtectedRoute pageId="email-templates"><EmailTemplateEditorPage /></ProtectedRoute>} />
                       {/* Integrations Route */}
                       <Route path='/integrations' element={<ProtectedRoute pageId="integrations"><IntegrationsPage /></ProtectedRoute>} />
-                      {/* Send Email Route */}
+                      {/* Send Email Route */} 
                       <Route path='/send-email' element={<ProtectedRoute pageId="send-email"><SendEmailPage /></ProtectedRoute>} />
                     </Routes>
                   </div>

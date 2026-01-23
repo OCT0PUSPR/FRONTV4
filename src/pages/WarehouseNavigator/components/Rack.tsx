@@ -1,13 +1,26 @@
 // Rack Component - Industrial Pallet Rack with proper styling
-// Features: Blue uprights, orange beams, wire mesh decking, diagonal bracing
+// Features: Blue uprights, orange beams, wire mesh decking, diagonal bracing, labels
 
 import React, { useMemo } from 'react';
 import { Vector3 } from 'three';
+import { Text } from '@react-three/drei';
 import { useTheme } from '../../../../context/theme';
 import { hexToNumber, RACK_COLORS } from '../utils/colorTheme';
 import { LAYOUT, LEVEL_CODES } from '../utils/positionCalculator';
 import { LocationNode } from '../types';
 import { Bin } from './Bin';
+
+// Label colors
+const LABEL_COLORS = {
+  light: {
+    rackNumber: '#1a1a1a',
+    levelCode: '#2a4a6a',
+  },
+  dark: {
+    rackNumber: '#f0f0f0',
+    levelCode: '#8ab4d4',
+  },
+};
 
 interface RackProps {
   row: string;
@@ -44,17 +57,38 @@ export function Rack({
   const wireColor = hexToNumber(isDark ? RACK_COLORS.wireDeckingDark : RACK_COLORS.wireDecking);
   const bracingColor = hexToNumber(isDark ? RACK_COLORS.bracingGrayDark : RACK_COLORS.bracingGray);
 
+  // Label colors
+  const labelColors = isDark ? LABEL_COLORS.dark : LABEL_COLORS.light;
+
   const { BAY_WIDTH, LEVEL_HEIGHT, BIN_WIDTH, BIN_DEPTH } = LAYOUT;
 
   // Organize bins by level
   const levelsData = useMemo(() => {
     const levelMap = new Map<string, LocationNode[]>();
 
+    console.log(`[Rack] Processing ${bins.length} bins for bay ${bay}`);
+
     bins.forEach(bin => {
+      // Get level from parsed data or from bin name (if level IS the bin)
+      let levelCode: string | null = null;
+
       if (bin.parsed) {
-        const existing = levelMap.get(bin.parsed.level) || [];
+        levelCode = bin.parsed.level;
+      } else {
+        // If no parsed data, the bin name might BE the level code (e.g., "AA", "AB")
+        // Check if the name matches a level code pattern
+        if (LEVEL_CODES.includes(bin.name as typeof LEVEL_CODES[number])) {
+          levelCode = bin.name;
+        }
+      }
+
+      if (levelCode) {
+        const existing = levelMap.get(levelCode) || [];
         existing.push(bin);
-        levelMap.set(bin.parsed.level, existing);
+        levelMap.set(levelCode, existing);
+        console.log(`[Rack] Bin "${bin.name}" assigned to level ${levelCode}`);
+      } else {
+        console.log(`[Rack] Bin "${bin.name}" has no level assignment, parsed:`, bin.parsed);
       }
     });
 
@@ -66,32 +100,51 @@ export function Rack({
 
     levels.sort((a, b) => a.levelIndex - b.levelIndex);
 
+    console.log(`[Rack] Levels found:`, levels.map(l => ({ code: l.levelCode, index: l.levelIndex, binCount: l.bins.length })));
+
     return levels;
-  }, [bins]);
+  }, [bins, bay]);
 
   // Calculate rack dimensions based on data
   const rackDimensions = useMemo(() => {
     if (levelsData.length === 0) {
+      console.log(`[Rack] No levels data, using defaults for bay ${bay}`);
+      const defaultLevelCount = 2;
+      const roofThickness = 0.03;
+      const beamH = 0.12;
       return {
         width: BAY_WIDTH,
         depth: BIN_DEPTH * 1.2,
-        height: LEVEL_HEIGHT * 3,
-        levelCount: 2,
+        height: defaultLevelCount * LEVEL_HEIGHT + beamH + roofThickness,
+        levelCount: defaultLevelCount,
+        allLevelIndices: [0, 1],
       };
     }
 
-    const maxLevelIndex = Math.max(...levelsData.map(l => l.levelIndex));
+    // Get all level indices (filter out -1 for unrecognized levels)
+    const validLevelIndices = levelsData
+      .map(l => l.levelIndex)
+      .filter(idx => idx >= 0);
+
+    const maxLevelIndex = Math.max(...validLevelIndices, 0);
+    const minLevelIndex = Math.min(...validLevelIndices, 0);
     const levelCount = maxLevelIndex + 1;
 
+    console.log(`[Rack] Bay ${bay} dimensions: levels ${minLevelIndex}-${maxLevelIndex}, count ${levelCount}`);
+
+    // Height should stop at the roof level (levelCount * LEVEL_HEIGHT + beamHeight + roofThickness)
+    const roofThickness = 0.03;
+    const beamH = 0.12;
     return {
       width: BAY_WIDTH,
       depth: BIN_DEPTH * 1.2,
-      height: (levelCount + 1) * LEVEL_HEIGHT,
+      height: levelCount * LEVEL_HEIGHT + beamH + roofThickness,
       levelCount,
+      allLevelIndices: validLevelIndices,
     };
-  }, [levelsData, BAY_WIDTH, BIN_DEPTH, LEVEL_HEIGHT]);
+  }, [levelsData, BAY_WIDTH, BIN_DEPTH, LEVEL_HEIGHT, bay]);
 
-  const { width: rackWidth, depth: rackDepth, height: rackHeight, levelCount } = rackDimensions;
+  const { width: rackWidth, depth: rackDepth, height: rackHeight, levelCount, allLevelIndices } = rackDimensions;
 
   // Upright dimensions (rectangular tube profile)
   const uprightWidth = 0.08;
@@ -221,9 +274,9 @@ export function Rack({
   // Generate orange horizontal load beams
   const beams = useMemo(() => {
     const elements: React.ReactElement[] = [];
-    const levelIndices = new Set(levelsData.map(l => l.levelIndex));
-    const beamLevels = [0, ...Array.from(levelIndices), levelCount];
-    const uniqueBeamLevels = [...new Set(beamLevels)].sort((a, b) => a - b);
+    // Render beams at floor (0) and at each level that has bins, plus top
+    const beamLevels = [0, ...allLevelIndices, levelCount];
+    const uniqueBeamLevels = [...new Set(beamLevels)].filter(l => l >= 0).sort((a, b) => a - b);
 
     uniqueBeamLevels.forEach(level => {
       const y = level * LEVEL_HEIGHT;
@@ -270,13 +323,13 @@ export function Rack({
     });
 
     return elements;
-  }, [basePosition, rackWidth, rackDepth, levelsData, levelCount, uprightWidth, uprightDepth, beamHeight, beamDepth, beamColor, LEVEL_HEIGHT]);
+  }, [basePosition, rackWidth, rackDepth, allLevelIndices, levelCount, uprightWidth, uprightDepth, beamHeight, beamDepth, beamColor, LEVEL_HEIGHT]);
 
-  // Generate wire mesh decking for each level
+  // Generate wire mesh decking for each level (the floor/shelf surface)
   const wireDecking = useMemo(() => {
     const elements: React.ReactElement[] = [];
-    const levelIndices = new Set(levelsData.map(l => l.levelIndex));
-    const deckLevels = [...Array.from(levelIndices)];
+    // Render decking at each level that has bins
+    const deckLevels = allLevelIndices.filter(l => l >= 0);
 
     deckLevels.forEach(level => {
       const y = level * LEVEL_HEIGHT + beamHeight;
@@ -347,7 +400,66 @@ export function Rack({
     });
 
     return elements;
-  }, [basePosition, rackWidth, rackDepth, levelsData, uprightWidth, uprightDepth, beamHeight, wireColor, LEVEL_HEIGHT]);
+  }, [basePosition, rackWidth, rackDepth, allLevelIndices, uprightWidth, uprightDepth, beamHeight, wireColor, LEVEL_HEIGHT]);
+
+  // Generate roof/top shelf for the rack
+  const roofPanel = useMemo(() => {
+    const elements: React.ReactElement[] = [];
+    const roofY = levelCount * LEVEL_HEIGHT + beamHeight;
+    const roofWidth = rackWidth - uprightWidth * 2;
+    const roofDepth = rackDepth - uprightDepth * 2;
+    const roofThickness = 0.03;
+
+    // Main roof panel (solid top)
+    elements.push(
+      <mesh
+        key="roof-panel"
+        position={[
+          basePosition.x + rackWidth / 2,
+          roofY + roofThickness / 2,
+          basePosition.z + rackDepth / 2,
+        ]}
+        castShadow
+        receiveShadow
+      >
+        <boxGeometry args={[roofWidth, roofThickness, roofDepth]} />
+        <meshStandardMaterial
+          color={wireColor}
+          metalness={0.6}
+          roughness={0.3}
+        />
+      </mesh>
+    );
+
+    // Cross support beams under the roof
+    const numSupports = 3;
+    const supportSpacing = roofDepth / (numSupports + 1);
+    const supportHeight = 0.04;
+    const supportWidth = 0.03;
+
+    for (let i = 1; i <= numSupports; i++) {
+      elements.push(
+        <mesh
+          key={`roof-support-${i}`}
+          position={[
+            basePosition.x + rackWidth / 2,
+            roofY - supportHeight / 2,
+            basePosition.z + uprightDepth + i * supportSpacing,
+          ]}
+          castShadow
+        >
+          <boxGeometry args={[roofWidth, supportHeight, supportWidth]} />
+          <meshStandardMaterial
+            color={beamColor}
+            metalness={0.5}
+            roughness={0.3}
+          />
+        </mesh>
+      );
+    }
+
+    return elements;
+  }, [basePosition, rackWidth, rackDepth, levelCount, uprightWidth, uprightDepth, beamHeight, wireColor, beamColor, LEVEL_HEIGHT]);
 
   // Filter levels by visibility setting
   const visibleLevelsData = useMemo(() => {
@@ -371,14 +483,30 @@ export function Rack({
       {/* Wire mesh decking */}
       {wireDecking}
 
+      {/* Roof/top panel */}
+      {roofPanel}
+
       {/* Render bins that exist in the data */}
       {visibleLevelsData.map(levelData => {
-        const levelY = levelData.levelIndex * LEVEL_HEIGHT + beamHeight + 0.05;
+        // Skip invalid level indices
+        if (levelData.levelIndex < 0) return null;
 
-        return levelData.bins.map(bin => {
+        // Position bin on top of the shelf decking
+        const levelY = levelData.levelIndex * LEVEL_HEIGHT + beamHeight + 0.02;
+
+        return levelData.bins.map((bin, binIndex) => {
+          // Get side from parsed data, or default to 1 (left position)
+          // Side 1 = left half of shelf, Side 2 = right half of shelf
           const side = bin.parsed?.side || 1;
-          const binX = basePosition.x + uprightWidth + (side - 1) * BIN_WIDTH + BIN_WIDTH * 0.1;
-          const binZ = basePosition.z + uprightDepth + BIN_DEPTH * 0.1;
+
+          // Calculate bin position within the shelf
+          // Shelf area is between uprights: from uprightWidth to (rackWidth - uprightWidth)
+          const shelfWidth = rackWidth - uprightWidth * 2;
+          const binSlotWidth = shelfWidth / 2; // Two bins per shelf
+
+          // Position bin in its slot (side 1 = left slot, side 2 = right slot)
+          const binX = basePosition.x + uprightWidth + (side - 1) * binSlotWidth + 0.02;
+          const binZ = basePosition.z + uprightDepth + 0.02;
 
           const binPosition = new Vector3(binX, levelY, binZ);
 
@@ -395,6 +523,19 @@ export function Rack({
           );
         });
       })}
+
+      {/* Rack number label standing vertical above rack */}
+      <Text
+        position={[basePosition.x + rackWidth / 2, rackHeight + 0.15, basePosition.z + rackDepth + 0.1]}
+        rotation={[0, 0, 0]}
+        fontSize={0.3}
+        color={labelColors.rackNumber}
+        anchorX="center"
+        anchorY="bottom"
+        fontWeight="bold"
+      >
+        {String(bay).padStart(2, '0')}
+      </Text>
     </group>
   );
 }

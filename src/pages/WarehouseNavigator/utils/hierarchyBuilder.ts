@@ -5,17 +5,22 @@ import { parseLocationCode, calculatePosition } from './positionCalculator';
 
 /**
  * Determine location type from path depth
- * WH/Stock/[Row]/[Bay]/[Level]/[Bin]
+ * Supports two hierarchy formats:
+ * 1. WH/Stock/Row/Bay/Level (level IS the bin) - depth 3
+ * 2. WH/Stock/Row/Bay/Level/Side (with side 01/02) - depth 4
  */
-export function getLocationType(path: string[]): LocationType {
+export function getLocationType(path: string[], hasChildren: boolean = true): LocationType {
   // Remove WH and Stock from path
   const depth = path.length - 2;
 
   switch (depth) {
     case 1: return 'row';    // AG
-    case 2: return 'bay';    // AG/14
-    case 3: return 'level';  // AG/14/AF
-    case 4: return 'bin';    // AG/14/AF/01
+    case 2: return 'bay';    // AG/01
+    case 3:
+      // If this level node has no children, it IS the bin
+      // Otherwise it's a level containing bins
+      return hasChildren ? 'level' : 'bin';
+    case 4: return 'bin';    // AG/01/AF/01
     default: return 'bin';
   }
 }
@@ -30,17 +35,26 @@ export function parseLocationPath(completeName: string): string[] {
 
 /**
  * Build a location code from path components
+ * Supports both 3-part and 4-part structures
  */
 export function buildLocationCode(path: string[]): string | null {
   // Remove WH and Stock prefix
   const parts = path.slice(2);
 
   if (parts.length === 4) {
-    // Full bin path: [Row, Bay, Level, Side]
+    // Full bin path with side: [Row, Bay, Level, Side]
     const [row, bay, level, side] = parts;
     const bayPadded = bay.padStart(2, '0');
     const sidePadded = side.padStart(2, '0');
     return `${row}${bayPadded}${level}${sidePadded}`;
+  }
+
+  if (parts.length === 3) {
+    // Level IS the bin: [Row, Bay, Level]
+    // Treat as side 01 (single bin per level)
+    const [row, bay, level] = parts;
+    const bayPadded = bay.padStart(2, '0');
+    return `${row}${bayPadded}${level}01`;
   }
 
   return null;
@@ -99,11 +113,12 @@ export function buildLocationHierarchy(
   // Create node map
   const nodeMap = new Map<number, LocationNode>();
 
-  // First pass: create all nodes
+  // First pass: create all nodes (with temporary type assignment)
   warehouseLocations.forEach(loc => {
     const path = parseLocationPath(loc.complete_name);
-    const type = getLocationType(path);
     const depth = path.length - 2; // Depth after WH/Stock
+    // Initially set type without knowing children status
+    const type = getLocationType(path, true);
 
     // Try to parse as bin code for position
     const code = buildLocationCode(path);
@@ -145,6 +160,28 @@ export function buildLocationHierarchy(
       // Parent not in nodeMap - this node becomes a root
       // This happens for row-level nodes whose parent (Stock) was excluded
       rootNodes.push(node);
+    }
+  });
+
+  // Third pass: Update type for leaf nodes at depth 3 (levels that ARE bins)
+  // If a 'level' type node has no children, it's actually a bin
+  nodeMap.forEach(node => {
+    if (node.type === 'level' && node.children.length === 0) {
+      // This level has no children, so it IS the storage location (bin)
+      node.type = 'bin';
+
+      // Recalculate parsed location code for positioning
+      const path = parseLocationPath(node.completeName);
+      const code = buildLocationCode(path);
+      if (code) {
+        const result = parseLocationCode(code);
+        if (result) {
+          node.parsed = result;
+          node.position = calculatePosition(result);
+        }
+      }
+
+      console.log('[hierarchyBuilder] Converted level to bin:', node.name, 'parsed:', node.parsed);
     }
   });
 

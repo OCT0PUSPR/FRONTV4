@@ -982,7 +982,7 @@ export function TransferRecordPage({
                     setExistingReportId(result.existingReport.id)
                     await checkExistingReports()
                     window.open(`${API_CONFIG.BACKEND_BASE_URL}/reports/generated/${result.existingReport.id}/download`, '_blank')
-                    setToast({ text: t('Document already exists - downloading'), state: 'info' })
+                    setToast({ text: t('Document already exists - downloading'), state: 'success' })
                 } else if (result.success && result.reportUuid) {
                     // Success with base64 - refresh and notify
                     await checkExistingReports()
