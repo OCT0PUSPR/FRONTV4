@@ -319,8 +319,8 @@ function DockDoor({ position, width, isDark }: { position: [number, number, numb
       </mesh>
 
       {/* Door (rolled up appearance) */}
-      <mesh position={[0, height - 0.3, 0.05]}>
-        <cylinderGeometry args={[0.25, 0.25, width, 16]} rotation={[0, 0, Math.PI / 2]} />
+      <mesh position={[0, height - 0.3, 0.05]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.25, 0.25, width, 16]} />
         <meshStandardMaterial color={hexToNumber(doorColor)} metalness={0.5} roughness={0.3} />
       </mesh>
 

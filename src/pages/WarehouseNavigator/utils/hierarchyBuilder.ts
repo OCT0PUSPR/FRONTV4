@@ -499,7 +499,7 @@ export function flattenToZones(nodes: LocationNode[]): LocationNode[] {
  */
 export function detectZoneType(loc: OdooLocation): ZoneType | null {
   // If explicitly set via custom field, use it
-  if (loc.x_zone_type && loc.x_zone_type !== false) {
+  if (loc.x_zone_type && typeof loc.x_zone_type === 'string') {
     return loc.x_zone_type as ZoneType;
   }
 
