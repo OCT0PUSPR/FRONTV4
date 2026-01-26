@@ -465,7 +465,7 @@ const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme }) => {
 
                     {/* Stat 2 */}
                     <div className="flex items-center gap-4 group">
-                        <div className="w-12 h-12 flex-shrink-0 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#fa709a] to-[#fee140] text-white shadow-lg">
+                        <div className="w-12 h-12 flex-shrink-0 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#dc2626] to-[#ea580c] text-white shadow-lg">
                              <Scan size={22} />
                         </div>
                         <div>
@@ -476,7 +476,7 @@ const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme }) => {
 
                     {/* Stat 3 */}
                     <div className="flex items-center gap-4 group">
-                         <div className="w-12 h-12 flex-shrink-0 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#f093fb] to-[#f5576c] text-white shadow-lg">
+                         <div className="w-12 h-12 flex-shrink-0 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#f59e0b] to-[#d97706] text-white shadow-lg">
                              <Layers size={22} />
                         </div>
                         <div>

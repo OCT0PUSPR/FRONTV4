@@ -735,14 +735,14 @@ export default function RoutesPage() {
           label={t("Total Routes")}
           value={routesData.length}
           icon={RouteIcon}
-          gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+          gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
           delay={0}
         />
         <StatCard
           label={t("Active Routes")}
           value={activeRoutes}
           icon={CheckCircle}
-          gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+          gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
           delay={1}
         />
         <StatCard
@@ -865,7 +865,7 @@ export default function RoutesPage() {
                 } else if (status === "active") {
                   return { icon: Clock, gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" }
                 } else {
-                  return { icon: RouteIcon, gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)" }
+                  return { icon: RouteIcon, gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)" }
                 }
               }}
               isLoading={loading?.stockRoutes || loading?.stockRules}

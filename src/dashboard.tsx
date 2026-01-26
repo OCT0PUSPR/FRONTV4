@@ -144,36 +144,48 @@ const getStatCardConfig = (widget: WidgetConfig, index: number): { icon: LucideI
   const title = widget.title?.toLowerCase() || '';
   const dataSource = widget.dataSource?.toLowerCase() || '';
   const yAxisKey = widget.settings?.yAxisKey?.toLowerCase() || '';
-  
+
   // Default gradients array for variety
   const gradients = [
-    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #dc2626 0%, #ea580c 100%)',
+    'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
     'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
     'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
     'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
   ];
 
+  // Array of fallback icons for variety when no keywords match
+  const fallbackIcons: LucideIcon[] = [Calculator, BarChart3, Hash, TrendingUp, Activity, Database, Layers, Package];
+
   // Determine icon based on title, dataSource, or yAxisKey
-  let icon: LucideIcon = Calculator;
-  
-  if (title.includes('revenue') || title.includes('income') || title.includes('profit') || yAxisKey.includes('revenue') || yAxisKey.includes('profit')) {
+  let icon: LucideIcon | null = null;
+
+  if (title.includes('revenue') || title.includes('income') || title.includes('sales') || title.includes('money') || yAxisKey.includes('revenue') || yAxisKey.includes('profit')) {
     icon = DollarSign;
-  } else if (title.includes('product') || dataSource.includes('product') || yAxisKey.includes('product')) {
-    icon = Package;
-  } else if (title.includes('stock') || title.includes('inventory') || dataSource.includes('stock') || dataSource.includes('inventory')) {
-    icon = Layers;
-  } else if (title.includes('order') || title.includes('transfer') || dataSource.includes('picking') || dataSource.includes('transfer')) {
-    icon = Activity;
-  } else if (title.includes('count') || title.includes('total')) {
-    icon = Hash;
-  } else if (title.includes('trend') || title.includes('growth')) {
+  } else if (title.includes('profit') || title.includes('margin') || title.includes('earning')) {
     icon = TrendingUp;
-  } else if (title.includes('database') || dataSource.includes('database')) {
+  } else if (title.includes('product') || title.includes('item') || title.includes('sku') || dataSource.includes('product') || yAxisKey.includes('product')) {
+    icon = Package;
+  } else if (title.includes('stock') || title.includes('inventory') || title.includes('quantity') || title.includes('qty') || dataSource.includes('stock') || dataSource.includes('inventory')) {
+    icon = Layers;
+  } else if (title.includes('order') || title.includes('transfer') || title.includes('receipt') || title.includes('shipment') || dataSource.includes('picking') || dataSource.includes('transfer')) {
+    icon = Activity;
+  } else if (title.includes('count') || title.includes('total') || title.includes('number') || title.includes('amount')) {
+    icon = Hash;
+  } else if (title.includes('trend') || title.includes('growth') || title.includes('increase') || title.includes('change')) {
+    icon = TrendingUp;
+  } else if (title.includes('database') || title.includes('data') || title.includes('record') || dataSource.includes('database')) {
     icon = Database;
-  } else {
-    icon = BarChart3;
+  } else if (title.includes('warehouse') || title.includes('location') || title.includes('zone')) {
+    icon = Layers;
+  } else if (title.includes('user') || title.includes('employee') || title.includes('worker')) {
+    icon = Activity;
+  }
+
+  // If no keyword matched, use fallback icons based on index for variety
+  if (!icon) {
+    icon = fallbackIcons[index % fallbackIcons.length];
   }
 
   return {

@@ -588,14 +588,14 @@ export default function Stocks() {
               label={t("Total Value")}
               value={`${defaultCurrency}${totalValue.toLocaleString()}`}
               icon={DollarSign}
-              gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+              gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
               delay={0}
             />
             <StatCard
               label={t("Total Units")}
               value={totalUnits.toLocaleString()}
               icon={Package}
-              gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+              gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
               delay={1}
             />
             <StatCard
@@ -713,7 +713,7 @@ export default function Stocks() {
                     // Match receipts-style status icon gradients
                     if (status === "out") {
                       // Out of stock -> cancelled (red)
-                      return { icon: AlertCircle, gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" }
+                      return { icon: AlertCircle, gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" }
                     }
                     if (status === "low") {
                       // Low stock -> warning-ish (blue)

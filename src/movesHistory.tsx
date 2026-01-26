@@ -346,7 +346,7 @@ export default function MovesHistoryPage() {
               label={t("Total Moves")}
               value={totalMoves}
               icon={Package}
-              gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+              gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
               delay={0}
             />
             <StatCard
@@ -367,7 +367,7 @@ export default function MovesHistoryPage() {
               label={t("Total Quantity")}
               value={totalQuantity.toLocaleString()}
               icon={ArrowRight}
-              gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+              gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
               delay={3}
             />
           </div>
@@ -525,7 +525,7 @@ export default function MovesHistoryPage() {
                         const status = move.status
                         const statusTheme = {
                           Done: { bg: "rgba(67, 233, 123, 0.1)", text: "#43e97b" },
-                          Cancelled: { bg: "rgba(240, 147, 251, 0.1)", text: "#f5576c" },
+                          Cancelled: { bg: "rgba(245, 158, 11, 0.1)", text: "#f5576c" },
                           Pending: { bg: "rgba(79, 172, 254, 0.1)", text: "#4facfe" },
                         }
                         const theme = statusTheme[status as keyof typeof statusTheme] || statusTheme.Pending

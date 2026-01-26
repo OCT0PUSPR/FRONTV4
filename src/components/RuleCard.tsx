@@ -39,14 +39,14 @@ export function RuleCard({ rule, onClick, index }: RuleCardProps) {
         }
       case "push to":
         return {
-          gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+          gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
           bg: "bg-rose-500/10",
           text: "text-rose-600 dark:text-rose-400",
           label: action,
         }
       case "buy":
         return {
-          gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+          gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
           bg: "bg-yellow-500/10",
           text: "text-yellow-600 dark:text-yellow-400",
           label: action,

@@ -100,7 +100,7 @@ export function useExport() {
             // Generate StatCard-style summary cards with gradients and icons
             const gradients = [
                 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
             ]

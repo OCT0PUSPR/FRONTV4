@@ -1,7 +1,8 @@
 // Hierarchy Builder - converts flat Odoo locations to hierarchical tree
 
-import { OdooLocation, LocationNode, LocationType, ParsedLocation, LEVEL_CODES } from '../types';
-import { parseLocationCode, calculatePosition } from './positionCalculator';
+import { OdooLocation, LocationNode, LocationType, ParsedLocation, LEVEL_CODES, ZoneType } from '../types';
+import { parseLocationCode, calculatePosition, calculateZonePosition, ZONE_DEFAULTS } from './positionCalculator';
+import { Vector3 } from 'three';
 
 /**
  * Determine location type from path depth
@@ -113,21 +114,68 @@ export function buildLocationHierarchy(
   // Create node map
   const nodeMap = new Map<number, LocationNode>();
 
+  // Track zone indices for auto-positioning (fallback when no explicit position)
+  const zoneIndices: Record<ZoneType, number> = {
+    dock: 0,
+    staging: 0,
+    scrap: 0,
+    qc: 0,
+    packing: 0,
+    floor: 0,
+  };
+
   // First pass: create all nodes (with temporary type assignment)
   warehouseLocations.forEach(loc => {
     const path = parseLocationPath(loc.complete_name);
     const depth = path.length - 2; // Depth after WH/Stock
-    // Initially set type without knowing children status
-    const type = getLocationType(path, true);
 
-    // Try to parse as bin code for position
+    // Check if this is a zone location (has x_zone_type or detected from name/fields)
+    const detectedZoneType = detectZoneType(loc);
+    const isZone = detectedZoneType !== null;
+    const zoneType = detectedZoneType || undefined;
+
+    // Determine location type
+    let type: LocationType;
+    if (isZone && zoneType) {
+      type = 'zone';
+    } else {
+      // Initially set type without knowing children status
+      type = getLocationType(path, true);
+    }
+
+    // Try to parse as bin code for position (for rack locations)
     const code = buildLocationCode(path);
     let parsed: ParsedLocation | undefined;
-    if (code) {
+    if (code && !isZone) {
       const result = parseLocationCode(code);
       if (result) {
         parsed = result;
       }
+    }
+
+    // Calculate position based on type
+    let position: Vector3 | undefined;
+    if (isZone && zoneType) {
+      // Check if explicit position is set in Odoo (posx, posz)
+      const hasExplicitPosition = (loc.posx !== undefined && loc.posx !== 0) ||
+                                   (loc.posz !== undefined && loc.posz !== 0);
+
+      if (hasExplicitPosition) {
+        // Use Odoo's position fields directly (posx = X, posz = Z, posy could be elevation)
+        position = new Vector3(
+          loc.posx || 0,
+          loc.posy || 0,  // Y is typically 0 for floor zones
+          loc.posz || 0
+        );
+        console.log(`[hierarchyBuilder] Zone "${loc.name}" using explicit position:`, position);
+      } else {
+        // Fallback to auto-calculated position based on zone type
+        position = calculateZonePosition(zoneType, zoneIndices[zoneType], warehouseLocations.length);
+        zoneIndices[zoneType]++;
+        console.log(`[hierarchyBuilder] Zone "${loc.name}" using auto position:`, position);
+      }
+    } else if (parsed) {
+      position = calculatePosition(parsed);
     }
 
     const node: LocationNode = {
@@ -143,7 +191,11 @@ export function buildLocationHierarchy(
       totalQty: 0,
       depth,
       parsed,
-      position: parsed ? calculatePosition(parsed) : undefined,
+      position,
+      // Zone-specific properties
+      zoneType: zoneType,
+      zoneWidth: isZone && zoneType ? (loc.x_zone_width || ZONE_DEFAULTS[zoneType].width) : undefined,
+      zoneDepth: isZone && zoneType ? (loc.x_zone_depth || ZONE_DEFAULTS[zoneType].depth) : undefined,
     };
 
     nodeMap.set(loc.id, node);
@@ -182,6 +234,46 @@ export function buildLocationHierarchy(
       }
 
       console.log('[hierarchyBuilder] Converted level to bin:', node.name, 'parsed:', node.parsed);
+    }
+  });
+
+  // Fourth pass: Position child zones relative to parent zones
+  // If a zone has no explicit position but has a zone parent, position it relative to parent
+  nodeMap.forEach(node => {
+    if (node.type === 'zone' && node.parentId) {
+      const parent = nodeMap.get(node.parentId);
+
+      // Check if parent is also a zone and this node has no explicit position
+      if (parent && parent.type === 'zone' && parent.position) {
+        // Check if this child zone was auto-positioned (no explicit posx/posz in original data)
+        // We can detect this by checking if the position matches an auto-calculated one
+        const originalLoc = warehouseLocations.find(l => l.id === node.id);
+        const hasExplicitPosition = originalLoc &&
+          ((originalLoc.posx !== undefined && originalLoc.posx !== 0) ||
+           (originalLoc.posz !== undefined && originalLoc.posz !== 0));
+
+        if (!hasExplicitPosition) {
+          // Find index among sibling zones
+          const siblingZones = parent.children.filter(c => c.type === 'zone');
+          const childIndex = siblingZones.indexOf(node);
+
+          const parentWidth = parent.zoneWidth || ZONE_DEFAULTS[parent.zoneType || 'floor'].width;
+          const parentDepth = parent.zoneDepth || ZONE_DEFAULTS[parent.zoneType || 'floor'].depth;
+          const childWidth = node.zoneWidth || ZONE_DEFAULTS[node.zoneType || 'floor'].width;
+          const childDepth = node.zoneDepth || ZONE_DEFAULTS[node.zoneType || 'floor'].depth;
+
+          node.position = calculateChildZonePosition(
+            parent.position,
+            parentWidth,
+            parentDepth,
+            childIndex,
+            childWidth,
+            childDepth
+          );
+
+          console.log(`[hierarchyBuilder] Child zone "${node.name}" positioned relative to parent "${parent.name}":`, node.position);
+        }
+      }
     }
   });
 
@@ -382,4 +474,76 @@ export function flattenToBins(nodes: LocationNode[]): LocationNode[] {
 
   nodes.forEach(collectBins);
   return bins;
+}
+
+/**
+ * Flatten tree to array of zones only
+ */
+export function flattenToZones(nodes: LocationNode[]): LocationNode[] {
+  const zones: LocationNode[] = [];
+
+  const collectZones = (node: LocationNode): void => {
+    if (node.type === 'zone') {
+      zones.push(node);
+    }
+    node.children.forEach(collectZones);
+  };
+
+  nodes.forEach(collectZones);
+  return zones;
+}
+
+/**
+ * Check if a location is a zone based on usage or custom fields
+ * Useful for detecting zones when x_zone_type is not set
+ */
+export function detectZoneType(loc: OdooLocation): ZoneType | null {
+  // If explicitly set via custom field, use it
+  if (loc.x_zone_type && loc.x_zone_type !== false) {
+    return loc.x_zone_type as ZoneType;
+  }
+
+  // Detect from Odoo built-in fields
+  if (loc.is_a_dock) return 'dock';
+  if (loc.scrap_location) return 'scrap';
+
+  // Detect from name patterns (case-insensitive)
+  const nameLower = loc.name.toLowerCase();
+  const completeNameLower = loc.complete_name.toLowerCase();
+
+  // Check both name and complete_name for patterns
+  const checkPattern = (pattern: string) =>
+    nameLower.includes(pattern) || completeNameLower.includes(pattern);
+
+  if (checkPattern('dock') || checkPattern('receiving') || checkPattern('shipping')) return 'dock';
+  if (checkPattern('staging') || checkPattern('stage') || checkPattern('waiting')) return 'staging';
+  if (checkPattern('scrap') || checkPattern('waste') || checkPattern('disposal')) return 'scrap';
+  if (checkPattern('qc') || checkPattern('quality') || checkPattern('inspection')) return 'qc';
+  if (checkPattern('pack') || checkPattern('packing')) return 'packing';
+  if (checkPattern('floor') || checkPattern('area')) return 'floor';
+
+  return null;
+}
+
+/**
+ * Calculate relative position for child zones
+ * Children are positioned relative to their parent zone
+ */
+export function calculateChildZonePosition(
+  parentPosition: Vector3,
+  parentWidth: number,
+  parentDepth: number,
+  childIndex: number,
+  childWidth: number,
+  childDepth: number
+): Vector3 {
+  // Position children along the back edge of the parent zone
+  const spacing = 1; // Gap between child zones
+  const xOffset = childIndex * (childWidth + spacing);
+
+  return new Vector3(
+    parentPosition.x + xOffset,
+    0,
+    parentPosition.z + parentDepth + spacing
+  );
 }

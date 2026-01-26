@@ -823,7 +823,7 @@ export default function PickingEditModal({ isOpen, pickingId, variant, onClose, 
                 style={{
                   width: "4px",
                   height: "20px",
-                  background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
                   borderRadius: "2px",
                 }}
               />
@@ -1033,7 +1033,7 @@ export default function PickingEditModal({ isOpen, pickingId, variant, onClose, 
                 style={{
                   width: "4px",
                   height: "20px",
-                  background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+                  background: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
                   borderRadius: "2px",
                 }}
               />

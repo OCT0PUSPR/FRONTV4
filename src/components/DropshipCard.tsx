@@ -57,7 +57,7 @@ export function DropshipCard({ dropship, onClick, index }: DropshipCardProps) {
         }
       case "cancelled":
         return {
-          gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+          gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
           icon: <XCircle className="w-5 h-5 text-white" />,
           label: t("Cancelled"),
           bg: "bg-rose-500/10",
@@ -66,7 +66,7 @@ export function DropshipCard({ dropship, onClick, index }: DropshipCardProps) {
         }
       case "draft":
         return {
-          gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+          gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
           icon: <FileText className="w-5 h-5 text-white" />,
           label: t("Draft"),
           bg: "bg-orange-500/10",

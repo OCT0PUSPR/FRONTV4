@@ -574,14 +574,14 @@ export default function RulesPage() {
             label={t("Total Rules")}
             value={totalRules}
             icon={Package}
-            gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+            gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
             delay={0}
           />
           <StatCard
             label={t("Active Rules")}
             value={activeRules}
             icon={CheckCircle2}
-            gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+            gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
             delay={1}
           />
           <StatCard
@@ -689,8 +689,8 @@ export default function RulesPage() {
                         const getActionColor = (act: string) => {
                           const normalized = act.toLowerCase()
                           if (normalized.includes("pull")) return { bg: "rgba(67, 233, 123, 0.1)", color: "#43e97b" }
-                          if (normalized.includes("push")) return { bg: "rgba(240, 147, 251, 0.1)", color: "#f093fb" }
-                          if (normalized.includes("buy")) return { bg: "rgba(250, 112, 154, 0.1)", color: "#fa709a" }
+                          if (normalized.includes("push")) return { bg: "rgba(245, 158, 11, 0.1)", color: "#f59e0b" }
+                          if (normalized.includes("buy")) return { bg: "rgba(220, 38, 38, 0.1)", color: "#dc2626" }
                           if (normalized.includes("manufacture")) return { bg: "rgba(102, 126, 234, 0.1)", color: "#667eea" }
                           return { bg: colors.mutedBg, color: colors.textSecondary }
                         }
@@ -821,9 +821,9 @@ export default function RulesPage() {
                     if (action.includes("pull")) {
                       return { icon: ArrowRight, gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)" }
                     } else if (action.includes("push")) {
-                      return { icon: ArrowRight, gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" }
+                      return { icon: ArrowRight, gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" }
                     } else if (action.includes("buy")) {
-                      return { icon: Package, gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)" }
+                      return { icon: Package, gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)" }
                     } else if (action.includes("manufacture")) {
                       return { icon: Settings, gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }
                     }

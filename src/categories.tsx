@@ -316,14 +316,14 @@ export default function ProductCategoriesPage() {
               label={t("Total Categories")}
               value={totalCategories}
               icon={FolderTree}
-              gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+              gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
               delay={0}
             />
             <StatCard
               label={t("Parent Categories")}
               value={parentCategories}
               icon={FolderTree}
-              gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+              gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
               delay={1}
             />
             <StatCard

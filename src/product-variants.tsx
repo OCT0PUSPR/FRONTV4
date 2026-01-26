@@ -295,14 +295,14 @@ export default function ProductVariantsPage() {
             label={t("Total Variants")}
             value={totalVariants}
             icon={Package}
-            gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+            gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
             delay={0}
           />
           <StatCard
             label={t("Inventory Value")}
             value={`$${totalInventoryValue.toLocaleString()}`}
             icon={DollarSign}
-            gradient="linear-gradient(135deg, #f5576c 0%, #f093fb 100%)"
+            gradient="linear-gradient(135deg, #d97706 0%, #f59e0b 100%)"
             delay={1}
           />
           <StatCard

@@ -45,7 +45,7 @@ export function StockCard({ stock, currency = 'LE', onClick, index }: StockCardP
   const getStatusTheme = (onHand: number) => {
     if (onHand === 0) {
       return {
-        gradient: "linear-gradient(135deg, #f5576c 0%, #f093fb 100%)",
+        gradient: "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)",
         icon: <XCircle className="w-5 h-5 text-white" />,
         label: t("Out of Stock"),
         bg: "bg-rose-500/10",
@@ -55,7 +55,7 @@ export function StockCard({ stock, currency = 'LE', onClick, index }: StockCardP
     }
     if (onHand < 100) {
       return {
-        gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+        gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
         icon: <AlertCircle className="w-5 h-5 text-white" />,
         label: t("Low Stock"),
         bg: "bg-orange-500/10",

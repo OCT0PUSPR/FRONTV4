@@ -43,7 +43,7 @@ export type Theme = {
 const lightColors: ThemeColors = {
   background: "#FFF",
   card: "#FFF",
-  action: "#4facfe",
+  action: "#3b82f6",
   cancel: "#FA8787",      // Cancelled
   success: "#C9F5C5",     // Done
   inProgress: "#FFE5A8",  // In Progress
@@ -74,7 +74,7 @@ const lightColors: ThemeColors = {
 const darkColors: ThemeColors = {
   background: "#09090b",      // zinc-950 - almost black background
   card: "#18181b",            // zinc-900 - slightly lighter for cards
-  action: "#4facfe",
+  action: "#3b82f6",          // blue-500 - matching sidebar active state
   cancel: "#FA8787",          // Cancelled
   success: "#C9F5C5",         // Done
   inProgress: "#FFE5A8",      // In Progress

@@ -403,7 +403,7 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({
             <svg className="transform -rotate-90 w-full h-full" viewBox="0 0 128 128">
               <defs>
                 <linearGradient id="utilizationGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#f093fb" />
+                  <stop offset="0%" stopColor="#f59e0b" />
                   <stop offset="100%" stopColor="#f5576c" />
                 </linearGradient>
               </defs>

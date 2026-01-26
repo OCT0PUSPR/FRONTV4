@@ -113,6 +113,7 @@ const menuItems: MenuItem[] = [
     icon: Wrench,
     items: [
       { title: "Physical Inventory", icon: Archive, url: "/physical-inventory" },
+      { title: "Count Orders", icon: ListChecks, url: "/physical-inventory/orders" },
       { title: "Scrap", icon: Trash2, url: "/scrap" },
       { title: "Landed Costs", icon: DollarSign, url: "/landed-costs" },
     ],
@@ -198,9 +199,8 @@ const getIconByName = (iconName: string): LucideIcon => {
     Users: Users,
     Key: Key,
     Network: Network,
-    // Add more mappings as needed
   }
-  return iconMap[iconName] || Settings // Default to Settings if icon not found
+  return iconMap[iconName] || Settings
 }
 
 export function EnhancedSidebar() {
@@ -208,7 +208,7 @@ export function EnhancedSidebar() {
   const { name } = useAuth()
   const location = useLocation()
   const { signOut } = useAuth()
-  const { isCollapsed, toggleSidebar } = useSidebar()
+  const { isCollapsed, toggleSidebar, setHasSecondaryPanel } = useSidebar()
   const [selectedModule, setSelectedModule] = useState<MenuItem | null>(null)
   const [showUserModal, setShowUserModal] = useState(false)
   const { mode, colors } = useTheme()
@@ -219,67 +219,45 @@ export function EnhancedSidebar() {
   const userMenuRef = useRef<HTMLDivElement>(null)
   const [fleetPages, setFleetPages] = useState<SubMenuItem[]>([])
 
-  /**
-   * Check if a URL should be visible based on CASL permissions
-   */
   const canViewRoute = useCallback(
     (url: string | undefined): boolean => {
-      if (!url) return true // No URL means it's a parent item, show it
-
-      // Get page_id from route
+      if (!url) return true
       const pageId = ROUTE_TO_PAGE_ID[url]
-
-      // If no page_id mapping, allow access (for pages not in our security system)
       if (!pageId) return true
-
-      // Check CASL permission
       return canViewPage(pageId)
     },
     [canViewPage],
   )
 
-  /**
-   * Filter menu items recursively based on CASL permissions
-   */
   const filterMenuItems = useCallback(
     (items: MenuItem[]): MenuItem[] => {
       return items
         .map((item) => {
-          // If item has a URL, check permission
           if (item.url && !canViewRoute(item.url)) {
-            return null // Hide this item
+            return null
           }
-
-          // If item has sub-items, filter them recursively
           if (item.items) {
             const filteredSubItems = item.items
               .map((subItem) => {
-                // Check sub-item URL
                 if (subItem.url && !canViewRoute(subItem.url)) {
                   return null
                 }
-
-                // Check nested items
                 if (subItem.items) {
                   const filteredNested = subItem.items.filter((nested) => !nested.url || canViewRoute(nested.url))
-                  // Only return sub-item if it has visible nested items
                   if (filteredNested.length === 0) {
                     return null
                   }
                   return { ...subItem, items: filteredNested }
                 }
-
                 return subItem
               })
               .filter((subItem): subItem is SubMenuItem => subItem !== null)
 
-            // Only return item if it has visible sub-items or no sub-items
             if (filteredSubItems.length === 0 && item.items.length > 0) {
               return null
             }
             return { ...item, items: filteredSubItems }
           }
-
           return item
         })
         .filter((item): item is MenuItem => item !== null)
@@ -287,19 +265,15 @@ export function EnhancedSidebar() {
     [canViewRoute],
   )
 
-  // Fetch Fleet Management pages from ABAC registry
   useEffect(() => {
     const loadFleetPages = async () => {
       try {
-        // Fetch Fleet module pages (module_id: 11, module_key: 'fleet')
         const response = await fetch(
           `${API_CONFIG.BACKEND_BASE_URL}/v1/abac/registry/modules/11/pages`,
           { headers: getTenantHeaders() }
         )
         const data = await response.json()
-
         if (data.success && data.data) {
-          // Map pages to menu items
           const pages: SubMenuItem[] = data.data
             .filter((page: any) => page.is_active)
             .map((page: any) => ({
@@ -313,39 +287,29 @@ export function EnhancedSidebar() {
         console.error('Error loading Fleet Management pages:', error)
       }
     }
-
     loadFleetPages()
   }, [])
 
-  // Filter menu items based on permissions and merge with Fleet pages
   const visibleMenuItems = useMemo(() => {
     if (isCaslLoading) {
-      return menuItems // Show all while loading
+      return menuItems
     }
-
     const filteredItems = filterMenuItems(menuItems)
-
-    // Add Fleet Management section if user has access to any Fleet page
     const accessibleFleetPages = fleetPages.filter((page) => {
       if (!page.url) return false
       return canViewRoute(page.url)
     })
 
     if (accessibleFleetPages.length > 0) {
-      // Find if Fleet Management already exists or insert it
       const fleetIndex = filteredItems.findIndex((item) => item.title === 'Fleet Management')
-
       const fleetMenuItem: MenuItem = {
         title: 'Fleet Management',
         icon: Car,
         items: accessibleFleetPages,
       }
-
       if (fleetIndex >= 0) {
-        // Replace existing Fleet Management item
         filteredItems[fleetIndex] = fleetMenuItem
       } else {
-        // Insert Fleet Management after Warehouse Management or before User Management
         const insertIndex = filteredItems.findIndex((item) => item.title === 'User Management')
         if (insertIndex >= 0) {
           filteredItems.splice(insertIndex, 0, fleetMenuItem)
@@ -354,17 +318,12 @@ export function EnhancedSidebar() {
         }
       }
     }
-
     return filteredItems
   }, [isCaslLoading, filterMenuItems, fleetPages, canViewRoute])
 
-  const isActive = (url: string) => {
-    return location.pathname === url
-  }
+  const isActive = (url: string) => location.pathname === url
 
-  const handleNavigation = (url: string) => {
-    navigate(url)
-  }
+  const handleNavigation = (url: string) => navigate(url)
 
   const handleSignOut = () => {
     signOut()
@@ -373,19 +332,19 @@ export function EnhancedSidebar() {
 
   const handleModuleClick = (item: MenuItem) => {
     if (item.items && item.items.length > 0) {
-      // Module with sub-items: expand to show pages
       setSelectedModule(item)
     } else if (item.url) {
-      // Single page module: navigate directly
       handleNavigation(item.url)
     }
   }
 
-  const handleBackToModules = () => {
-    setSelectedModule(null)
-  }
+  const handleBackToModules = () => setSelectedModule(null)
 
-  // Check if any page in the selected module is active
+  // Sync secondary panel state with sidebar context
+  useEffect(() => {
+    setHasSecondaryPanel(selectedModule !== null && selectedModule.items !== undefined)
+  }, [selectedModule, setHasSecondaryPanel])
+
   const isModuleActive = (item: MenuItem): boolean => {
     if (item.url) return isActive(item.url)
     if (item.items) {
@@ -400,17 +359,16 @@ export function EnhancedSidebar() {
     return false
   }
 
-  // Auto-select module based on current route
   useEffect(() => {
-    if (!selectedModule) {
-      const activeModule = visibleMenuItems.find(item => isModuleActive(item))
-      if (activeModule && activeModule.items) {
-        setSelectedModule(activeModule)
-      }
+    const activeModule = visibleMenuItems.find(item => isModuleActive(item))
+    if (!selectedModule && activeModule && activeModule.items) {
+      setSelectedModule(activeModule)
+    }
+    if (selectedModule && activeModule && activeModule.title !== selectedModule.title && activeModule.items) {
+      setSelectedModule(activeModule)
     }
   }, [location.pathname, visibleMenuItems])
 
-  // Close user menu on outside click
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       const target = e.target as Node
@@ -421,373 +379,315 @@ export function EnhancedSidebar() {
     if (showUserModal) {
       document.addEventListener("mousedown", onDocClick)
     }
-    return () => {
-      document.removeEventListener("mousedown", onDocClick)
-    }
+    return () => document.removeEventListener("mousedown", onDocClick)
   }, [showUserModal])
 
-  // Modules Panel (Icons only when pages are shown, full when no module selected)
-  const renderModulesPanel = () => {
-    const isMinimized = selectedModule !== null
+  // Determine sidebar mode
+  const hasSelectedModule = selectedModule !== null && selectedModule.items
+  const showFullSidebar = !hasSelectedModule && !isCollapsed
+  const showIconsOnly = isCollapsed || hasSelectedModule
 
-    return (
+  return (
+    <div
+      className={`flex h-screen fixed ${isRTL ? "right-0" : "left-0"} top-0 transition-all duration-300`}
+      style={{
+        backgroundColor: isDarkMode ? "#18181b" : "#0F7EA3",
+      }}
+    >
+      {/* Primary Navigation Rail */}
       <div
         className={`flex flex-col h-full transition-all duration-300 ${
-          isMinimized ? 'w-16' : (isCollapsed ? 'w-20' : 'w-64')
-        } ${isDarkMode ? 'border-zinc-800' : 'border-white/20'} ${isMinimized ? 'border-r' : ''}`}
+          showFullSidebar ? "w-60" : "w-[60px]"
+        }`}
+        style={{
+          borderRight: hasSelectedModule
+            ? `1px solid ${isDarkMode ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.15)"}`
+            : "none",
+        }}
       >
-        {/* Header */}
-        <div className={`p-3 flex-shrink-0 border-b ${isDarkMode ? "border-zinc-800" : "border-white/20"}`}>
-          <div className="flex items-center justify-center">
-            {isMinimized ? (
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${
-                  isDarkMode
-                    ? "bg-gradient-to-br from-blue-500 to-cyan-500"
-                    : "bg-white"
-                }`}
-              >
-                <Package className={`w-5 h-5 ${isDarkMode ? "text-white" : "text-[#0F7EA3]"}`} />
-              </div>
-            ) : (
-              <div className="flex items-center gap-6 justify-between w-full">
-                {!isCollapsed && (
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-all duration-300 ${
-                        isDarkMode
-                          ? "bg-gradient-to-br from-blue-500 to-cyan-500"
-                          : "bg-white"
-                      }`}
-                    >
-                      <Package className={`w-5 h-5 ${isDarkMode ? "text-white" : "text-[#0F7EA3]"}`} />
-                    </div>
-                    <span className={`text-lg font-bold ${isDarkMode ? "text-white" : "text-white"}`}>
-                      Octopus
-                    </span>
-                  </div>
-                )}
-                <button
-                  onClick={toggleSidebar}
-                  className={`p-2.5 rounded-xl transition-all duration-200 ${
-                    isDarkMode
-                      ? "hover:bg-zinc-800 text-zinc-400 hover:text-white"
-                      : "hover:bg-white/20 text-white/90 hover:text-white"
-                  }`}
-                >
-                  {isCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Modules List */}
-        <div className="flex-1 overflow-y-auto py-3 px-2 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-          <div className="space-y-1">
-            {visibleMenuItems.map((item) => (
-              <button
-                key={item.title}
-                onClick={() => handleModuleClick(item)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${
-                  isMinimized ? "justify-center" : (isCollapsed ? "justify-center" : "justify-start")
-                } ${
-                  isModuleActive(item)
-                    ? isDarkMode
-                      ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25"
-                      : "bg-white text-[#0F7EA3] shadow-md"
-                    : isDarkMode
-                      ? "text-zinc-300 hover:bg-zinc-800 hover:text-white"
-                      : "text-white hover:bg-white/20 hover:text-white"
-                } group relative overflow-hidden`}
-                title={isMinimized || isCollapsed ? item.title : undefined}
-              >
-                <item.icon className="w-5 h-5 flex-shrink-0 relative z-10" />
-                {!isMinimized && !isCollapsed && (
-                  <span className={`flex-1 ${isRTL ? "text-right" : "text-left"} relative z-10`}>
-                    {t(item.title)}
-                  </span>
-                )}
-                {!isMinimized && !isCollapsed && item.items && item.items.length > 0 && (
-                  isRTL ? (
-                    <ChevronLeft className="w-4 h-4 relative z-10" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 relative z-10" />
-                  )
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* User Profile - Only show when not minimized */}
-        {!isMinimized && (
-          <div className={`p-3 flex-shrink-0 border-t ${isDarkMode ? "border-zinc-800" : "border-white/20"}`}>
-            <div className="relative" ref={userMenuRef}>
-              <div
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 cursor-pointer group ${
-                  isCollapsed ? "justify-center" : ""
-                } ${isDarkMode ? "hover:bg-zinc-800" : "hover:bg-white/20"}`}
-                onClick={() => !isCollapsed && setShowUserModal(true)}
-              >
-                <div className="relative flex-shrink-0">
-                  <div
-                    className={`relative w-9 h-9 rounded-full flex items-center justify-center ${
-                      isDarkMode
-                        ? "bg-gradient-to-br from-blue-500 to-cyan-500"
-                        : "bg-gradient-to-br from-blue-600 to-cyan-600"
-                    }`}
-                  >
-                    <span className="text-sm font-bold text-white">{name.toString().charAt(0).toUpperCase()}</span>
-                  </div>
-                </div>
-                {!isCollapsed && (
-                  <div className="flex-1">
-                    <div className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-white"}`}>{name}</div>
-                    <div className={`text-xs ${isDarkMode ? "text-zinc-500" : "text-white/70"}`}>{t("My Workspace")}</div>
-                  </div>
-                )}
-              </div>
-
-              {/* User Modal */}
-              {showUserModal && !isCollapsed && (
+        {/* Logo Header */}
+        <div className="h-16 flex items-center justify-center px-3 flex-shrink-0">
+          {showFullSidebar ? (
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2.5">
                 <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
                   style={{
-                    position: 'absolute',
-                    bottom: '100%',
-                    left: 0,
-                    marginBottom: '0.25rem',
-                    borderRadius: '0.375rem',
-                    border: `1px solid ${isDarkMode ? '#3f3f46' : colors.border}`,
-                    zIndex: 50,
-                    overflow: 'hidden',
-                    background: colors.card,
-                    color: colors.textPrimary,
-                    boxShadow: isDarkMode ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                    width: '14rem',
+                    background: isDarkMode
+                      ? "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)"
+                      : "rgba(255,255,255,0.2)",
                   }}
                 >
-                  <button
-                    onClick={() => {
-                      setShowUserModal(false)
-                    }}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '0.5rem 0.75rem',
-                      fontSize: '0.875rem',
-                      transition: 'background-color 0.2s',
-                      color: colors.textPrimary,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = colors.mutedBg
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent'
-                    }}
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span className="font-medium">{t("Settings")}</span>
-                  </button>
-                  <button
-                    onClick={handleSignOut}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '0.5rem 0.75rem',
-                      fontSize: '0.875rem',
-                      transition: 'background-color 0.2s',
-                      color: '#ef4444',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = colors.mutedBg
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent'
-                    }}
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span className="font-medium">{t("Sign Out")}</span>
-                  </button>
+                  <Boxes className="w-4 h-4 text-white" />
                 </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // Pages Panel (shows when a module is selected)
-  const renderPagesPanel = () => {
-    if (!selectedModule || !selectedModule.items) return null
-
-    return (
-      <div className={`flex flex-col h-full w-48 border-r ${isDarkMode ? 'border-zinc-800' : 'border-white/20'}`}>
-        {/* Module Header with Back Button */}
-        <div className={`p-3 flex-shrink-0 border-b ${isDarkMode ? "border-zinc-800" : "border-white/20"}`}>
-          <button
-            onClick={handleBackToModules}
-            className={`w-full flex items-center gap-2 px-2 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-              isDarkMode
-                ? "text-zinc-300 hover:bg-zinc-800 hover:text-white"
-                : "text-white hover:bg-white/20 hover:text-white"
-            }`}
-          >
-            {isRTL ? (
-              <ChevronRight className="w-4 h-4" />
-            ) : (
-              <ChevronLeft className="w-4 h-4" />
-            )}
-            <selectedModule.icon className="w-4 h-4" />
-            <span className="truncate">{t(selectedModule.title)}</span>
-          </button>
-        </div>
-
-        {/* Pages List */}
-        <div className="flex-1 overflow-y-auto py-3 px-2 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-          <div className="space-y-1">
-            {selectedModule.items.map((subItem) => (
-              <button
-                key={subItem.title}
-                onClick={() => subItem.url && handleNavigation(subItem.url)}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all duration-200 ${
-                  isActive(subItem.url || "")
-                    ? isDarkMode
-                      ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium shadow-lg shadow-blue-500/25"
-                      : "bg-white text-[#0F7EA3] font-medium shadow-md"
-                    : isDarkMode
-                      ? "text-zinc-400 hover:bg-zinc-800 hover:text-white"
-                      : "text-white/90 hover:bg-white/15 hover:text-white"
-                }`}
-              >
-                <subItem.icon className="w-4 h-4 flex-shrink-0" />
-                <span className={`flex-1 ${isRTL ? "text-right" : "text-left"} truncate`}>
-                  {t(subItem.title)}
+                <span className="text-[15px] font-semibold tracking-tight text-white">
+                  {t("Smart Inventory")}
                 </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* User Avatar when pages panel is shown */}
-        <div className={`p-3 flex-shrink-0 border-t ${isDarkMode ? "border-zinc-800" : "border-white/20"}`}>
-          <div
-            className={`flex items-center justify-center py-2 rounded-xl cursor-pointer transition-all duration-200 ${
-              isDarkMode ? "hover:bg-zinc-800" : "hover:bg-white/20"
-            }`}
-            onClick={() => setShowUserModal(true)}
-            ref={userMenuRef}
-          >
-            <div
-              className={`relative w-9 h-9 rounded-full flex items-center justify-center ${
-                isDarkMode
-                  ? "bg-gradient-to-br from-blue-500 to-cyan-500"
-                  : "bg-gradient-to-br from-blue-600 to-cyan-600"
-              }`}
-            >
-              <span className="text-sm font-bold text-white">{name.toString().charAt(0).toUpperCase()}</span>
-            </div>
-          </div>
-
-          {/* User Modal for pages panel */}
-          {showUserModal && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: '4rem',
-                left: '1rem',
-                borderRadius: '0.375rem',
-                border: `1px solid ${isDarkMode ? '#3f3f46' : colors.border}`,
-                zIndex: 50,
-                overflow: 'hidden',
-                background: colors.card,
-                color: colors.textPrimary,
-                boxShadow: isDarkMode ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                width: '12rem',
-              }}
-            >
-              <div className="px-3 py-2 border-b" style={{ borderColor: isDarkMode ? '#3f3f46' : colors.border }}>
-                <div className="text-sm font-semibold">{name}</div>
-                <div className="text-xs opacity-70">{t("My Workspace")}</div>
               </div>
               <button
-                onClick={() => {
-                  setShowUserModal(false)
-                }}
-                style={{
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '0.5rem 0.75rem',
-                  fontSize: '0.875rem',
-                  transition: 'background-color 0.2s',
-                  color: colors.textPrimary,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                }}
+                onClick={toggleSidebar}
+                className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
+              >
+                <PanelLeftClose className="w-4 h-4 text-white/70" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={hasSelectedModule ? handleBackToModules : toggleSidebar}
+              className="p-2 rounded-lg transition-colors hover:bg-white/10"
+              title={hasSelectedModule ? t("Back to modules") : t("Expand sidebar")}
+            >
+              {hasSelectedModule ? (
+                isRTL ? (
+                  <ChevronRight className="w-5 h-5 text-white/80" />
+                ) : (
+                  <ChevronLeft className="w-5 h-5 text-white/80" />
+                )
+              ) : (
+                <PanelLeftOpen className="w-5 h-5 text-white/80" />
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Navigation Items */}
+        <nav className="flex-1 overflow-y-auto py-2 px-2 scrollbar-thin scrollbar-thumb-white/10">
+          <ul className="space-y-0.5">
+            {visibleMenuItems.map((item) => {
+              const active = isModuleActive(item)
+              const isCurrentModule = selectedModule?.title === item.title
+
+              return (
+                <li key={item.title}>
+                  <button
+                    onClick={() => handleModuleClick(item)}
+                    className={`w-full flex items-center gap-3 rounded-lg transition-all duration-150 ${
+                      showFullSidebar ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"
+                    }`}
+                    style={{
+                      background: active
+                        ? isDarkMode
+                          ? "linear-gradient(135deg, rgba(59,130,246,0.9) 0%, rgba(6,182,212,0.9) 100%)"
+                          : "rgba(255,255,255,0.95)"
+                        : isCurrentModule
+                          ? isDarkMode
+                            ? "rgba(255,255,255,0.08)"
+                            : "rgba(255,255,255,0.15)"
+                          : "transparent",
+                      color: active
+                        ? isDarkMode
+                          ? "#ffffff"
+                          : "#0F7EA3"
+                        : isDarkMode
+                          ? "rgba(255,255,255,0.7)"
+                          : "rgba(255,255,255,0.9)",
+                      boxShadow: active
+                        ? isDarkMode
+                          ? "0 4px 12px rgba(59,130,246,0.3)"
+                          : "0 2px 8px rgba(0,0,0,0.1)"
+                        : "none",
+                    }}
+                    title={showIconsOnly ? t(item.title) : undefined}
+                    onMouseEnter={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.background = isDarkMode
+                          ? "rgba(255,255,255,0.08)"
+                          : "rgba(255,255,255,0.15)"
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!active && !isCurrentModule) {
+                        e.currentTarget.style.background = "transparent"
+                      } else if (isCurrentModule && !active) {
+                        e.currentTarget.style.background = isDarkMode
+                          ? "rgba(255,255,255,0.08)"
+                          : "rgba(255,255,255,0.15)"
+                      }
+                    }}
+                  >
+                    <item.icon
+                      className="w-[18px] h-[18px] flex-shrink-0"
+                      strokeWidth={active ? 2.5 : 2}
+                    />
+                    {showFullSidebar && (
+                      <>
+                        <span className={`flex-1 text-sm ${isRTL ? "text-right" : "text-left"} ${active ? "font-medium" : ""}`}>
+                          {t(item.title)}
+                        </span>
+                        {item.items && item.items.length > 0 && (
+                          isRTL ? (
+                            <ChevronLeft className="w-4 h-4 opacity-50" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 opacity-50" />
+                          )
+                        )}
+                      </>
+                    )}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
+
+        {/* User Profile */}
+        <div className="p-2 flex-shrink-0" ref={userMenuRef}>
+          <div
+            className={`flex items-center gap-3 rounded-lg cursor-pointer transition-colors ${
+              showFullSidebar ? "p-2.5" : "p-2 justify-center"
+            }`}
+            style={{ background: "transparent" }}
+            onClick={() => setShowUserModal(!showUserModal)}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = isDarkMode
+                ? "rgba(255,255,255,0.08)"
+                : "rgba(255,255,255,0.15)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent"
+            }}
+          >
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                background: "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)",
+              }}
+            >
+              <span className="text-xs font-semibold text-white">
+                {name.toString().charAt(0).toUpperCase()}
+              </span>
+            </div>
+            {showFullSidebar && (
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-white truncate">{name}</div>
+                <div className="text-xs text-white/50">{t("My Workspace")}</div>
+              </div>
+            )}
+          </div>
+
+          {/* User Menu Dropdown */}
+          {showUserModal && (
+            <div
+              className="absolute left-2 right-2 rounded-lg overflow-hidden"
+              style={{
+                bottom: "4.5rem",
+                background: colors.card,
+                border: `1px solid ${isDarkMode ? "rgba(255,255,255,0.1)" : colors.border}`,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                zIndex: 100,
+              }}
+            >
+              <button
+                onClick={() => setShowUserModal(false)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors"
+                style={{ color: colors.textPrimary }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = colors.mutedBg
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.background = "transparent"
                 }}
               >
                 <Settings className="w-4 h-4" />
-                <span className="font-medium">{t("Settings")}</span>
+                <span>{t("Settings")}</span>
               </button>
               <button
                 onClick={handleSignOut}
-                style={{
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '0.5rem 0.75rem',
-                  fontSize: '0.875rem',
-                  transition: 'background-color 0.2s',
-                  color: '#ef4444',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm transition-colors"
+                style={{ color: "#ef4444" }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = colors.mutedBg
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.background = "transparent"
                 }}
               >
                 <LogOut className="w-4 h-4" />
-                <span className="font-medium">{t("Sign Out")}</span>
+                <span>{t("Sign Out")}</span>
               </button>
             </div>
           )}
         </div>
       </div>
-    )
-  }
 
-  return (
-    <div
-      className={`${
-        isDarkMode
-          ? "bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950"
-          : ""
-      } border-r ${
-        isDarkMode ? "border-zinc-800" : "border-slate-100"
-      } flex h-screen fixed ${isRTL ? "right-0" : "left-0"} top-0 transition-all duration-300 shadow-xl`}
-      style={!isDarkMode ? { backgroundColor: "#0F7EA3" } : {}}
-    >
-      {/* Modules Panel */}
-      {renderModulesPanel()}
+      {/* Secondary Panel - Sub-pages */}
+      {hasSelectedModule && selectedModule.items && (
+        <div
+          className="flex flex-col h-full w-52 transition-all duration-300"
+          style={{
+            background: isDarkMode
+              ? "rgba(0,0,0,0.2)"
+              : "rgba(0,0,0,0.08)",
+          }}
+        >
+          {/* Module Title */}
+          <div className="h-16 flex items-center px-4 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <selectedModule.icon className="w-4 h-4 text-white/70" />
+              <span className="text-sm font-medium text-white">
+                {t(selectedModule.title)}
+              </span>
+            </div>
+          </div>
 
-      {/* Pages Panel - appears when module with items is selected */}
-      {renderPagesPanel()}
+          {/* Sub-pages List */}
+          <nav className="flex-1 overflow-y-auto py-2 px-2 scrollbar-thin scrollbar-thumb-white/10">
+            <ul className="space-y-0.5">
+              {selectedModule.items.map((subItem) => {
+                const active = isActive(subItem.url || "")
+
+                return (
+                  <li key={subItem.title}>
+                    <button
+                      onClick={() => subItem.url && handleNavigation(subItem.url)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150"
+                      style={{
+                        background: active
+                          ? isDarkMode
+                            ? "linear-gradient(135deg, rgba(59,130,246,0.9) 0%, rgba(6,182,212,0.9) 100%)"
+                            : "rgba(255,255,255,0.95)"
+                          : "transparent",
+                        color: active
+                          ? isDarkMode
+                            ? "#ffffff"
+                            : "#0F7EA3"
+                          : isDarkMode
+                            ? "rgba(255,255,255,0.6)"
+                            : "rgba(255,255,255,0.85)",
+                        boxShadow: active
+                          ? isDarkMode
+                            ? "0 4px 12px rgba(59,130,246,0.3)"
+                            : "0 2px 8px rgba(0,0,0,0.1)"
+                          : "none",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!active) {
+                          e.currentTarget.style.background = isDarkMode
+                            ? "rgba(255,255,255,0.06)"
+                            : "rgba(255,255,255,0.12)"
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!active) {
+                          e.currentTarget.style.background = "transparent"
+                        }
+                      }}
+                    >
+                      <subItem.icon
+                        className="w-4 h-4 flex-shrink-0"
+                        strokeWidth={active ? 2.5 : 1.75}
+                      />
+                      <span className={`text-[13px] ${isRTL ? "text-right" : "text-left"} truncate ${active ? "font-medium" : ""}`}>
+                        {t(subItem.title)}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+        </div>
+      )}
     </div>
   )
 }

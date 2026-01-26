@@ -42,7 +42,7 @@ export function ScrapCard({ scrap, onClick, index }: ScrapCardProps) {
         }
       case "draft":
         return {
-          gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+          gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
           icon: <FileText className="w-5 h-5 text-white" />,
           label: t("Draft"),
           bg: "bg-orange-500/10",

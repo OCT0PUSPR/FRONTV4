@@ -41,7 +41,7 @@ export function ValuationCard({
 
   // Status theme - using orange/yellow gradient for valuation cards
   const statusTheme = {
-    gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+    gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
     icon: <DollarSign className="w-5 h-5 text-white" />,
     label: t("Valuation"),
     bg: "bg-orange-500/10",

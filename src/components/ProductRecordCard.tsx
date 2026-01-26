@@ -29,7 +29,7 @@ export function ProductRecordCard({ product, onClick, index }: ProductRecordCard
   // Status gradient based on availability
   const statusGradient = product.qty_available > 0
     ? "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
-    : "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+    : "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
 
   return (
     <div

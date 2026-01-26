@@ -44,7 +44,7 @@ export function MoveCard({ move, onClick, index }: MoveCardProps) {
         }
       case "cancelled":
         return {
-          gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+          gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
           bg: "bg-rose-500/10",
           text: "text-rose-600 dark:text-rose-400",
           label: t("Cancelled"),

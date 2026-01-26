@@ -1,7 +1,7 @@
 // Location Tree Component - Hierarchical tree view of locations
 
 import { useCallback, useMemo } from 'react';
-import { ChevronRight, ChevronDown, Package, Layers, Grid3X3, Box } from 'lucide-react';
+import { ChevronRight, ChevronDown, Package, Layers, Grid3X3, Box, Truck, AlertTriangle, CheckCircle, PackageOpen, Square } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../../context/theme';
 import { LocationNode, LocationType } from '../types';
@@ -16,8 +16,26 @@ interface LocationTreeProps {
 }
 
 // Icon for each location type
-function LocationIcon({ type, hasStock }: { type: LocationType; hasStock: boolean }) {
+function LocationIcon({ type, hasStock, zoneType }: { type: LocationType; hasStock: boolean; zoneType?: string }) {
   const iconClass = `h-4 w-4 ${hasStock ? 'text-orange-500' : 'text-gray-400 dark:text-zinc-500'}`;
+
+  // Zone-specific icons
+  if (type === 'zone' && zoneType) {
+    switch (zoneType) {
+      case 'dock':
+        return <Truck className={`h-4 w-4 text-blue-500`} />;
+      case 'staging':
+        return <PackageOpen className={`h-4 w-4 text-yellow-500`} />;
+      case 'scrap':
+        return <AlertTriangle className={`h-4 w-4 text-red-500`} />;
+      case 'qc':
+        return <CheckCircle className={`h-4 w-4 text-green-500`} />;
+      case 'packing':
+        return <Package className={`h-4 w-4 text-purple-500`} />;
+      case 'floor':
+        return <Square className={`h-4 w-4 text-gray-500`} />;
+    }
+  }
 
   switch (type) {
     case 'row':
@@ -28,6 +46,8 @@ function LocationIcon({ type, hasStock }: { type: LocationType; hasStock: boolea
       return <Layers className={iconClass} />;
     case 'bin':
       return hasStock ? <Package className={iconClass} /> : <Box className={iconClass} />;
+    case 'zone':
+      return <Square className={`h-4 w-4 text-gray-500`} />;
     default:
       return <Box className={iconClass} />;
   }
@@ -131,7 +151,7 @@ function TreeNode({
         )}
 
         {/* Icon */}
-        <LocationIcon type={node.type} hasStock={node.hasStock} />
+        <LocationIcon type={node.type} hasStock={node.hasStock} zoneType={node.zoneType} />
 
         {/* Name */}
         <span

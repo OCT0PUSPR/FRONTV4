@@ -10,7 +10,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
-const COLORS = ['#4facfe', '#00f2fe', '#43e97b', '#fa709a', '#fee140', '#30cfd0', '#a8edea', '#fed6e3'];
+const COLORS = ['#4facfe', '#00f2fe', '#43e97b', '#dc2626', '#ea580c', '#30cfd0', '#a8edea', '#fed6e3'];
 
 interface SimulationModalProps {
   isOpen: boolean;

@@ -374,14 +374,14 @@ export default function ProductPackagingsPage() {
               label={t("Total Packagings")}
               value={totalPackagings}
               icon={Package}
-              gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+              gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
               delay={0}
             />
             <StatCard
               label={t("Products with Packaging")}
               value={productsWithPackaging}
               icon={Box}
-              gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+              gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
               delay={1}
             />
             <StatCard
@@ -532,8 +532,8 @@ export default function ProductPackagingsPage() {
                               gap: "0.5rem",
                               padding: "0.25rem 0.75rem",
                               borderRadius: "999px",
-                              background: usageType === "both" ? "rgba(79, 172, 254, 0.1)" : usageType === "sales" ? "rgba(240, 147, 251, 0.1)" : usageType === "purchase" ? "rgba(67, 233, 123, 0.1)" : colors.mutedBg,
-                              color: usageType === "both" ? "#4facfe" : usageType === "sales" ? "#f093fb" : usageType === "purchase" ? "#43e97b" : colors.textSecondary,
+                              background: usageType === "both" ? "rgba(79, 172, 254, 0.1)" : usageType === "sales" ? "rgba(245, 158, 11, 0.1)" : usageType === "purchase" ? "rgba(67, 233, 123, 0.1)" : colors.mutedBg,
+                              color: usageType === "both" ? "#4facfe" : usageType === "sales" ? "#f59e0b" : usageType === "purchase" ? "#43e97b" : colors.textSecondary,
                               fontSize: "0.75rem",
                               fontWeight: 600,
                               textTransform: "uppercase",
@@ -601,7 +601,7 @@ export default function ProductPackagingsPage() {
                     } else if (isSales) {
                       return { icon: ShoppingBag, gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" }
                     } else if (isPurchase) {
-                      return { icon: ShoppingCart, gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)" }
+                      return { icon: ShoppingCart, gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)" }
                     } else {
                       return { icon: Package, gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }
                     }
@@ -989,7 +989,7 @@ function PackagingCard({ packaging, onClick, index }: PackagingCardProps) {
   const isRTL = i18n?.dir() === "rtl"
 
   const statusTheme = {
-    gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+    gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
     bg: "bg-rose-500/10",
     text: "text-rose-600 dark:text-rose-400",
     label: packaging.sales && packaging.purchase ? t("Sales & Purchase") : packaging.sales ? t("Sales") : packaging.purchase ? t("Purchase") : t("Packaging"),

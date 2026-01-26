@@ -30,6 +30,8 @@ const MENU_ITEMS = [
   { url: '/batch', pageId: 'batch' },
   { url: '/wave', pageId: 'wave' },
   { url: '/physical-inventory', pageId: 'physical-inventory' },
+  { url: '/physical-inventory/orders', pageId: 'physical-inventory-orders' },
+  { url: '/physical-inventory/orders/create', pageId: 'physical-inventory-orders-create' },
   { url: '/scrap', pageId: 'scrap' },
   { url: '/landed-costs', pageId: 'landed-costs' },
   { url: '/products', pageId: 'products' },

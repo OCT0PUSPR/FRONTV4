@@ -613,14 +613,14 @@ export default function OperationsPage() {
               label={t("Total Operations")}
               value={totalOperations}
               icon={Package}
-              gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+              gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
               delay={0}
             />
             <StatCard
               label={t("Draft Operations")}
               value={draftOperations}
               icon={FileText}
-              gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+              gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
               delay={1}
             />
             <StatCard
@@ -1047,10 +1047,10 @@ export default function OperationsPage() {
                     return { icon: ArrowLeftRight, gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }
                   }
                   if (code.includes("manufacturing")) {
-                    return { icon: Wrench, gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" }
+                    return { icon: Wrench, gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" }
                   }
                   if (code.includes("repair")) {
-                    return { icon: Wrench, gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)" }
+                    return { icon: Wrench, gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)" }
                   }
                   if (code.includes("dropship")) {
                     return { icon: Truck, gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" }
@@ -1325,7 +1325,7 @@ export default function OperationsPage() {
                     style={{
                       width: "4px",
                       height: "20px",
-                      background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                      background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
                       borderRadius: "2px",
                     }}
                   />
@@ -1476,7 +1476,7 @@ export default function OperationsPage() {
                     style={{
                       width: "4px",
                       height: "20px",
-                      background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+                      background: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
                       borderRadius: "2px",
                     }}
                   />

@@ -608,14 +608,14 @@ export default function LandedCostsPage() {
             label={t("Total Costs")}
             value={totalCosts}
             icon={FileText}
-            gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+            gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
             delay={0}
           />
           <StatCard
             label={t("Draft")}
             value={draftCosts}
             icon={FileText}
-            gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+            gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
             delay={1}
           />
           <StatCard
@@ -832,12 +832,12 @@ export default function LandedCostsPage() {
                   case "posted":
                     return { icon: CheckCircle2, gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)" }
                   case "draft":
-                    return { icon: FileText, gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)" }
+                    return { icon: FileText, gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)" }
                   case "cancelled":
                   case "cancel":
-                    return { icon: X, gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" }
+                    return { icon: X, gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" }
                   default:
-                    return { icon: FileText, gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)" }
+                    return { icon: FileText, gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)" }
                 }
               }
               return getStatusIcon(state)

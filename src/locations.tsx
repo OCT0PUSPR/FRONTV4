@@ -587,14 +587,14 @@ export default function LocationsPage() {
               label={t("Total Locations")}
               value={computedLocations.length}
               icon={Warehouse}
-              gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+              gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
               delay={0}
             />
             <StatCard
               label={t("Total Items")}
               value={totalItems.toLocaleString()}
               icon={Package}
-              gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+              gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
               delay={1}
             />
             <StatCard
@@ -881,7 +881,7 @@ export default function LocationsPage() {
                   icon: CheckCircle2,
                   gradient: isActive
                     ? "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
-                    : "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                    : "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
                 }
               }}
               showPagination={true}
@@ -1248,7 +1248,7 @@ export default function LocationsPage() {
                     style={{
                       width: "4px",
                       height: "20px",
-                      background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                      background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
                       borderRadius: "2px",
                     }}
                   />
@@ -1333,7 +1333,7 @@ export default function LocationsPage() {
                     style={{
                       width: "4px",
                       height: "20px",
-                      background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+                      background: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
                       borderRadius: "2px",
                     }}
                   />

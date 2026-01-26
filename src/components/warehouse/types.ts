@@ -23,7 +23,7 @@ export enum RackStatus {
   
   export interface RackCell {
     id: string;
-    label: string; 
+    label: string;
     aisleId: string;
     columnId: string;
     status: RackStatus;
@@ -32,6 +32,9 @@ export enum RackStatus {
     shelves: Shelf[];
     issueDescription?: string;
     lastUpdated: string;
+    // Odoo integration fields
+    odooLocationId?: number;
+    odooLocationName?: string;
   }
   
   export type Orientation = 'vertical' | 'horizontal';

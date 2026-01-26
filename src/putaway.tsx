@@ -561,14 +561,14 @@ export default function PutawaysRulesPage() {
             label={t("Total Rules")}
             value={totalRules}
             icon={FileText}
-            gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+            gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
             delay={0}
           />
           <StatCard
             label={t("Active Rules")}
             value={activeRules}
             icon={MapPin}
-            gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+            gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
             delay={1}
           />
           <StatCard

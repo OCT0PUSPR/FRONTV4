@@ -694,7 +694,7 @@ export default function UserManagementPage() {
           if (u.active) {
             return { icon: CheckCircle2, gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)" }
           }
-          return { icon: XCircle, gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" }
+          return { icon: XCircle, gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" }
         }}
       />
     </div>
@@ -866,7 +866,7 @@ export default function UserManagementPage() {
         getRowIcon={(role) => {
           const r = role as Role
           if (r.is_system) {
-            return { icon: Shield, gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)" }
+            return { icon: Shield, gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)" }
           }
           return { icon: Shield, gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" }
         }}
@@ -1063,7 +1063,7 @@ export default function UserManagementPage() {
           if (p.effect === "allow") {
             return { icon: CheckCircle2, gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)" }
           }
-          return { icon: XCircle, gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" }
+          return { icon: XCircle, gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" }
         }}
       />
     </div>
@@ -1745,14 +1745,14 @@ export default function UserManagementPage() {
               label={t("Users")}
               value={users.length}
               icon={Users}
-              gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+              gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
               delay={0}
             />
             <StatCard
               label={t("Roles")}
               value={roles.length}
               icon={Shield}
-              gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+              gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
               delay={1}
             />
             <StatCard

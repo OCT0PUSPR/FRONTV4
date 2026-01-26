@@ -460,14 +460,14 @@ export default function ScrapOrdersPage() {
               label={t("Total Scrap Orders")}
               value={totalScraps}
               icon={Trash2}
-              gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+              gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
               delay={0}
             />
             <StatCard
               label={t("Draft Orders")}
               value={draftScraps}
               icon={FileText}
-              gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+              gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
               delay={1}
             />
             <StatCard
@@ -562,9 +562,9 @@ export default function ScrapOrdersPage() {
                       case "done":
                         return { icon: CheckCircle2, gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)" }
                       case "draft":
-                        return { icon: FileText, gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)" }
+                        return { icon: FileText, gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)" }
                       default:
-                        return { icon: FileText, gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)" }
+                        return { icon: FileText, gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)" }
                     }
                   }
                   return getStatusIcon(status)

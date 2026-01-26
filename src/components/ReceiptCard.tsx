@@ -65,8 +65,8 @@ export function ReceiptCard({ receipt, onClick, index }: ReceiptCardProps) {
         }
       case "cancelled":
         return {
-          gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-          textGradient: "bg-gradient-to-br from-[#f093fb] to-[#f5576c]",
+          gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+          textGradient: "bg-gradient-to-br from-[#f59e0b] to-[#d97706]",
           icon: <XCircle className="w-5 h-5 text-white" />,
           label: t("Cancelled"),
           bg: "bg-rose-500/10",
@@ -75,8 +75,8 @@ export function ReceiptCard({ receipt, onClick, index }: ReceiptCardProps) {
         }
       case "draft":
         return {
-          gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-          textGradient: "bg-gradient-to-br from-[#fa709a] to-[#fee140]",
+          gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
+          textGradient: "bg-gradient-to-br from-[#dc2626] to-[#ea580c]",
           icon: <FileText className="w-5 h-5 text-white" />,
           label: t("Draft"),
           bg: "bg-orange-500/10",

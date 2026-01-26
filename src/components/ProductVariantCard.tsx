@@ -33,7 +33,7 @@ export function ProductVariantCard({ variant, onClick, index }: ProductVariantCa
   const getStatusTheme = (onHand: number) => {
     if (onHand === 0) {
       return {
-        gradient: "linear-gradient(135deg, #f5576c 0%, #f093fb 100%)",
+        gradient: "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)",
         iconComponent: XCircle,
         iconSvg: '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>',
         label: t("Out of Stock"),
@@ -44,7 +44,7 @@ export function ProductVariantCard({ variant, onClick, index }: ProductVariantCa
     }
     if (onHand < 100) {
       return {
-        gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+        gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
         iconComponent: AlertCircle,
         iconSvg: '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>',
         label: t("Low Stock"),

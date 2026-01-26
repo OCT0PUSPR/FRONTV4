@@ -1,7 +1,7 @@
 "use client"
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { AlertTriangle, RefreshCcw } from 'lucide-react'
+import { RefreshCcw, Home } from 'lucide-react'
 
 interface Props {
   children: ReactNode
@@ -11,46 +11,28 @@ interface Props {
 interface State {
   hasError: boolean
   error: Error | null
-  errorInfo: ErrorInfo | null
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
-    this.state = { hasError: false, error: null, errorInfo: null }
+    this.state = { hasError: false, error: null }
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error, errorInfo: null }
+  static getDerivedStateFromError(error: Error): Partial<State> {
+    return { hasError: true, error }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo)
-    this.setState({
-      error,
-      errorInfo,
-    })
   }
 
-  handleReset = () => {
-    // Clear caches and reload
-    if ('caches' in window) {
-      caches.keys().then((names) => {
-        names.forEach((name) => {
-          caches.delete(name)
-        })
-      })
-    }
-    
-    // Clear localStorage caches
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('vite') || key.includes('cache')) {
-        localStorage.removeItem(key)
-      }
-    })
-    
-    // Reload the page
+  handleReload = () => {
     window.location.reload()
+  }
+
+  handleGoHome = () => {
+    window.location.href = '/overview'
   }
 
   render() {
@@ -67,60 +49,133 @@ export class ErrorBoundary extends Component<Props, State> {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '2rem',
+            padding: '1.5rem',
             background: '#f9fafb',
-            color: '#1f2937',
           }}
         >
-          <div
+          <style>{`
+            @keyframes fade-in {
+              from { opacity: 0; transform: translateY(20px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes pulse-slow {
+              0%, 100% { opacity: 0.06; }
+              50% { opacity: 0.1; }
+            }
+            .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
+            .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+            .delay-1 { animation-delay: 0.1s; opacity: 0; }
+            .delay-2 { animation-delay: 0.2s; opacity: 0; }
+            .delay-3 { animation-delay: 0.3s; opacity: 0; }
+            @media (prefers-color-scheme: dark) {
+              .error-bg { background: #111827 !important; }
+              .error-title { color: #fff !important; }
+              .error-desc { color: #9ca3af !important; }
+              .error-number { color: rgba(255,255,255,0.1) !important; }
+              .error-btn-secondary { background: #1f2937 !important; color: #fff !important; }
+            }
+          `}</style>
+
+          {/* Error Number */}
+          <h1
+            className="animate-fade-in animate-pulse-slow error-number"
             style={{
-              background: 'white',
-              borderRadius: '1rem',
-              padding: '2rem',
-              maxWidth: '600px',
-              width: '100%',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+              fontSize: 'clamp(120px, 25vw, 240px)',
+              fontWeight: 900,
+              lineHeight: 1,
+              letterSpacing: '-0.05em',
+              color: 'rgba(0,0,0,0.06)',
+              fontFamily: 'system-ui, -apple-system, sans-serif',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-              <AlertTriangle size={48} style={{ color: '#ef4444' }} />
-              <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Something went wrong</h1>
-            </div>
-            
-            <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
-              An error occurred while loading the page. This might be due to a cached file issue.
-            </p>
-            
-            {this.state.error && (
-              <details style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f3f4f6', borderRadius: '0.5rem' }}>
-                <summary style={{ cursor: 'pointer', fontWeight: 600, marginBottom: '0.5rem' }}>
-                  Error Details
-                </summary>
-                <pre style={{ fontSize: '0.875rem', overflow: 'auto', margin: 0 }}>
-                  {this.state.error.toString()}
-                  {this.state.errorInfo?.componentStack}
-                </pre>
-              </details>
-            )}
-            
+            500
+          </h1>
+
+          {/* Title */}
+          <h2
+            className="animate-fade-in delay-1 error-title"
+            style={{
+              fontSize: '1.75rem',
+              fontWeight: 600,
+              marginTop: '-2rem',
+              marginBottom: '0.75rem',
+              color: '#111827',
+              animationFillMode: 'forwards',
+            }}
+          >
+            Something Went Wrong
+          </h2>
+
+          {/* Description */}
+          <p
+            className="animate-fade-in delay-2 error-desc"
+            style={{
+              fontSize: '1rem',
+              textAlign: 'center',
+              maxWidth: '400px',
+              marginBottom: '2rem',
+              color: '#6b7280',
+              animationFillMode: 'forwards',
+            }}
+          >
+            An unexpected error occurred. Please reload the page.
+          </p>
+
+          {/* Buttons */}
+          <div
+            className="animate-fade-in delay-3"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              animationFillMode: 'forwards',
+            }}
+          >
             <button
-              onClick={this.handleReset}
+              onClick={this.handleReload}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                padding: '0.75rem 1.5rem',
-                background: '#3b82f6',
-                color: 'white',
-                border: 'none',
+                padding: '0.625rem 1.25rem',
                 borderRadius: '0.5rem',
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                color: '#fff',
+                background: '#2563eb',
+                border: 'none',
                 cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '1rem',
+                transition: 'opacity 0.2s',
               }}
+              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
             >
-              <RefreshCcw size={20} />
-              Clear Cache & Reload
+              <RefreshCcw size={16} />
+              Reload
+            </button>
+
+            <button
+              onClick={this.handleGoHome}
+              className="error-btn-secondary"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.625rem 1.25rem',
+                borderRadius: '0.5rem',
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                color: '#111827',
+                background: '#f3f4f6',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'opacity 0.2s',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
+              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+            >
+              <Home size={16} />
+              Home
             </button>
           </div>
         </div>
@@ -130,6 +185,3 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children
   }
 }
-
-
-

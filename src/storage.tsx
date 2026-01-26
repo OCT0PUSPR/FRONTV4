@@ -412,14 +412,14 @@ export default function StorageCategoriesPage() {
               label={t("Total Categories")}
               value={totalCategories}
               icon={Warehouse}
-              gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+              gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
               delay={0}
             />
             <StatCard
               label={t("Total Locations Managed")}
               value={totalLocations}
               icon={MapPin}
-              gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+              gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
               delay={1}
             />
             <StatCard
@@ -568,8 +568,8 @@ export default function StorageCategoriesPage() {
                               gap: "0.5rem",
                               padding: "0.25rem 0.75rem",
                               borderRadius: "999px",
-                              background: policy === "mixed" ? "rgba(79, 172, 254, 0.1)" : policy === "same" ? "rgba(67, 233, 123, 0.1)" : "rgba(240, 147, 251, 0.1)",
-                              color: policy === "mixed" ? "#4facfe" : policy === "same" ? "#43e97b" : "#f093fb",
+                              background: policy === "mixed" ? "rgba(79, 172, 254, 0.1)" : policy === "same" ? "rgba(67, 233, 123, 0.1)" : "rgba(245, 158, 11, 0.1)",
+                              color: policy === "mixed" ? "#4facfe" : policy === "same" ? "#43e97b" : "#f59e0b",
                               fontSize: "0.75rem",
                               fontWeight: 600,
                               textTransform: "uppercase",
@@ -662,7 +662,7 @@ export default function StorageCategoriesPage() {
                     } else if (policy === "mixed") {
                       return { icon: Warehouse, gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" }
                     }
-                    return { icon: Warehouse, gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" }
+                    return { icon: Warehouse, gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" }
                   }}
                 />
               )}
@@ -999,7 +999,7 @@ export default function StorageCategoriesPage() {
                     style={{
                       width: "4px",
                       height: "20px",
-                      background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                      background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
                       borderRadius: "2px",
                     }}
                   />

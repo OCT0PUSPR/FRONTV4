@@ -4,8 +4,6 @@ import { useAuth } from '../context/auth.tsx'
 import { SidebarProvider, useSidebar } from '../context/sidebar.tsx'
 import { DataProvider } from '../context/data.tsx'
 import { ThemeProvider } from '../context/theme'
-import { SecurityProvider } from '../context/security.tsx'
-import { PersonalizationProvider } from '../context/personalization.tsx'
 import { CaslProvider } from '../context/casl.tsx'
 import { Route, Routes, useNavigate, Navigate, useLocation } from "react-router"
 import Lottie from 'lottie-react'
@@ -77,6 +75,7 @@ import AllVehicles from './AllVehicles.tsx'
 import { ProtectedRoute } from './components/ProtectedRoute.tsx'
 import { ROUTE_TO_PAGE_ID, getPageIdFromRoute } from './config/pageRoutes'
 import Error500Page from './error500.tsx'
+import NotFoundPage from './pages/errors/NotFoundPage'
 import { DynamicRecordPage } from './pages/DynamicRecordPage'
 import { FieldManagement } from './pages/FieldManagement'
 import FieldLayoutEditor from './pages/FieldLayoutEditor'
@@ -91,15 +90,23 @@ import EmailTemplatesPage from './pages/EmailTemplatesPage'
 import EmailTemplateEditorPage from './pages/EmailTemplateEditorPage'
 import SendEmailPage from './pages/SendEmailPage'
 import WarehouseNavigator from './pages/WarehouseNavigator'
+import {
+  PhysicalInventoryDashboard,
+  OrderListPage as PIOrderListPage,
+  CreateOrderPage as PICreateOrderPage,
+  OrderDetailPage as PIOrderDetailPage,
+  DiscrepancyReviewPage,
+} from './pages/WarehouseNavigator/physical-inventory'
 
 // Wrapper component for License page that conditionally renders layout
 function LicensePageWrapper() {
   const { isAuthenticated } = useAuth()
-  const { isCollapsed } = useSidebar()
+  const { getSidebarWidth } = useSidebar()
   const location = useLocation()
   const navigate = useNavigate()
   const { i18n } = useTranslation()
   const isRTL = i18n.dir() === 'rtl'
+  const sidebarWidth = getSidebarWidth()
   const [allLicensesActivated, setAllLicensesActivated] = useState<boolean>(false)
   const [isChecking, setIsChecking] = useState(true)
 
@@ -172,7 +179,10 @@ function LicensePageWrapper() {
     return (
       <div className="flex h-screen overflow-hidden">
         <EnhancedSidebar />
-        <main className={`flex-1 overflow-hidden transition-all duration-300 ${isCollapsed ? (isRTL ? 'mr-20' : 'ml-20') : (isRTL ? 'mr-64' : 'ml-64')}`}>
+        <main
+          className="flex-1 overflow-hidden transition-all duration-300"
+          style={{ [isRTL ? 'marginRight' : 'marginLeft']: `${sidebarWidth}px` }}
+        >
           <div className="flex flex-col h-full">
             <HeaderNavbar />
             <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 flex items-center justify-center">
@@ -191,11 +201,12 @@ function LicensePageWrapper() {
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth()
-  const { isCollapsed } = useSidebar()
+  const { getSidebarWidth } = useSidebar()
   const navigate = useNavigate()
   const location = useLocation()
   const { t, i18n } = useTranslation()
   const isRTL = i18n.dir() === 'rtl'
+  const sidebarWidth = getSidebarWidth()
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>(WAREHOUSES[0].id);
   const [timeRange, setTimeRange] = useState<TimeRange>('Week');
   const [isCheckingLicense, setIsCheckingLicense] = useState(true);
@@ -421,7 +432,10 @@ function AppContent() {
         element={
           <div className="flex h-screen overflow-hidden">
             <EnhancedSidebar />
-            <main className={`flex-1 overflow-hidden transition-all duration-300 ${isCollapsed ? (isRTL ? 'mr-20' : 'ml-20') : (isRTL ? 'mr-64' : 'ml-64')}`}>
+            <main
+              className="flex-1 overflow-hidden transition-all duration-300"
+              style={{ [isRTL ? 'marginRight' : 'marginLeft']: `${sidebarWidth}px` }}
+            >
               <div className="flex flex-col h-full">
                 <HeaderNavbar />
                 <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
@@ -441,7 +455,10 @@ function AppContent() {
           isAuthenticated ? (
             <div className="flex h-screen overflow-hidden">
               <EnhancedSidebar />
-              <main className={`flex-1 overflow-hidden transition-all duration-300 ${isCollapsed ? (isRTL ? 'mr-20' : 'ml-20') : (isRTL ? 'mr-64' : 'ml-64')}`}>
+              <main
+                className="flex-1 overflow-hidden transition-all duration-300"
+                style={{ [isRTL ? 'marginRight' : 'marginLeft']: `${sidebarWidth}px` }}
+              >
                 <div className="flex flex-col h-full">
                   <HeaderNavbar />
                   <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
@@ -483,8 +500,12 @@ function AppContent() {
                       <Route path='/locations/view/:id' element={<ProtectedRoute pageId="locations"><DynamicRecordPage modelName="stock.location" pageTitle="Location" backRoute="/locations" /></ProtectedRoute>} />
                       <Route path='/locations/edit/:id' element={<ProtectedRoute pageId="locations"><DynamicRecordPage modelName="stock.location" pageTitle="Location" backRoute="/locations" /></ProtectedRoute>} />
                       <Route path='/locations/create' element={<ProtectedRoute pageId="locations"><DynamicRecordPage modelName="stock.location" pageTitle="Location" backRoute="/locations" /></ProtectedRoute>} />
-                      <Route path="/physical-inventory" element={<ProtectedRoute pageId={getPageIdFromRoute('/physical-inventory') || 'physical-inventory'}><PhysicalInventory /></ProtectedRoute>} />
-                      <Route path="/physical-inventory/view/:id" element={<ProtectedRoute pageId="physical-inventory"><DynamicRecordPage modelName="stock.inventory" pageTitle="Physical Inventory" backRoute="/physical-inventory" /></ProtectedRoute>} />
+                      {/* Physical Inventory Routes */}
+                      <Route path="/physical-inventory" element={<ProtectedRoute pageId={getPageIdFromRoute('/physical-inventory') || 'physical-inventory'}><PhysicalInventoryDashboard /></ProtectedRoute>} />
+                      <Route path="/physical-inventory/orders" element={<ProtectedRoute pageId="physical-inventory-orders"><PIOrderListPage /></ProtectedRoute>} />
+                      <Route path="/physical-inventory/orders/create" element={<ProtectedRoute pageId="physical-inventory-orders-create"><PICreateOrderPage /></ProtectedRoute>} />
+                      <Route path="/physical-inventory/orders/:id" element={<ProtectedRoute pageId="physical-inventory-orders-detail"><PIOrderDetailPage /></ProtectedRoute>} />
+                      <Route path="/physical-inventory/orders/:id/review" element={<ProtectedRoute pageId="physical-inventory-orders-review"><DiscrepancyReviewPage /></ProtectedRoute>} />
                       <Route path="/warehouse" element={<ProtectedRoute pageId={getPageIdFromRoute('/warehouse') || 'warehouse'}><WarehousesPage /></ProtectedRoute>} />
                       <Route path="/operations" element={<ProtectedRoute pageId={getPageIdFromRoute('/operations') || 'operations'}><OperationTypesPage /></ProtectedRoute>} />
                       <Route path="/operations/view/:id" element={<ProtectedRoute pageId="operations"><DynamicRecordPage modelName="stock.picking.type" pageTitle="Operation Type" backRoute="/operations" /></ProtectedRoute>} />
@@ -593,10 +614,13 @@ function AppContent() {
         }
       />
 
-      {/* Default redirect */}
+      {/* 404 Not Found */}
+      <Route path="/404" element={<NotFoundPage />} />
+
+      {/* Default redirect for unknown routes */}
       <Route path="*" element={
         isAuthenticated ? (
-          <Navigate to="/overview" replace />
+          <NotFoundPage />
         ) : (
           <Navigate to="/signin" replace />
         )
@@ -605,22 +629,18 @@ function AppContent() {
   )
 }
 
-function App() {  
+function App() {
   return (
     <ThemeProvider>
       <DataProvider>
-        <SecurityProvider>
-          <CaslProvider>
-            <PersonalizationProvider>
-              <SidebarProvider>
-                <TenantCheck>
-                  <AppContent />
-                </TenantCheck>
-                <Toaster position="top-right" richColors />
-              </SidebarProvider>
-            </PersonalizationProvider>
-          </CaslProvider>
-        </SecurityProvider>
+        <CaslProvider>
+          <SidebarProvider>
+            <TenantCheck>
+              <AppContent />
+            </TenantCheck>
+            <Toaster position="top-right" richColors />
+          </SidebarProvider>
+        </CaslProvider>
       </DataProvider>
     </ThemeProvider>
   )

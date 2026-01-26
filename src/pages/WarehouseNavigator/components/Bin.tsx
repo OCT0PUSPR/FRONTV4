@@ -1,4 +1,4 @@
-// Bin Component - Individual storage bin (solid box)
+// Bin Component - Individual storage bin (solid box) with pallet underneath
 // Grey when empty, Orange/Yellow when has items
 
 import { useRef, useState, useMemo } from 'react';
@@ -25,6 +25,97 @@ const BIN_COLORS = {
     selected: '#FFD700',      // Gold when selected
   },
 };
+
+// Pallet colors (wooden appearance)
+const PALLET_COLORS = {
+  light: {
+    wood: '#A67C52',      // Light wood color
+    woodDark: '#8B6914',  // Darker wood for depth
+  },
+  dark: {
+    wood: '#7D5A3C',      // Darker wood for dark mode
+    woodDark: '#5C4033',  // Even darker
+  },
+};
+
+// Pallet component - wooden pallet under the bin
+function Pallet({
+  position,
+  width,
+  depth,
+  isDark,
+}: {
+  position: [number, number, number];
+  width: number;
+  depth: number;
+  isDark: boolean;
+}) {
+  const colors = isDark ? PALLET_COLORS.dark : PALLET_COLORS.light;
+  const palletHeight = 0.08;
+  const boardThickness = 0.02;
+  const slatsCount = 5;
+  const slatWidth = width / slatsCount;
+  const gapRatio = 0.15; // Gap between slats
+
+  return (
+    <group position={position}>
+      {/* Top boards (slats running along depth) */}
+      {Array.from({ length: slatsCount }).map((_, i) => {
+        const slatActualWidth = slatWidth * (1 - gapRatio);
+        const xOffset = i * slatWidth + slatActualWidth / 2 - width / 2 + (slatWidth * gapRatio) / 2;
+        return (
+          <mesh
+            key={`top-slat-${i}`}
+            position={[xOffset, palletHeight - boardThickness / 2, 0]}
+            castShadow
+            receiveShadow
+          >
+            <boxGeometry args={[slatActualWidth, boardThickness, depth * 0.95]} />
+            <meshStandardMaterial
+              color={hexToNumber(i % 2 === 0 ? colors.wood : colors.woodDark)}
+              roughness={0.9}
+              metalness={0}
+            />
+          </mesh>
+        );
+      })}
+
+      {/* Support beams (3 beams running along width) */}
+      {[-1, 0, 1].map((pos, i) => (
+        <mesh
+          key={`support-${i}`}
+          position={[0, palletHeight / 2, pos * (depth * 0.35)]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[width * 0.95, palletHeight - boardThickness, boardThickness * 2]} />
+          <meshStandardMaterial
+            color={hexToNumber(colors.woodDark)}
+            roughness={0.9}
+            metalness={0}
+          />
+        </mesh>
+      ))}
+
+      {/* Bottom boards (3 boards running along depth for ground contact) */}
+      {[-1, 0, 1].map((pos, i) => (
+        <mesh
+          key={`bottom-${i}`}
+          position={[pos * (width * 0.35), boardThickness / 2, 0]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[width * 0.2, boardThickness, depth * 0.9]} />
+          <meshStandardMaterial
+            color={hexToNumber(colors.wood)}
+            roughness={0.9}
+            metalness={0}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
 
 interface BinProps {
   position: Vector3;
@@ -85,36 +176,50 @@ export function Bin({
     return hexToNumber(isOccupied ? colors.occupied : colors.empty);
   }, [isSelected, hovered, isOccupied, colors]);
 
+  // Pallet dimensions
+  const palletHeight = 0.08;
+
   return (
-    <mesh
-      ref={meshRef}
-      position={[position.x + binWidth / 2, position.y + binHeight / 2, position.z + binDepth / 2]}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick?.();
-      }}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        setHovered(true);
-        document.body.style.cursor = 'pointer';
-      }}
-      onPointerOut={() => {
-        setHovered(false);
-        document.body.style.cursor = 'auto';
-      }}
-      castShadow
-      receiveShadow
-    >
-      {/* Always solid box - grey for empty, orange for occupied */}
-      <boxGeometry args={[binWidth, binHeight, binDepth]} />
-      <meshStandardMaterial
-        color={color}
-        roughness={0.7}
-        metalness={0.1}
-        emissive={isSelected || isHighlighted ? color : 0}
-        emissiveIntensity={isSelected || isHighlighted ? 0.2 : 0}
+    <group>
+      {/* Pallet underneath the bin */}
+      <Pallet
+        position={[position.x + binWidth / 2, position.y, position.z + binDepth / 2]}
+        width={binWidth * 1.1}
+        depth={binDepth * 1.1}
+        isDark={isDark}
       />
-    </mesh>
+
+      {/* The bin itself, raised by pallet height */}
+      <mesh
+        ref={meshRef}
+        position={[position.x + binWidth / 2, position.y + palletHeight + binHeight / 2, position.z + binDepth / 2]}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick?.();
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHovered(true);
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          setHovered(false);
+          document.body.style.cursor = 'auto';
+        }}
+        castShadow
+        receiveShadow
+      >
+        {/* Always solid box - grey for empty, orange for occupied */}
+        <boxGeometry args={[binWidth, binHeight, binDepth]} />
+        <meshStandardMaterial
+          color={color}
+          roughness={0.7}
+          metalness={0.1}
+          emissive={isSelected || isHighlighted ? color : 0}
+          emissiveIntensity={isSelected || isHighlighted ? 0.2 : 0}
+        />
+      </mesh>
+    </group>
   );
 }
 

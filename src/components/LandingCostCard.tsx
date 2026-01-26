@@ -31,8 +31,8 @@ export function LandingCostCard({ cost, onClick, index }: LandingCostCardProps) 
         }
       case "draft":
         return {
-          gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-          textGradient: "bg-gradient-to-br from-[#fa709a] to-[#fee140]",
+          gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
+          textGradient: "bg-gradient-to-br from-[#dc2626] to-[#ea580c]",
           icon: <FileText className="w-5 h-5 text-white" />,
           label: t("Draft"),
           bg: "bg-orange-500/10",

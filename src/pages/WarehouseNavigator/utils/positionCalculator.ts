@@ -2,7 +2,7 @@
 // Converts location codes to 3D positions
 
 import { Vector3 } from 'three';
-import { ParsedLocation, LayoutConstants, LEVEL_CODES } from '../types';
+import { ParsedLocation, LayoutConstants, LEVEL_CODES, ZoneType } from '../types';
 
 // Re-export LEVEL_CODES for convenience
 export { LEVEL_CODES };
@@ -188,5 +188,98 @@ export function getCameraPositionForWarehouse(rowCount: number = 8): Vector3 {
     bounds.width / 2,
     bounds.height + 5,
     bounds.depth + 10
+  );
+}
+
+// Zone layout defaults (can be customized per zone)
+export const ZONE_DEFAULTS = {
+  dock: { width: 6, depth: 8 },
+  staging: { width: 8, depth: 6 },
+  scrap: { width: 4, depth: 4 },
+  qc: { width: 5, depth: 5 },
+  packing: { width: 6, depth: 5 },
+  floor: { width: 5, depth: 5 },
+};
+
+/**
+ * Calculate position for a zone based on its type and index
+ * Zones are placed around the rack area perimeter
+ */
+export function calculateZonePosition(
+  zoneType: ZoneType,
+  zoneIndex: number,
+  rowCount: number = 8
+): Vector3 {
+  const bounds = calculateWarehouseBounds(rowCount);
+  const defaults = ZONE_DEFAULTS[zoneType];
+
+  // Position zones around warehouse perimeter based on type
+  switch (zoneType) {
+    case 'dock':
+      // Docks are at the front (negative Z), spaced along X
+      return new Vector3(
+        zoneIndex * (defaults.width + 2) + defaults.width / 2,
+        0,
+        -defaults.depth - 2
+      );
+
+    case 'staging':
+      // Staging areas near docks, slightly further back
+      return new Vector3(
+        zoneIndex * (defaults.width + 2) + defaults.width / 2,
+        0,
+        -defaults.depth / 2 - 1
+      );
+
+    case 'scrap':
+      // Scrap areas on the right side of warehouse
+      return new Vector3(
+        bounds.width + 2,
+        0,
+        zoneIndex * (defaults.depth + 2) + defaults.depth / 2
+      );
+
+    case 'qc':
+      // QC areas on the left side
+      return new Vector3(
+        -defaults.width - 2,
+        0,
+        bounds.depth / 2 + zoneIndex * (defaults.depth + 2)
+      );
+
+    case 'packing':
+      // Packing near shipping/docks area
+      return new Vector3(
+        bounds.width / 2 + zoneIndex * (defaults.width + 2),
+        0,
+        -defaults.depth - 2
+      );
+
+    case 'floor':
+    default:
+      // Floor areas fill remaining space
+      return new Vector3(
+        bounds.width / 2 + zoneIndex * (defaults.width + 1),
+        0,
+        bounds.depth + defaults.depth / 2 + 2
+      );
+  }
+}
+
+/**
+ * Get camera position for viewing a zone
+ */
+export function getCameraPositionForZone(
+  position: Vector3,
+  zoneWidth: number,
+  zoneDepth: number
+): Vector3 {
+  const maxDim = Math.max(zoneWidth, zoneDepth);
+  const distance = maxDim * 1.5;
+
+  return new Vector3(
+    position.x + zoneWidth / 2,
+    distance / 2 + 3,
+    position.z + zoneDepth / 2 + distance
   );
 }

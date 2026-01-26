@@ -430,14 +430,14 @@ export default function WarehousesPage() {
               label={t("Total Warehouses")}
               value={totalWarehouses}
               icon={Warehouse}
-              gradient="linear-gradient(135deg, #fa709a 0%, #fee140 100%)"
+              gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
               delay={0}
             />
             <StatCard
               label={t("Total Capacity")}
               value={totalCapacity.toLocaleString()}
               icon={Box}
-              gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+              gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
               delay={1}
             />
             <StatCard
@@ -868,7 +868,7 @@ export default function WarehousesPage() {
                       icon: Warehouse,
                       gradient: isActive
                         ? "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
-                        : "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                        : "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
                     }
                   }}
                   isLoading={loading?.warehouses}
@@ -1101,7 +1101,7 @@ export default function WarehousesPage() {
                     style={{
                       width: "4px",
                       height: "20px",
-                      background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                      background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
                       borderRadius: "2px",
                     }}
                   />
@@ -1424,7 +1424,7 @@ function WarehouseCard({ warehouse, rawWarehouse, warehouses, onClick, index, on
       case "inactive":
       default:
         return {
-          gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+          gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
           bg: "bg-rose-500/10",
           text: "text-rose-600 dark:text-rose-400",
           label: t("Inactive"),

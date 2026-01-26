@@ -335,20 +335,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (data.success) {
         const setter = getSetter(dataType)
         let payload = data[dataType] || []
-        if (dataType === 'quants' && Array.isArray(payload)) {
-          // Filter to match Odoo's On Hand default view: internal locations and positive available quantity
-          const locUsageById = new Map<number, string>()
-          for (const loc of (locations || [])) {
-            const id = typeof loc.id === 'number' ? loc.id : Array.isArray(loc.id) ? loc.id[0] : undefined
-            if (typeof id === 'number') locUsageById.set(id, loc.usage)
-          }
-          payload = payload.filter((q: any) => {
-            const locId = Array.isArray(q.location_id) ? q.location_id[0] : q.location_id
-            const usage = locUsageById.get(locId)
-            const available = Number(q.available_quantity ?? q.quantity ?? 0)
-            return usage === 'internal' && available > 0
-          })
-        }
+        // NOTE: Removed quants filtering here - it was causing a race condition
+        // where quants would be filtered out if locations hadn't loaded yet.
+        // Filtering is now done at the component level where both datasets are available.
         setter(payload)
       } else {
         throw new Error(data.message || `Failed to fetch ${dataType}`)

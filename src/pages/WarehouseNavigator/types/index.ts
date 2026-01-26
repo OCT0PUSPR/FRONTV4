@@ -3,8 +3,11 @@
 import { Vector3 } from 'three';
 
 // Location Types
-export type LocationType = 'row' | 'bay' | 'level' | 'bin';
+export type LocationType = 'row' | 'bay' | 'level' | 'bin' | 'zone';
 export type LocationUsage = 'internal' | 'view' | 'supplier' | 'customer' | 'inventory' | 'production' | 'transit';
+
+// Zone types for non-rack locations
+export type ZoneType = 'dock' | 'staging' | 'scrap' | 'qc' | 'packing' | 'floor';
 
 // Parsed location from code pattern like AR14AF01
 export interface ParsedLocation {
@@ -33,6 +36,11 @@ export interface OdooLocation {
   scrap_location?: boolean;
   is_a_dock?: boolean;
   replenish_location?: boolean;
+  // Custom field for zone type (dock, staging, scrap, qc, packing, floor)
+  x_zone_type?: ZoneType | false;
+  // Zone dimensions (in meters)
+  x_zone_width?: number;
+  x_zone_depth?: number;
 }
 
 // Hierarchical location node for tree display
@@ -50,6 +58,10 @@ export interface LocationNode {
   depth: number;
   position?: Vector3;
   parsed?: ParsedLocation;
+  // Zone properties for non-rack locations
+  zoneType?: ZoneType;
+  zoneWidth?: number;
+  zoneDepth?: number;
 }
 
 // Odoo stock.warehouse record

@@ -690,28 +690,28 @@ export default function TransferReceiptsPage() {
               label={t("Total Receipts")}
               value={totalReceipts}
               icon={Package}
-              gradient="linear-gradient(135deg, #e91e63 0%, #fbbf24 100%)"
+              gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
               delay={0}
             />
             <StatCard
               label={t("Draft Receipts")}
               value={draftReceipts}
               icon={FileText}
-              gradient="linear-gradient(135deg, #ec4899 0%, #ef4444 100%)"
+              gradient="linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
               delay={1}
             />
             <StatCard
               label={t("Scheduled Today")}
               value={scheduledToday}
               icon={Clock}
-              gradient="linear-gradient(135deg, #f59e0b 0%, #f97316 100%)"
+              gradient="linear-gradient(135deg, #2563eb 0%, #0891b2 100%)"
               delay={2}
             />
             <StatCard
               label={t("Completed")}
               value={completedReceipts}
               icon={CheckCircle2}
-              gradient="linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
+              gradient="linear-gradient(135deg, #059669 0%, #0d9488 100%)"
               delay={3}
             />
           </div>
