@@ -49,8 +49,8 @@ export function EmptyState({ onConfigureClick }: EmptyStateProps) {
           onClick={onConfigureClick}
           className="
             flex items-center gap-2 px-4 py-2 rounded-md
-            bg-orange-500 text-white
-            hover:bg-orange-600 transition-colors
+            bg-blue-500 text-white
+            hover:bg-blue-600 transition-colors
           "
         >
           {t('warehouse_navigator.configure', 'Go to Inventory Settings')}

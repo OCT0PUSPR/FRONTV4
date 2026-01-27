@@ -96,7 +96,7 @@ export function Breadcrumbs({
               {index === 0 && (
                 <Home
                   className="h-4 w-4 inline-block mr-1 -mt-0.5"
-                  style={{ color: '#e07020' }}
+                  style={{ color: '#3b82f6' }}
                 />
               )}
               {item.name}

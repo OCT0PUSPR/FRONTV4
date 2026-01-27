@@ -7,15 +7,19 @@ import { getTheme } from '../utils/colorTheme';
 import { LocationNode, CameraTarget } from '../types';
 import { Warehouse } from './Warehouse';
 import { CameraController } from './CameraController';
+import { PickRoute } from '../utils/routingAlgorithm';
 
 interface SceneProps {
   locations: LocationNode[];
   selectedLocationId: number | null;
   onBinClick?: (id: number) => void;
-  visibleLevels: Set<string>;
   searchQuery?: string;
   cameraTarget?: CameraTarget | null;
   onCameraAnimationComplete?: () => void;
+  // Routing props
+  currentRoute?: PickRoute | null;
+  highlightedRouteStep?: number;
+  onRouteStepClick?: (stepIndex: number) => void;
 }
 
 // Loading fallback component
@@ -49,10 +53,12 @@ export function Scene({
   locations,
   selectedLocationId,
   onBinClick,
-  visibleLevels,
   searchQuery,
   cameraTarget,
   onCameraAnimationComplete,
+  currentRoute,
+  highlightedRouteStep,
+  onRouteStepClick,
 }: SceneProps) {
   const { mode } = useTheme();
   const isDark = mode === 'dark';
@@ -112,8 +118,10 @@ export function Scene({
           locations={locations}
           selectedLocationId={selectedLocationId}
           onBinClick={onBinClick}
-          visibleLevels={visibleLevels}
           searchQuery={searchQuery}
+          currentRoute={currentRoute}
+          highlightedRouteStep={highlightedRouteStep}
+          onRouteStepClick={onRouteStepClick}
         />
       </Suspense>
     </Canvas>

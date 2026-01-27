@@ -107,13 +107,12 @@ export default function Error500() {
 
       {/* 500 Number */}
       <h1
-        className={`text-[180px] md:text-[240px] font-black leading-none tracking-tighter ${isLoaded ? 'animate-fade-in animate-pulse-slow' : 'opacity-0'}`}
+        className={`text-[180px] md:text-[240px] font-black leading-none tracking-tighter text-black/[0.06] dark:text-white/10 ${isLoaded ? 'animate-fade-in animate-pulse-slow' : 'opacity-0'}`}
         style={{
-          color: 'rgba(0,0,0,0.06)',
           fontFamily: 'system-ui, -apple-system, sans-serif',
         }}
       >
-        <span className="dark:text-white/10">500</span>
+        500
       </h1>
 
       {/* Title */}

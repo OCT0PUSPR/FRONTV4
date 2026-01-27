@@ -23,27 +23,27 @@ export function HelpTour({ isOpen, onClose }: HelpTourProps) {
 
   const steps: TourStep[] = [
     {
-      icon: <Mouse className="h-8 w-8 text-orange-500" />,
+      icon: <Mouse className="h-8 w-8 text-blue-500" />,
       titleKey: 'warehouse_navigator.rotate',
       descriptionKey: 'warehouse_navigator.rotate_desc',
     },
     {
-      icon: <Hand className="h-8 w-8 text-orange-500" />,
+      icon: <Hand className="h-8 w-8 text-blue-500" />,
       titleKey: 'warehouse_navigator.pan',
       descriptionKey: 'warehouse_navigator.pan_desc',
     },
     {
-      icon: <ZoomIn className="h-8 w-8 text-orange-500" />,
+      icon: <ZoomIn className="h-8 w-8 text-blue-500" />,
       titleKey: 'warehouse_navigator.zoom',
       descriptionKey: 'warehouse_navigator.zoom_desc',
     },
     {
-      icon: <MousePointerClick className="h-8 w-8 text-orange-500" />,
+      icon: <MousePointerClick className="h-8 w-8 text-blue-500" />,
       titleKey: 'warehouse_navigator.click_to_select',
       descriptionKey: 'warehouse_navigator.click_to_select_desc',
     },
     {
-      icon: <Map className="h-8 w-8 text-orange-500" />,
+      icon: <Map className="h-8 w-8 text-blue-500" />,
       titleKey: 'warehouse_navigator.minimap',
       descriptionKey: 'warehouse_navigator.minimap_desc',
     },
@@ -130,7 +130,7 @@ export function HelpTour({ isOpen, onClose }: HelpTourProps) {
                 key={index}
                 className={`
                   w-2 h-2 rounded-full transition-colors
-                  ${index === currentStep ? 'bg-orange-500' : 'bg-gray-200 dark:bg-zinc-700'}
+                  ${index === currentStep ? 'bg-blue-500' : 'bg-gray-200 dark:bg-zinc-700'}
                 `}
               />
             ))}
@@ -154,8 +154,8 @@ export function HelpTour({ isOpen, onClose }: HelpTourProps) {
             <button
               onClick={handleNext}
               className="
-                px-4 py-2 rounded-md bg-orange-500 text-white
-                hover:bg-orange-600 transition-colors
+                px-4 py-2 rounded-md bg-blue-500 text-white
+                hover:bg-blue-600 transition-colors
               "
             >
               {currentStep === steps.length - 1

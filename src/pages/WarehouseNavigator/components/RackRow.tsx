@@ -6,7 +6,7 @@ import { Vector3 } from 'three';
 import { Text } from '@react-three/drei';
 import { useTheme } from '../../../../context/theme';
 import { LocationNode, LEVEL_CODES } from '../types';
-import { LAYOUT, getRowIndex } from '../utils/positionCalculator';
+import { LAYOUT } from '../utils/positionCalculator';
 import { Rack } from './Rack';
 
 // Row label colors
@@ -26,7 +26,7 @@ interface RackRowProps {
   rowNode?: LocationNode;
   selectedBinId: number | null;
   onBinClick?: (id: number) => void;
-  visibleLevels: Set<string>;
+  actualRowIndex: number; // The actual index in the list of rows (0, 1, 2, 3...)
 }
 
 // Bay data structure for rendering
@@ -41,7 +41,7 @@ export function RackRow({
   rowNode,
   selectedBinId,
   onBinClick,
-  visibleLevels,
+  actualRowIndex,
 }: RackRowProps) {
   const { mode } = useTheme();
   const isDark = mode === 'dark';
@@ -51,9 +51,15 @@ export function RackRow({
   const { BAY_WIDTH, ROW_SPACING, BIN_DEPTH, LEVEL_HEIGHT } = LAYOUT;
   const beamHeight = 0.12;
 
-  // Calculate Z position based on row index (0-based position)
-  const rowIndex = getRowIndex(row);
-  const baseZ = rowIndex * (ROW_SPACING + BIN_DEPTH);
+  // Calculate Z position based on actual row index with back-to-back pairing
+  // Pairs: rows 0+1 are back-to-back, rows 2+3 are back-to-back, etc.
+  const pairIndex = Math.floor(actualRowIndex / 2);
+  const isSecondInPair = actualRowIndex % 2 === 1;
+
+  // Each pair takes: 2 * BIN_DEPTH (for two rows) + ROW_SPACING (aisle after pair)
+  // First row in pair at pairIndex * (2 * BIN_DEPTH + ROW_SPACING)
+  // Second row in pair at same + BIN_DEPTH (immediately behind first)
+  const baseZ = pairIndex * (2 * BIN_DEPTH + ROW_SPACING) + (isSecondInPair ? BIN_DEPTH : 0);
 
   // Collect actual bay data from the location hierarchy
   const baysData = useMemo(() => {
@@ -81,21 +87,12 @@ export function RackRow({
             bayNode: child,
             bins: bayBins,
           });
-
-          console.log(`[RackRow] Bay ${bayNum} bins:`, bayBins.map(b => ({
-            name: b.name,
-            type: b.type,
-            parsed: b.parsed,
-          })));
         }
       }
     });
 
     // Sort bays by number
     bays.sort((a, b) => a.bayNumber - b.bayNumber);
-
-    console.log(`[RackRow] Row ${row}: Found ${bays.length} bays with total bins:`,
-      bays.reduce((sum, b) => sum + b.bins.length, 0));
 
     return bays;
   }, [rowNode, row]);
@@ -130,7 +127,6 @@ export function RackRow({
   // Generate racks only for actual bays in the data
   const racks = useMemo(() => {
     if (baysData.length === 0) {
-      console.log(`[RackRow] Row ${row}: No bays to render`);
       return [];
     }
 
@@ -148,11 +144,10 @@ export function RackRow({
           bins={bayData.bins}
           selectedBinId={selectedBinId}
           onBinClick={onBinClick}
-          visibleLevels={visibleLevels}
         />
       );
     });
-  }, [row, baseZ, baysData, selectedBinId, onBinClick, visibleLevels, BAY_WIDTH]);
+  }, [row, baseZ, baysData, selectedBinId, onBinClick, BAY_WIDTH]);
 
   return (
     <group>

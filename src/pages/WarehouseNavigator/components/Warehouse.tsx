@@ -8,21 +8,28 @@ import { LAYOUT, ZONE_DEFAULTS } from '../utils/positionCalculator';
 import { RackRow } from './RackRow';
 import { Floor } from './Floor';
 import { Zone } from './Zone';
+import { PickRoutePath, RouteHighlights } from './PickRoutePath';
+import { PickRoute } from '../utils/routingAlgorithm';
 
 interface WarehouseProps {
   locations: LocationNode[];
   selectedLocationId: number | null;
   onBinClick?: (id: number) => void;
-  visibleLevels: Set<string>;
   searchQuery?: string;
+  // Routing props
+  currentRoute?: PickRoute | null;
+  highlightedRouteStep?: number;
+  onRouteStepClick?: (stepIndex: number) => void;
 }
 
 export function Warehouse({
   locations,
   selectedLocationId,
   onBinClick,
-  visibleLevels,
   searchQuery,
+  currentRoute,
+  highlightedRouteStep,
+  onRouteStepClick,
 }: WarehouseProps) {
   const { BAY_WIDTH, LEVEL_HEIGHT, ROW_SPACING, BIN_DEPTH } = LAYOUT;
 
@@ -41,8 +48,6 @@ export function Warehouse({
     const sortedRows = Array.from(rowNodes.entries())
       .sort(([a], [b]) => a.localeCompare(b));
 
-    console.log('[Warehouse] Found rows:', sortedRows.map(([name]) => name));
-
     return sortedRows;
   }, [locations]);
 
@@ -59,8 +64,6 @@ export function Warehouse({
     };
 
     locations.forEach(findZones);
-
-    console.log('[Warehouse] Found zones:', zoneNodes.map(z => ({ name: z.name, type: z.zoneType })));
 
     return zoneNodes;
   }, [locations]);
@@ -103,7 +106,13 @@ export function Warehouse({
 
     // Calculate base dimensions from rack data
     let width = Math.max(totalBaysAcrossAllRows * BAY_WIDTH, BAY_WIDTH * 2);
-    let depth = Math.max(rows.length * (ROW_SPACING + BIN_DEPTH), ROW_SPACING * 2);
+
+    // Depth calculation with back-to-back pairing:
+    // Each pair takes: 2 * BIN_DEPTH (two rows back-to-back) + ROW_SPACING (aisle)
+    // Last pair doesn't need aisle after it
+    const numPairs = Math.ceil(rows.length / 2);
+    let depth = numPairs * (2 * BIN_DEPTH + ROW_SPACING);
+
     const height = (maxLevelIndex + 2) * LEVEL_HEIGHT; // +2 for floor and top beam
 
     // Expand dimensions to include zones
@@ -128,14 +137,6 @@ export function Warehouse({
     // Update dimensions to include zones (with padding)
     width = maxX - minX + 4;
     depth = maxZ - minZ + 4;
-
-    console.log('[Warehouse] Dimensions:', {
-      width, depth, height,
-      rowCount: rows.length,
-      zoneCount: zones.length,
-      maxBays: totalBaysAcrossAllRows,
-      maxLevel: maxLevelIndex
-    });
 
     return { width, depth, height, offsetX: minX - 2, offsetZ: minZ - 2 };
   }, [rows, zones, BAY_WIDTH, LEVEL_HEIGHT, ROW_SPACING, BIN_DEPTH]);
@@ -178,14 +179,14 @@ export function Warehouse({
       </group>
 
       {/* Rack rows - only renders rows that exist in data */}
-      {visibleRows.map(([rowName, rowNode]) => (
+      {visibleRows.map(([rowName, rowNode], index) => (
         <RackRow
           key={rowName}
           row={rowName}
           rowNode={rowNode}
           selectedBinId={selectedLocationId}
           onBinClick={onBinClick}
-          visibleLevels={visibleLevels}
+          actualRowIndex={index}
         />
       ))}
 
@@ -211,6 +212,22 @@ export function Warehouse({
           />
         );
       })}
+
+      {/* Pick route path visualization */}
+      {currentRoute && (
+        <>
+          <PickRoutePath
+            route={currentRoute}
+            highlightedStep={highlightedRouteStep}
+            onStepClick={onRouteStepClick}
+            showLabels={true}
+          />
+          <RouteHighlights
+            route={currentRoute}
+            highlightedStep={highlightedRouteStep}
+          />
+        </>
+      )}
 
       {/* Ambient lighting - base illumination */}
       <ambientLight intensity={0.6} />
@@ -251,7 +268,7 @@ export function Warehouse({
   );
 }
 
-// Interior warehouse lighting component
+// Interior warehouse lighting component (simplified for performance)
 interface WarehouseLightingProps {
   width: number;
   depth: number;
@@ -259,27 +276,16 @@ interface WarehouseLightingProps {
 }
 
 function WarehouseLighting({ width, depth, height }: WarehouseLightingProps) {
-  // Calculate number of lights based on warehouse size
-  const lightsX = Math.max(2, Math.ceil(width / 8));
-  const lightsZ = Math.max(2, Math.ceil(depth / 8));
-  const lightHeight = height + 3;
+  // Use minimal lights - just 4 corners and center
+  const lightHeight = height + 5;
 
-  const lights = [];
-  for (let i = 0; i < lightsX; i++) {
-    for (let j = 0; j < lightsZ; j++) {
-      const x = (width / (lightsX + 1)) * (i + 1);
-      const z = (depth / (lightsZ + 1)) * (j + 1);
-      lights.push(
-        <pointLight
-          key={`light-${i}-${j}`}
-          position={[x, lightHeight, z]}
-          intensity={0.4}
-          distance={20}
-          decay={2}
-        />
-      );
-    }
-  }
-
-  return <>{lights}</>;
+  return (
+    <>
+      <pointLight position={[width / 2, lightHeight, depth / 2]} intensity={0.6} distance={50} decay={1} />
+      <pointLight position={[width * 0.2, lightHeight, depth * 0.2]} intensity={0.3} distance={40} decay={1} />
+      <pointLight position={[width * 0.8, lightHeight, depth * 0.2]} intensity={0.3} distance={40} decay={1} />
+      <pointLight position={[width * 0.2, lightHeight, depth * 0.8]} intensity={0.3} distance={40} decay={1} />
+      <pointLight position={[width * 0.8, lightHeight, depth * 0.8]} intensity={0.3} distance={40} decay={1} />
+    </>
+  );
 }

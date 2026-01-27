@@ -48,7 +48,7 @@ export function LevelToggles({ visibleLevels, onToggle }: LevelTogglesProps) {
         </h3>
         <button
           onClick={handleToggleAll}
-          className="text-xs text-orange-500 hover:text-orange-600 transition-colors"
+          className="text-xs text-blue-500 hover:text-blue-600 transition-colors"
         >
           {allVisible
             ? t('warehouse_navigator.hide_all', 'Hide all')
@@ -68,10 +68,10 @@ export function LevelToggles({ visibleLevels, onToggle }: LevelTogglesProps) {
               className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-md cursor-pointer transition-all duration-150"
               style={{
                 backgroundColor: isVisible
-                  ? (isDark ? 'rgba(234, 88, 12, 0.2)' : '#ffedd5')
+                  ? (isDark ? 'rgba(59, 130, 246, 0.2)' : '#dbeafe')
                   : colors.mutedBg,
                 color: isVisible
-                  ? (isDark ? '#fb923c' : '#c2410c')
+                  ? (isDark ? '#60a5fa' : '#1d4ed8')
                   : colors.textSecondary,
               }}
             >

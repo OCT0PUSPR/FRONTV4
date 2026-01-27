@@ -7,11 +7,13 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useTheme } from '../../../context/theme';
 import { useAuth } from '../../../context/auth';
-import { CameraTarget, StockItem, LEVEL_CODES } from './types';
+import { CameraTarget, StockItem } from './types';
 import { useWarehouseData } from './hooks/useWarehouseData';
 import { useWebSocket } from './hooks/useWebSocket';
+import { useDeliveryRouting } from './hooks/useDeliveryRouting';
 import { findNodeById, getAncestorIds } from './utils/hierarchyBuilder';
 import { getCameraPositionForWarehouse, calculateWarehouseBounds, calculatePosition } from './utils/positionCalculator';
+import { RoutingAlgorithm } from './utils/routingAlgorithm';
 import { Vector3 } from 'three';
 
 // Components
@@ -21,7 +23,6 @@ import { Toolbar } from './components/Toolbar';
 import { Breadcrumbs } from './components/Breadcrumbs';
 import { BinModal } from './components/BinModal';
 import { BinDetailsSidebar } from './components/BinDetailsSidebar';
-import { ConnectionStatus } from './components/ConnectionStatus';
 import { HelpTour } from './components/HelpTour';
 import { EmptyState } from './components/EmptyState';
 import { Minimap } from './components/Minimap';
@@ -44,12 +45,42 @@ export function WarehouseNavigator() {
     fetchStockForLocation,
   } = useWarehouseData();
 
-  // State
+  // State - define selected warehouse first so we can use it in routing hook
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<number | null>(null);
+
+  // Get selected warehouse info for routing
+  const selectedWarehouse = useMemo(() => {
+    return warehouses.find(w => w.id === selectedWarehouseId);
+  }, [warehouses, selectedWarehouseId]);
+
+  // Delivery routing hook - pass warehouse context for filtering
+  const {
+    deliveries,
+    isLoadingDeliveries,
+    fetchDeliveries,
+    selectedDelivery,
+    moveLines,
+    isLoadingMoveLines,
+    selectDelivery,
+    pickItems,
+    isLoadingLocations: isLoadingPickLocations,
+    currentRoute,
+    routeAlgorithm,
+    setRouteAlgorithm,
+    calculateRoute,
+    routeComparison,
+    error: routingError,
+    clearError: clearRoutingError,
+  } = useDeliveryRouting(locations, selectedWarehouseId, selectedWarehouse?.code);
+
+  // Routing UI state
+  const [routingMode, setRoutingMode] = useState(false);
+  const [highlightedRouteStep, setHighlightedRouteStep] = useState<number | undefined>(undefined);
+
+  // State (continued)
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-  const [visibleLevels, setVisibleLevels] = useState<Set<string>>(new Set(LEVEL_CODES));
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHelpTour, setShowHelpTour] = useState(false);
   const [cameraTarget, setCameraTarget] = useState<CameraTarget | null>(null);
@@ -101,11 +132,6 @@ export function WarehouseNavigator() {
       setNavigationHistory([]);
     }
   }, [selectedWarehouseId, fetchLocations]);
-
-  // Get selected warehouse
-  const selectedWarehouse = useMemo(() => {
-    return warehouses.find(w => w.id === selectedWarehouseId);
-  }, [warehouses, selectedWarehouseId]);
 
   // Handle warehouse change
   const handleWarehouseChange = useCallback((id: number) => {
@@ -235,19 +261,6 @@ export function WarehouseNavigator() {
     });
   }, []);
 
-  // Handle level toggle
-  const handleToggleLevel = useCallback((level: string) => {
-    setVisibleLevels(prev => {
-      const next = new Set(prev);
-      if (next.has(level)) {
-        next.delete(level);
-      } else {
-        next.add(level);
-      }
-      return next;
-    });
-  }, []);
-
   // Handle back button
   const handleBack = useCallback(() => {
     if (navigationHistory.length > 0) {
@@ -351,6 +364,83 @@ export function WarehouseNavigator() {
     }
   }, [error]);
 
+  // Show routing error toast
+  useEffect(() => {
+    if (routingError) {
+      toast.error(routingError);
+      clearRoutingError();
+    }
+  }, [routingError, clearRoutingError]);
+
+  // Handle calculate route - triggers route calculation
+  const handleCalculateRoute = useCallback(() => {
+    // Use a start position near the warehouse entrance (0, 0, 0)
+    const startPosition = new Vector3(0, 0, 0);
+    calculateRoute(startPosition);
+  }, [calculateRoute]);
+
+  // Fly camera to route overview when route is calculated
+  useEffect(() => {
+    if (currentRoute && currentRoute.steps.length > 0) {
+      // Calculate bounds of all route steps
+      let minX = Infinity, maxX = -Infinity;
+      let minZ = Infinity, maxZ = -Infinity;
+      let maxY = 0;
+
+      currentRoute.steps.forEach(step => {
+        const pos = step.item.position;
+        minX = Math.min(minX, pos.x);
+        maxX = Math.max(maxX, pos.x);
+        minZ = Math.min(minZ, pos.z);
+        maxZ = Math.max(maxZ, pos.z);
+        maxY = Math.max(maxY, pos.y);
+      });
+
+      const centerX = (minX + maxX) / 2;
+      const centerZ = (minZ + maxZ) / 2;
+      const width = maxX - minX + 10;
+      const depth = maxZ - minZ + 10;
+      const distance = Math.max(width, depth) * 1.2;
+
+      setCameraTarget({
+        position: new Vector3(centerX + distance * 0.5, maxY + distance * 0.8, centerZ + distance * 0.5),
+        lookAt: new Vector3(centerX, maxY / 2, centerZ),
+        duration: 1200,
+      });
+    }
+  }, [currentRoute]);
+
+  // Handle route step click - fly to that location
+  const handleRouteStepClick = useCallback((stepIndex: number) => {
+    setHighlightedRouteStep(stepIndex);
+
+    if (currentRoute && currentRoute.steps[stepIndex]) {
+      const step = currentRoute.steps[stepIndex];
+      const pos = step.item.position;
+
+      setCameraTarget({
+        position: new Vector3(pos.x + 3, pos.y + 2, pos.z + 4),
+        lookAt: pos.clone(),
+        duration: 600,
+      });
+    }
+  }, [currentRoute]);
+
+  // Handle routing mode toggle
+  const handleToggleRoutingMode = useCallback(() => {
+    setRoutingMode(prev => {
+      if (!prev) {
+        // Entering routing mode - fetch deliveries
+        fetchDeliveries();
+      } else {
+        // Exiting routing mode - clear selection
+        selectDelivery(null);
+        setHighlightedRouteStep(undefined);
+      }
+      return !prev;
+    });
+  }, [fetchDeliveries, selectDelivery]);
+
   // Calculate if we can go back
   const canGoBack = navigationHistory.length > 0 || selectedLocationId !== null;
 
@@ -398,10 +488,28 @@ export function WarehouseNavigator() {
           onToggleNode={handleToggleNode}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          visibleLevels={visibleLevels}
-          onToggleLevel={handleToggleLevel}
           onLocationDoubleClick={handleLocationDoubleClick}
           isLoading={isLoading}
+          // Routing props
+          routingMode={routingMode}
+          onToggleRoutingMode={handleToggleRoutingMode}
+          deliveries={deliveries}
+          isLoadingDeliveries={isLoadingDeliveries}
+          onRefreshDeliveries={fetchDeliveries}
+          selectedDelivery={selectedDelivery}
+          onSelectDelivery={(d) => { selectDelivery(d); }}
+          moveLines={moveLines}
+          isLoadingMoveLines={isLoadingMoveLines}
+          pickItems={pickItems}
+          isLoadingPickLocations={isLoadingPickLocations}
+          currentRoute={currentRoute}
+          routeAlgorithm={routeAlgorithm}
+          onAlgorithmChange={setRouteAlgorithm}
+          onCalculateRoute={handleCalculateRoute}
+          routeComparison={routeComparison}
+          routingError={routingError}
+          onClearRoutingError={clearRoutingError}
+          onRouteStepClick={handleRouteStepClick}
         />
 
         {/* 3D Scene */}
@@ -414,10 +522,13 @@ export function WarehouseNavigator() {
                 locations={locations}
                 selectedLocationId={selectedLocationId}
                 onBinClick={handleBinClick}
-                visibleLevels={visibleLevels}
                 searchQuery={searchQuery}
                 cameraTarget={cameraTarget}
                 onCameraAnimationComplete={() => setCameraTarget(null)}
+                // Routing props
+                currentRoute={currentRoute}
+                highlightedRouteStep={highlightedRouteStep}
+                onRouteStepClick={handleRouteStepClick}
               />
 
               {/* Minimap */}
@@ -429,17 +540,6 @@ export function WarehouseNavigator() {
             </>
           )}
         </div>
-      </div>
-
-      {/* Status bar */}
-      <div
-        className="flex items-center justify-between px-4 py-2 border-t text-xs"
-        style={{ borderColor: colors.border, color: colors.textSecondary }}
-      >
-        <ConnectionStatus status={wsStatus} />
-        <span>
-          {t('warehouse_navigator.stock_updates', 'Stock updates')}: {wsStatus === 'connected' ? t('warehouse_navigator.live', 'Live') : '—'}
-        </span>
       </div>
 
       {/* Bin detail modal */}

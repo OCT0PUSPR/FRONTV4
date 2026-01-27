@@ -116,7 +116,7 @@ export function BinModal({
         <div className="flex-1 overflow-y-auto p-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-2 border-orange-500 border-t-transparent" />
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent" />
             </div>
           ) : stockItems.length === 0 ? (
             <div
@@ -143,10 +143,10 @@ export function BinModal({
                   <div
                     className="
                       w-10 h-10 rounded flex items-center justify-center flex-shrink-0
-                      bg-orange-100 dark:bg-orange-900/30
+                      bg-blue-100 dark:bg-blue-900/30
                     "
                   >
-                    <Package className="h-5 w-5 text-orange-500" />
+                    <Package className="h-5 w-5 text-blue-500" />
                   </div>
 
                   {/* Product details */}
@@ -173,7 +173,7 @@ export function BinModal({
                   <div className="text-right flex-shrink-0">
                     <p
                       className="text-sm font-semibold"
-                      style={{ color: '#e07020' }}
+                      style={{ color: '#3b82f6' }}
                     >
                       {Math.round(item.quantity * 100) / 100}
                     </p>
@@ -202,7 +202,7 @@ export function BinModal({
                 count: stockItems.length,
               })}
             </span>
-            <span className="text-sm font-medium" style={{ color: '#e07020' }}>
+            <span className="text-sm font-medium" style={{ color: '#3b82f6' }}>
               {t('warehouse_navigator.total_quantity', 'Total Qty: {{qty}}', {
                 qty: Math.round(stockItems.reduce((sum, item) => sum + item.quantity, 0) * 100) / 100,
               })}

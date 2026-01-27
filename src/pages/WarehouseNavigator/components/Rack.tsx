@@ -29,7 +29,6 @@ interface RackProps {
   bins?: LocationNode[];
   selectedBinId: number | null;
   onBinClick?: (id: number) => void;
-  visibleLevels: Set<string>;
 }
 
 // Level data structure for rendering
@@ -46,7 +45,6 @@ export function Rack({
   bins = [],
   selectedBinId,
   onBinClick,
-  visibleLevels,
 }: RackProps) {
   const { mode } = useTheme();
   const isDark = mode === 'dark';
@@ -66,8 +64,6 @@ export function Rack({
   const levelsData = useMemo(() => {
     const levelMap = new Map<string, LocationNode[]>();
 
-    console.log(`[Rack] Processing ${bins.length} bins for bay ${bay}`);
-
     bins.forEach(bin => {
       // Get level from parsed data or from bin name (if level IS the bin)
       let levelCode: string | null = null;
@@ -86,9 +82,6 @@ export function Rack({
         const existing = levelMap.get(levelCode) || [];
         existing.push(bin);
         levelMap.set(levelCode, existing);
-        console.log(`[Rack] Bin "${bin.name}" assigned to level ${levelCode}`);
-      } else {
-        console.log(`[Rack] Bin "${bin.name}" has no level assignment, parsed:`, bin.parsed);
       }
     });
 
@@ -100,15 +93,12 @@ export function Rack({
 
     levels.sort((a, b) => a.levelIndex - b.levelIndex);
 
-    console.log(`[Rack] Levels found:`, levels.map(l => ({ code: l.levelCode, index: l.levelIndex, binCount: l.bins.length })));
-
     return levels;
   }, [bins, bay]);
 
   // Calculate rack dimensions based on data
   const rackDimensions = useMemo(() => {
     if (levelsData.length === 0) {
-      console.log(`[Rack] No levels data, using defaults for bay ${bay}`);
       const defaultLevelCount = 2;
       const roofThickness = 0.03;
       const beamH = 0.12;
@@ -127,10 +117,7 @@ export function Rack({
       .filter(idx => idx >= 0);
 
     const maxLevelIndex = Math.max(...validLevelIndices, 0);
-    const minLevelIndex = Math.min(...validLevelIndices, 0);
     const levelCount = maxLevelIndex + 1;
-
-    console.log(`[Rack] Bay ${bay} dimensions: levels ${minLevelIndex}-${maxLevelIndex}, count ${levelCount}`);
 
     // Height should stop at the roof level (levelCount * LEVEL_HEIGHT + beamHeight + roofThickness)
     const roofThickness = 0.03;
@@ -175,7 +162,7 @@ export function Rack({
             rackHeight / 2,
             basePosition.z + pos.z + uprightDepth / 2,
           ]}
-          castShadow
+          
         >
           <boxGeometry args={[uprightWidth, rackHeight, uprightDepth]} />
           <meshStandardMaterial
@@ -190,66 +177,20 @@ export function Rack({
     return elements;
   }, [basePosition, rackWidth, rackDepth, rackHeight, uprightWidth, uprightDepth, uprightColor]);
 
-  // Generate diagonal bracing on side frames
+  // Generate simplified bracing on side frames (just horizontal connectors)
   const bracing = useMemo(() => {
     const elements: React.ReactElement[] = [];
     const bracingThickness = 0.02;
 
-    // Create X-bracing on left and right side frames
+    // Only add horizontal braces at bottom and top for performance
     const sidePositions = [
-      { x: uprightWidth / 2, side: 'left' },
-      { x: rackWidth - uprightWidth / 2, side: 'right' },
+      { x: uprightWidth / 2 },
+      { x: rackWidth - uprightWidth / 2 },
     ];
 
     sidePositions.forEach((sidePos, sideIndex) => {
-      // Diagonal braces between each level
-      for (let level = 0; level < levelCount; level++) {
-        const y1 = level * LEVEL_HEIGHT + beamHeight;
-        const y2 = (level + 1) * LEVEL_HEIGHT;
-        const midY = (y1 + y2) / 2;
-        const segmentHeight = y2 - y1;
-
-        // Calculate diagonal length
-        const diagonalLength = Math.sqrt(segmentHeight * segmentHeight + (rackDepth - uprightDepth) * (rackDepth - uprightDepth));
-        const angle = Math.atan2(segmentHeight, rackDepth - uprightDepth);
-
-        // First diagonal (bottom-front to top-back)
-        elements.push(
-          <mesh
-            key={`brace-${sideIndex}-${level}-a`}
-            position={[
-              basePosition.x + sidePos.x,
-              midY,
-              basePosition.z + rackDepth / 2,
-            ]}
-            rotation={[angle, 0, 0]}
-            castShadow
-          >
-            <boxGeometry args={[bracingThickness, bracingThickness, diagonalLength]} />
-            <meshStandardMaterial color={bracingColor} metalness={0.5} roughness={0.4} />
-          </mesh>
-        );
-
-        // Second diagonal (bottom-back to top-front) - forms X pattern
-        elements.push(
-          <mesh
-            key={`brace-${sideIndex}-${level}-b`}
-            position={[
-              basePosition.x + sidePos.x,
-              midY,
-              basePosition.z + rackDepth / 2,
-            ]}
-            rotation={[-angle, 0, 0]}
-            castShadow
-          >
-            <boxGeometry args={[bracingThickness, bracingThickness, diagonalLength]} />
-            <meshStandardMaterial color={bracingColor} metalness={0.5} roughness={0.4} />
-          </mesh>
-        );
-      }
-
-      // Horizontal braces connecting front and back uprights at each level
-      for (let level = 0; level <= levelCount; level++) {
+      // Just bottom and top horizontal braces
+      [0, levelCount].forEach(level => {
         const y = level * LEVEL_HEIGHT;
         elements.push(
           <mesh
@@ -259,13 +200,12 @@ export function Rack({
               y + beamHeight / 2,
               basePosition.z + rackDepth / 2,
             ]}
-            castShadow
           >
             <boxGeometry args={[bracingThickness, bracingThickness, rackDepth - uprightDepth]} />
             <meshStandardMaterial color={bracingColor} metalness={0.5} roughness={0.4} />
           </mesh>
         );
-      }
+      });
     });
 
     return elements;
@@ -290,7 +230,7 @@ export function Rack({
             y + beamHeight / 2,
             basePosition.z + uprightDepth / 2,
           ]}
-          castShadow
+          
         >
           <boxGeometry args={[rackWidth - uprightWidth * 2, beamHeight, beamDepth]} />
           <meshStandardMaterial
@@ -310,7 +250,7 @@ export function Rack({
             y + beamHeight / 2,
             basePosition.z + rackDepth - uprightDepth / 2,
           ]}
-          castShadow
+          
         >
           <boxGeometry args={[rackWidth - uprightWidth * 2, beamHeight, beamDepth]} />
           <meshStandardMaterial
@@ -325,7 +265,7 @@ export function Rack({
     return elements;
   }, [basePosition, rackWidth, rackDepth, allLevelIndices, levelCount, uprightWidth, uprightDepth, beamHeight, beamDepth, beamColor, LEVEL_HEIGHT]);
 
-  // Generate wire mesh decking for each level (the floor/shelf surface)
+  // Generate wire mesh decking for each level (simplified - just the deck plane)
   const wireDecking = useMemo(() => {
     const elements: React.ReactElement[] = [];
     // Render decking at each level that has bins
@@ -336,7 +276,7 @@ export function Rack({
       const deckWidth = rackWidth - uprightWidth * 2 - 0.02;
       const deckDepth = rackDepth - uprightDepth * 2 - 0.02;
 
-      // Wire mesh deck (semi-transparent grid)
+      // Wire mesh deck (simplified single plane with wireframe for grid effect)
       elements.push(
         <mesh
           key={`deck-${level}`}
@@ -346,81 +286,37 @@ export function Rack({
             basePosition.z + rackDepth / 2,
           ]}
           rotation={[-Math.PI / 2, 0, 0]}
-          receiveShadow
+          
         >
-          <planeGeometry args={[deckWidth, deckDepth]} />
+          <planeGeometry args={[deckWidth, deckDepth, 4, 3]} />
           <meshStandardMaterial
             color={wireColor}
             metalness={0.7}
             roughness={0.2}
-            transparent
-            opacity={0.6}
-            wireframe={false}
+            wireframe={true}
           />
         </mesh>
       );
-
-      // Wire mesh grid lines (cross supports)
-      const gridSpacing = 0.15;
-      const numCrossSupports = Math.floor(deckDepth / gridSpacing);
-
-      for (let i = 1; i < numCrossSupports; i++) {
-        elements.push(
-          <mesh
-            key={`wire-cross-${level}-${i}`}
-            position={[
-              basePosition.x + rackWidth / 2,
-              y + 0.015,
-              basePosition.z + uprightDepth + i * gridSpacing,
-            ]}
-          >
-            <boxGeometry args={[deckWidth, 0.008, 0.008]} />
-            <meshStandardMaterial color={wireColor} metalness={0.8} roughness={0.2} />
-          </mesh>
-        );
-      }
-
-      // Longitudinal supports
-      const numLongSupports = Math.floor(deckWidth / gridSpacing);
-      for (let i = 1; i < numLongSupports; i++) {
-        elements.push(
-          <mesh
-            key={`wire-long-${level}-${i}`}
-            position={[
-              basePosition.x + uprightWidth + i * gridSpacing,
-              y + 0.02,
-              basePosition.z + rackDepth / 2,
-            ]}
-          >
-            <boxGeometry args={[0.008, 0.008, deckDepth]} />
-            <meshStandardMaterial color={wireColor} metalness={0.8} roughness={0.2} />
-          </mesh>
-        );
-      }
     });
 
     return elements;
   }, [basePosition, rackWidth, rackDepth, allLevelIndices, uprightWidth, uprightDepth, beamHeight, wireColor, LEVEL_HEIGHT]);
 
-  // Generate roof/top shelf for the rack
+  // Generate roof/top shelf for the rack (simplified - just the panel)
   const roofPanel = useMemo(() => {
-    const elements: React.ReactElement[] = [];
     const roofY = levelCount * LEVEL_HEIGHT + beamHeight;
     const roofWidth = rackWidth - uprightWidth * 2;
     const roofDepth = rackDepth - uprightDepth * 2;
     const roofThickness = 0.03;
 
-    // Main roof panel (solid top)
-    elements.push(
+    return (
       <mesh
-        key="roof-panel"
         position={[
           basePosition.x + rackWidth / 2,
           roofY + roofThickness / 2,
           basePosition.z + rackDepth / 2,
         ]}
-        castShadow
-        receiveShadow
+        
       >
         <boxGeometry args={[roofWidth, roofThickness, roofDepth]} />
         <meshStandardMaterial
@@ -430,44 +326,7 @@ export function Rack({
         />
       </mesh>
     );
-
-    // Cross support beams under the roof
-    const numSupports = 3;
-    const supportSpacing = roofDepth / (numSupports + 1);
-    const supportHeight = 0.04;
-    const supportWidth = 0.03;
-
-    for (let i = 1; i <= numSupports; i++) {
-      elements.push(
-        <mesh
-          key={`roof-support-${i}`}
-          position={[
-            basePosition.x + rackWidth / 2,
-            roofY - supportHeight / 2,
-            basePosition.z + uprightDepth + i * supportSpacing,
-          ]}
-          castShadow
-        >
-          <boxGeometry args={[roofWidth, supportHeight, supportWidth]} />
-          <meshStandardMaterial
-            color={beamColor}
-            metalness={0.5}
-            roughness={0.3}
-          />
-        </mesh>
-      );
-    }
-
-    return elements;
-  }, [basePosition, rackWidth, rackDepth, levelCount, uprightWidth, uprightDepth, beamHeight, wireColor, beamColor, LEVEL_HEIGHT]);
-
-  // Filter levels by visibility setting
-  const visibleLevelsData = useMemo(() => {
-    if (visibleLevels.size === 0 || visibleLevels.size === LEVEL_CODES.length) {
-      return levelsData;
-    }
-    return levelsData.filter(level => visibleLevels.has(level.levelCode));
-  }, [levelsData, visibleLevels]);
+  }, [basePosition, rackWidth, rackDepth, levelCount, uprightWidth, uprightDepth, beamHeight, wireColor, LEVEL_HEIGHT]);
 
   return (
     <group>
@@ -487,7 +346,7 @@ export function Rack({
       {roofPanel}
 
       {/* Render bins that exist in the data */}
-      {visibleLevelsData.map(levelData => {
+      {levelsData.map(levelData => {
         // Skip invalid level indices
         if (levelData.levelIndex < 0) return null;
 

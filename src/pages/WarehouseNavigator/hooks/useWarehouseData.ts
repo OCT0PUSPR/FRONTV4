@@ -124,9 +124,11 @@ export function useWarehouseData(): UseWarehouseDataReturn {
 
     try {
       // Use SmartFieldSelector's data endpoint for stock.location
-      // Get all internal locations with limit
+      // Filter by warehouse_id to only get locations for this warehouse
+      // Use higher limit to accommodate large warehouses
+      const domain = JSON.stringify([['warehouse_id', '=', warehouseId]]);
       const response = await fetch(
-        `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.location?limit=2000`,
+        `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.location?domain=${encodeURIComponent(domain)}&limit=10000`,
         {
           method: 'GET',
           headers: getApiHeaders(),

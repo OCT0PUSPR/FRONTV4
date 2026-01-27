@@ -73,9 +73,9 @@ export function BinDetailsSidebar({
         <div className="flex items-center gap-2">
           <div
             className="p-2 rounded-lg"
-            style={{ backgroundColor: isDark ? 'rgba(224, 112, 32, 0.2)' : '#fff3e8' }}
+            style={{ backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff' }}
           >
-            <Package className="h-5 w-5" style={{ color: '#e07020' }} />
+            <Package className="h-5 w-5" style={{ color: '#3b82f6' }} />
           </div>
           <div>
             <h2
@@ -162,8 +162,8 @@ export function BinDetailsSidebar({
               <span
                 className="px-2 py-0.5 rounded text-xs font-medium"
                 style={{
-                  backgroundColor: isDark ? 'rgba(224, 112, 32, 0.2)' : '#fff3e8',
-                  color: '#e07020',
+                  backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#eff6ff',
+                  color: '#3b82f6',
                 }}
               >
                 Bin {binCode}
@@ -184,7 +184,7 @@ export function BinDetailsSidebar({
             {stockItems.length} {t('warehouse_navigator.products', 'products')}
           </span>
         </div>
-        <span className="text-sm font-semibold" style={{ color: '#e07020' }}>
+        <span className="text-sm font-semibold" style={{ color: '#3b82f6' }}>
           {Math.round(stockItems.reduce((sum, item) => sum + item.quantity, 0) * 100) / 100} {t('warehouse_navigator.total', 'total')}
         </span>
       </div>
@@ -193,7 +193,7 @@ export function BinDetailsSidebar({
       <div className="flex-1 overflow-y-auto" style={{ height: 'calc(100% - 200px)' }}>
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent" />
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent" />
           </div>
         ) : stockItems.length === 0 ? (
           <div
@@ -228,10 +228,10 @@ export function BinDetailsSidebar({
                 <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{
-                    backgroundColor: isDark ? 'rgba(224, 112, 32, 0.15)' : '#fff3e8',
+                    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff',
                   }}
                 >
-                  <Package className="h-5 w-5" style={{ color: '#e07020' }} />
+                  <Package className="h-5 w-5" style={{ color: '#3b82f6' }} />
                 </div>
 
                 {/* Product details */}
@@ -256,7 +256,7 @@ export function BinDetailsSidebar({
                   <div className="flex items-center gap-2 mt-1.5">
                     <span
                       className="text-lg font-bold"
-                      style={{ color: '#e07020' }}
+                      style={{ color: '#3b82f6' }}
                     >
                       {Math.round(item.quantity * 100) / 100}
                     </span>

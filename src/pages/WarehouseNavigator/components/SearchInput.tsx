@@ -41,11 +41,11 @@ export function SearchInput({ value, onChange, placeholder }: SearchInputProps) 
     <div
       className={`
         relative flex items-center rounded-lg border transition-all duration-200
-        ${isFocused ? 'ring-2 ring-orange-500' : ''}
+        ${isFocused ? 'ring-2 ring-blue-500' : ''}
       `}
       style={{
         backgroundColor: colors.mutedBg,
-        borderColor: isFocused ? '#e07020' : colors.border,
+        borderColor: isFocused ? '#3b82f6' : colors.border,
       }}
     >
       <Search

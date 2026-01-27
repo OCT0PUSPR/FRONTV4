@@ -283,3 +283,58 @@ export function getCameraPositionForZone(
     position.z + zoneDepth / 2 + distance
   );
 }
+
+/**
+ * Calculate the "pick position" - the position in the aisle in front of a bin
+ * Workers access bins from the aisle side (front), not from the back-to-back side
+ *
+ * For back-to-back row pairs (AG+AH, AI+AJ, etc.):
+ * - First row in pair (AG, AI, AK...): front faces LOWER Z (toward previous aisle)
+ * - Second row in pair (AH, AJ, AL...): front faces HIGHER Z (toward next aisle)
+ *
+ * @param binPosition - The actual bin position (inside the rack)
+ * @param rowCode - The row code (e.g., 'AG', 'AH')
+ * @param atBinHeight - If true, returns position at bin height; if false, at ground level
+ */
+export function calculatePickPosition(
+  binPosition: Vector3,
+  rowCode: string,
+  atBinHeight: boolean = true
+): Vector3 {
+  const rowIndex = getRowIndex(rowCode);
+  const isSecondInPair = rowIndex % 2 === 1;
+
+  // How far into the aisle the pick position should be
+  // Use a fixed offset that puts the marker clearly in front of the rack
+  const AISLE_OFFSET = 1.2; // About 1.2 units into the aisle
+
+  // Y position: at bin height or near ground
+  const y = atBinHeight ? binPosition.y : 0.5;
+
+  // Calculate pick position based on which side the front faces
+  if (isSecondInPair) {
+    // Second in pair (AH, AJ...): front faces higher Z
+    return new Vector3(
+      binPosition.x,
+      y,
+      binPosition.z + AISLE_OFFSET
+    );
+  } else {
+    // First in pair (AG, AI...): front faces lower Z
+    return new Vector3(
+      binPosition.x,
+      y,
+      binPosition.z - AISLE_OFFSET
+    );
+  }
+}
+
+/**
+ * Determine if the front of a row faces lower Z (negative) or higher Z (positive)
+ * First row in pair faces lower Z, second row faces higher Z
+ */
+export function getRowFrontDirection(rowCode: string): 'lower' | 'higher' {
+  const rowIndex = getRowIndex(rowCode);
+  const isSecondInPair = rowIndex % 2 === 1;
+  return isSecondInPair ? 'higher' : 'lower';
+}

@@ -38,7 +38,7 @@ const PALLET_COLORS = {
   },
 };
 
-// Pallet component - wooden pallet under the bin
+// Simplified pallet component - single box for performance
 function Pallet({
   position,
   width,
@@ -52,68 +52,16 @@ function Pallet({
 }) {
   const colors = isDark ? PALLET_COLORS.dark : PALLET_COLORS.light;
   const palletHeight = 0.08;
-  const boardThickness = 0.02;
-  const slatsCount = 5;
-  const slatWidth = width / slatsCount;
-  const gapRatio = 0.15; // Gap between slats
 
   return (
-    <group position={position}>
-      {/* Top boards (slats running along depth) */}
-      {Array.from({ length: slatsCount }).map((_, i) => {
-        const slatActualWidth = slatWidth * (1 - gapRatio);
-        const xOffset = i * slatWidth + slatActualWidth / 2 - width / 2 + (slatWidth * gapRatio) / 2;
-        return (
-          <mesh
-            key={`top-slat-${i}`}
-            position={[xOffset, palletHeight - boardThickness / 2, 0]}
-            castShadow
-            receiveShadow
-          >
-            <boxGeometry args={[slatActualWidth, boardThickness, depth * 0.95]} />
-            <meshStandardMaterial
-              color={hexToNumber(i % 2 === 0 ? colors.wood : colors.woodDark)}
-              roughness={0.9}
-              metalness={0}
-            />
-          </mesh>
-        );
-      })}
-
-      {/* Support beams (3 beams running along width) */}
-      {[-1, 0, 1].map((pos, i) => (
-        <mesh
-          key={`support-${i}`}
-          position={[0, palletHeight / 2, pos * (depth * 0.35)]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[width * 0.95, palletHeight - boardThickness, boardThickness * 2]} />
-          <meshStandardMaterial
-            color={hexToNumber(colors.woodDark)}
-            roughness={0.9}
-            metalness={0}
-          />
-        </mesh>
-      ))}
-
-      {/* Bottom boards (3 boards running along depth for ground contact) */}
-      {[-1, 0, 1].map((pos, i) => (
-        <mesh
-          key={`bottom-${i}`}
-          position={[pos * (width * 0.35), boardThickness / 2, 0]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[width * 0.2, boardThickness, depth * 0.9]} />
-          <meshStandardMaterial
-            color={hexToNumber(colors.wood)}
-            roughness={0.9}
-            metalness={0}
-          />
-        </mesh>
-      ))}
-    </group>
+    <mesh position={position}>
+      <boxGeometry args={[width, palletHeight, depth]} />
+      <meshStandardMaterial
+        color={hexToNumber(colors.wood)}
+        roughness={0.9}
+        metalness={0}
+      />
+    </mesh>
   );
 }
 
@@ -147,21 +95,11 @@ export function Bin({
   const binDepth = BIN_DEPTH * 0.75;
   const binHeight = LEVEL_HEIGHT * 0.7;
 
-  // Animation for selection highlight
-  const pulseRef = useRef(0);
-
+  // Only animate selected/highlighted bins for performance
   useFrame((_, delta) => {
-    if (isSelected || isHighlighted) {
-      pulseRef.current += delta * 3;
-      if (meshRef.current) {
-        const scale = 1 + Math.sin(pulseRef.current) * 0.03;
-        meshRef.current.scale.setScalar(scale);
-      }
-    } else {
-      pulseRef.current = 0;
-      if (meshRef.current) {
-        meshRef.current.scale.setScalar(1);
-      }
+    if ((isSelected || isHighlighted) && meshRef.current) {
+      const scale = 1 + Math.sin(Date.now() * 0.003) * 0.03;
+      meshRef.current.scale.setScalar(scale);
     }
   });
 
@@ -206,8 +144,6 @@ export function Bin({
           setHovered(false);
           document.body.style.cursor = 'auto';
         }}
-        castShadow
-        receiveShadow
       >
         {/* Always solid box - grey for empty, orange for occupied */}
         <boxGeometry args={[binWidth, binHeight, binDepth]} />
