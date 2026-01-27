@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogTitle,
@@ -22,11 +23,14 @@ import {
   Alert,
   Autocomplete,
   Divider,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import {
   PictureAsPdf as PdfIcon,
   Download as DownloadIcon,
   Send as GenerateIcon,
+  Language as LanguageIcon,
 } from '@mui/icons-material';
 import {
   CustomReportsService,
@@ -47,15 +51,25 @@ interface FilterValues {
   [key: string]: any;
 }
 
+// Available languages for report generation
+const REPORT_LANGUAGES = [
+  { code: 'en', label: 'English', dir: 'ltr' },
+  { code: 'ar', label: 'العربية', dir: 'rtl' },
+];
+
 export default function ReportGenerateModal({
   open,
   onClose,
   report,
 }: ReportGenerateModalProps) {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Language selection for generated report
+  const [reportLanguage, setReportLanguage] = useState<'en' | 'ar'>(i18n.language?.startsWith('ar') ? 'ar' : 'en');
 
   // For single record reports
   const [records, setRecords] = useState<(PickingRecord | ProductRecord)[]>([]);
@@ -80,6 +94,8 @@ export default function ReportGenerateModal({
       setSelectedRecordId(null);
       setFilterValues({});
       setError(null);
+      // Reset language to current UI language
+      setReportLanguage(i18n.language?.startsWith('ar') ? 'ar' : 'en');
     }
   }, [open, report]);
 
@@ -174,6 +190,7 @@ export default function ReportGenerateModal({
         report_key: report.report_key,
         record_id: selectedRecordId || undefined,
         filters: filterValues,
+        language: reportLanguage,
       };
 
       if (downloadDirectly) {
@@ -415,6 +432,54 @@ export default function ReportGenerateModal({
 
             {renderRecordSelector()}
             {renderFilters()}
+
+            {/* Language Selection */}
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <LanguageIcon fontSize="small" />
+                Report Language
+              </Typography>
+              <ToggleButtonGroup
+                value={reportLanguage}
+                exclusive
+                onChange={(_, newLang: 'en' | 'ar' | null) => newLang && setReportLanguage(newLang)}
+                aria-label="report language"
+                size="small"
+                sx={{
+                  '& .MuiToggleButton-root': {
+                    px: 3,
+                    py: 1,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                  },
+                  '& .MuiToggleButton-root.Mui-selected': {
+                    backgroundColor: 'primary.main',
+                    color: 'primary.contrastText',
+                    '&:hover': {
+                      backgroundColor: 'primary.dark',
+                    }
+                  }
+                }}
+              >
+                {REPORT_LANGUAGES.map((lang) => (
+                  <ToggleButton
+                    key={lang.code}
+                    value={lang.code}
+                    sx={{
+                      direction: lang.dir,
+                      fontFamily: lang.code === 'ar' ? '"Noto Sans Arabic", "Cairo", sans-serif' : 'inherit'
+                    }}
+                  >
+                    {lang.label}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                {reportLanguage === 'ar'
+                  ? 'سيتم إنشاء التقرير باللغة العربية مع دعم RTL'
+                  : 'The report will be generated in the selected language'}
+              </Typography>
+            </Box>
 
             {!report.available_filters && report.report_category === 'single_record' && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>

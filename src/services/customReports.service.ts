@@ -68,6 +68,7 @@ export interface GenerateReportParams {
   record_id?: number;
   filters?: Record<string, any>;
   return_base64?: boolean;
+  language?: 'en' | 'ar';
 }
 
 export interface GenerateReportResponse {

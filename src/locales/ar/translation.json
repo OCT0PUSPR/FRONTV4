@@ -5305,5 +5305,35 @@
       "validate_order": "التحقق من الأمر",
       "reject_order": "رفض الأمر"
     }
-  }
+  },
+
+  "Report Templates": "قوالب التقارير",
+  "Generate warehouse documents and PDF reports": "إنشاء مستندات المستودع وتقارير PDF",
+  "Warehouse Reports": "تقارير المستودع",
+  "Generate warehouse documents and reports": "إنشاء مستندات وتقارير المستودع",
+  "No warehouse reports available": "لا توجد تقارير مستودع متاحة",
+  "Single Record": "سجل واحد",
+  "List Report": "تقرير قائمة",
+
+  "Generated Reports": "التقارير المُنشأة",
+  "View and download generated PDF reports": "عرض وتنزيل تقارير PDF المُنشأة",
+  "No reports match your filters": "لا توجد تقارير مطابقة للفلاتر",
+  "No reports generated yet": "لم يتم إنشاء تقارير بعد",
+  "Clear filters": "مسح الفلاتر",
+  "Generation failed": "فشل الإنشاء",
+  "Start": "البداية",
+  "End": "النهاية",
+  "Clear": "مسح",
+  "reports": "تقارير",
+  "Showing": "عرض",
+
+  "Delivery Note": "إشعار التسليم",
+  "Goods Receipt Note": "إشعار استلام البضائع",
+  "Stock Internal Transfer": "نقل داخلي للمخزون",
+  "Pick List": "قائمة الالتقاط",
+  "Stock Card": "بطاقة المخزون",
+  "Physical Count Sheet": "ورقة الجرد الفعلي",
+  "Stock Summary": "ملخص المخزون",
+  "Stock Adjustments": "تعديلات المخزون",
+  "Transfers List": "قائمة التحويلات"
 }

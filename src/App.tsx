@@ -90,6 +90,8 @@ import EmailTemplatesPage from './pages/EmailTemplatesPage'
 import EmailTemplateEditorPage from './pages/EmailTemplateEditorPage'
 import SendEmailPage from './pages/SendEmailPage'
 import WarehouseNavigator from './pages/WarehouseNavigator'
+import OCRReceiptPage from './ocr-receipt'
+import { BackendHealthCheck } from './components/BackendHealthCheck'
 import {
   PhysicalInventoryDashboard,
   OrderListPage as PIOrderListPage,
@@ -472,6 +474,7 @@ function AppContent() {
                       <Route path="/receipts/view/:id" element={<ProtectedRoute pageId="receipts"><TransferReceiptsPage /></ProtectedRoute>} />
                       <Route path="/receipts/edit/:id" element={<ProtectedRoute pageId="receipts"><TransferReceiptsPage /></ProtectedRoute>} />
                       <Route path="/receipts/create" element={<ProtectedRoute pageId="receipts"><TransferReceiptsPage /></ProtectedRoute>} />
+                      <Route path="/ocr-receipt" element={<ProtectedRoute pageId="receipts"><OCRReceiptPage /></ProtectedRoute>} />
                       <Route path="/deliveries" element={<ProtectedRoute pageId="deliveries"><TransferDeliveriesPage /></ProtectedRoute>} />
                       <Route path="/deliveries/view/:id" element={<ProtectedRoute pageId="deliveries"><TransferDeliveriesPage /></ProtectedRoute>} />
                       <Route path="/deliveries/edit/:id" element={<ProtectedRoute pageId="deliveries"><TransferDeliveriesPage /></ProtectedRoute>} />
@@ -636,7 +639,9 @@ function App() {
         <CaslProvider>
           <SidebarProvider>
             <TenantCheck>
-              <AppContent />
+              <BackendHealthCheck>
+                <AppContent />
+              </BackendHealthCheck>
             </TenantCheck>
             <Toaster position="top-right" richColors />
           </SidebarProvider>

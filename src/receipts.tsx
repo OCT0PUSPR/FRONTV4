@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation, useParams, matchPath } from "react-router-dom"
 import { useTheme } from "../context/theme"
-import { Plus, Package, Clock, CheckCircle2, FileText, AlertCircle, XCircle, RefreshCcw, Edit, Printer, RotateCcw, Trash2, Eye } from "lucide-react"
+import { Plus, Package, Clock, CheckCircle2, FileText, AlertCircle, XCircle, RefreshCcw, Edit, Printer, RotateCcw, Trash2, Eye, ScanLine } from "lucide-react"
 import { TransferSidebar } from "./components/TransferSidebar"
 import { TransferRecordPage } from "./pages/TransferRecordPage"
 import { Card, CardContent } from "../@/components/ui/card"
@@ -26,6 +26,7 @@ import Toast from "./components/Toast"
 import Alert from "./components/Alert"
 import { useSmartFieldRecords } from "./hooks/useSmartFieldRecords"
 import { generateColumnsFromFields } from "./utils/generateColumnsFromFields"
+import { OCRImportModal } from "./components/OCRImportModal"
 
 
 function mapPickingToReceiptCard(p: any) {
@@ -108,6 +109,7 @@ export default function TransferReceiptsPage() {
   const [toast, setToast] = useState<{ text: string; state: "success" | "error" } | null>(null)
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
   const [pickingToDelete, setPickingToDelete] = useState<number | null>(null)
+  const [isOCRModalOpen, setIsOCRModalOpen] = useState(false)
   const isRTL = i18n.dir() === "rtl"
   const navigate = useNavigate()
 
@@ -653,27 +655,50 @@ export default function TransferReceiptsPage() {
                 {smartFieldLoading ? t("Loading...") : t("Refresh")}
               </Button>
               {canCreatePage("receipts") && (
-                <Button
-                  style={{
-                    background: colors.action,
-                    color: "#FFFFFF",
-                    padding: isMobile ? "0.625rem 1rem" : "0.75rem 1.5rem",
-                    borderRadius: "8px",
-                    border: "none",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-                    width: isMobile ? "100%" : "auto",
-                    justifyContent: "center",
-                  }}
-                  onClick={handleNewReceipt}
-                >
-                  <Plus size={isMobile ? 18 : 20} />
-                  {t("New Receipt")}
-                </Button>
+                <>
+                  <Button
+                    style={{
+                      background: colors.card,
+                      color: colors.textPrimary,
+                      padding: isMobile ? "0.625rem 1rem" : "0.75rem 1.5rem",
+                      borderRadius: "8px",
+                      border: `1px solid ${colors.border}`,
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                      width: isMobile ? "100%" : "auto",
+                      justifyContent: "center",
+                    }}
+                    onClick={() => setIsOCRModalOpen(true)}
+                  >
+                    <ScanLine size={isMobile ? 18 : 20} />
+                    {t("Import from Invoice")}
+                  </Button>
+                  <Button
+                    style={{
+                      background: colors.action,
+                      color: "#FFFFFF",
+                      padding: isMobile ? "0.625rem 1rem" : "0.75rem 1.5rem",
+                      borderRadius: "8px",
+                      border: "none",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                      width: isMobile ? "100%" : "auto",
+                      justifyContent: "center",
+                    }}
+                    onClick={handleNewReceipt}
+                  >
+                    <Plus size={isMobile ? 18 : 20} />
+                    {t("New Receipt")}
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -1043,6 +1068,17 @@ export default function TransferReceiptsPage() {
               />
             )}
           </TransferSidebar>
+
+          {/* OCR Import Modal */}
+          <OCRImportModal
+            isOpen={isOCRModalOpen}
+            onClose={() => setIsOCRModalOpen(false)}
+            onSuccess={(pickingId) => {
+              showToast(t("Receipt created successfully"), "success")
+              refetchSmartFields()
+              navigate(`/receipts/view/${pickingId}`)
+            }}
+          />
         </div>
       </div>
     </div>

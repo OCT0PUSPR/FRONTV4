@@ -1799,5 +1799,35 @@
       "validate_order": "Validate Order",
       "reject_order": "Reject Order"
     }
-  }
+  },
+
+  "Report Templates": "Report Templates",
+  "Generate warehouse documents and PDF reports": "Generate warehouse documents and PDF reports",
+  "Warehouse Reports": "Warehouse Reports",
+  "Generate warehouse documents and reports": "Generate warehouse documents and reports",
+  "No warehouse reports available": "No warehouse reports available",
+  "Single Record": "Single Record",
+  "List Report": "List Report",
+
+  "Generated Reports": "Generated Reports",
+  "View and download generated PDF reports": "View and download generated PDF reports",
+  "No reports match your filters": "No reports match your filters",
+  "No reports generated yet": "No reports generated yet",
+  "Clear filters": "Clear filters",
+  "Generation failed": "Generation failed",
+  "Start": "Start",
+  "End": "End",
+  "Clear": "Clear",
+  "reports": "reports",
+  "Showing": "Showing",
+
+  "Delivery Note": "Delivery Note",
+  "Goods Receipt Note": "Goods Receipt Note",
+  "Stock Internal Transfer": "Stock Internal Transfer",
+  "Pick List": "Pick List",
+  "Stock Card": "Stock Card",
+  "Physical Count Sheet": "Physical Count Sheet",
+  "Stock Summary": "Stock Summary",
+  "Stock Adjustments": "Stock Adjustments",
+  "Transfers List": "Transfers List"
 }
