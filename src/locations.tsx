@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
-import { MapPin, Box, DollarSign, Warehouse, TrendingUp, Package, Plus, RefreshCcw, X, CheckCircle2, Edit, Trash2, Eye } from "lucide-react"
+import { MapPin, Box, Banknote, Warehouse, TrendingUp, Package, Plus, RefreshCcw, X, CheckCircle2, Edit, Trash2, Eye } from "lucide-react"
 import Toast from "./components/Toast"
 import { useTheme } from "../context/theme"
 import { useData } from "../context/data"
@@ -209,6 +209,39 @@ export default function LocationsPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
   const [locationToDelete, setLocationToDelete] = useState<number | null>(null)
+  const [defaultCurrency, setDefaultCurrency] = useState<string>('LE')
+
+  // Fetch default currency from res.currency
+  useEffect(() => {
+    const sessionId = localStorage.getItem('sessionId') || sessionStorage.getItem('sessionId')
+    if (!sessionId) return
+
+    const fetchCurrencies = async () => {
+      try {
+        const tenantId = localStorage.getItem('current_tenant_id')
+        const headers: Record<string, string> = {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+        if (tenantId) {
+          headers['X-Tenant-ID'] = tenantId
+        }
+
+        const response = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/currencies`, {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId })
+        })
+        const data = await response.json()
+        if (data.success && Array.isArray(data.currencies) && data.currencies.length > 0) {
+          const defaultCur = data.currencies.find((c: any) => c.id === 1) || data.currencies[0]
+          setDefaultCurrency(defaultCur.symbol || defaultCur.name || 'LE')
+        }
+      } catch (error) {
+        console.error('Error fetching currencies:', error)
+      }
+    }
+    fetchCurrencies()
+  }, [])
 
   useEffect(() => {
     const checkMobile = () => {
@@ -599,8 +632,8 @@ export default function LocationsPage() {
             />
             <StatCard
               label={t("Total Value")}
-              value={`${(totalValue / 1000).toFixed(0)}K LE`}
-              icon={DollarSign}
+              value={`${defaultCurrency}${(totalValue / 1000).toFixed(0)}K`}
+              icon={Banknote}
               gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
               delay={2}
             />

@@ -7,7 +7,7 @@ import {
   AlertCircle,
   Plus,
   RefreshCcw,
-  DollarSign,
+  Banknote,
   TrendingUp,
   Trash2,
   Edit,
@@ -587,7 +587,7 @@ export default function Stocks() {
             <StatCard
               label={t("Total Value")}
               value={`${defaultCurrency}${totalValue.toLocaleString()}`}
-              icon={DollarSign}
+              icon={Banknote}
               gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
               delay={0}
             />

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { useTheme } from "../context/theme"
 import { useCasl } from "../context/casl"
-import { Plus, DollarSign, Package, TrendingUp, Award, RefreshCcw, Edit, CheckCircle2, Eye } from "lucide-react"
+import { Plus, Banknote, Package, TrendingUp, Award, RefreshCcw, Edit, CheckCircle2, Eye } from "lucide-react"
 import { Button } from "../@/components/ui/button"
 import { StatCard } from "./components/StatCard"
 import { ValuationCard } from "./components/ValuationCard"
@@ -619,7 +619,7 @@ export default function ValuationPage() {
             <StatCard
               label={t("Total Inventory Value")}
               value={`${defaultCurrency}${(totalValue / 1000).toFixed(1)}K`}
-              icon={DollarSign}
+              icon={Banknote}
               gradient="linear-gradient(135deg, #dc2626 0%, #ea580c 100%)"
               delay={0}
             />
@@ -879,7 +879,7 @@ export default function ValuationPage() {
                       margin: "0 auto 1.5rem",
                     }}
                   >
-                    <DollarSign size={28} color="#FFFFFF" />
+                    <Banknote size={28} color="#FFFFFF" />
                   </div>
                   <h3
                     style={{

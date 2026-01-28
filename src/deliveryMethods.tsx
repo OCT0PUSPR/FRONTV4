@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { useTheme } from "../context/theme"
-import { Plus, Truck, DollarSign, Globe, Package, X, ChevronDown, RefreshCcw, CheckCircle2, FileText, Trash2, Edit, Eye } from "lucide-react"
+import { Plus, Truck, Banknote, Globe, Package, X, ChevronDown, RefreshCcw, CheckCircle2, FileText, Trash2, Edit, Eye } from "lucide-react"
 import { useData } from "../context/data"
 import { useAuth } from "../context/auth"
 import { useCasl } from "../context/casl"
@@ -138,8 +138,11 @@ export default function DeliveryMethodsPage() {
           body: JSON.stringify({ sessionId }),
         })
         const data = await res.json().catch(() => ({}))
-        const cur = Array.isArray(data?.currencies) ? data.currencies[0] : null
-        if (cur?.symbol) setCurrencySymbol(cur.symbol)
+        if (data?.success && Array.isArray(data?.currencies) && data.currencies.length > 0) {
+          // Find default currency (id === 1) or use the first one
+          const defaultCur = data.currencies.find((c: any) => c.id === 1) || data.currencies[0]
+          if (defaultCur?.symbol) setCurrencySymbol(defaultCur.symbol)
+        }
       } catch {}
     })()
     ;(async () => {
@@ -838,7 +841,7 @@ export default function DeliveryMethodsPage() {
         <StatCard
           label={t("Average Price")}
           value={`${currencySymbol}${averagePrice}`}
-          icon={DollarSign}
+          icon={Banknote}
           gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"
           delay={2}
         />

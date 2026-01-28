@@ -72,10 +72,18 @@ export const InboundModal: React.FC<InboundModalProps> = ({ isOpen, onClose, war
     try {
       // Build domain for incoming transfers
       // state not in ('done', 'cancel') - only pending ones
-      const domainParts = [
+      const domainParts: any[] = [
         ['picking_type_code', '=', 'incoming'],
         ['state', 'not in', ['done', 'cancel']]
       ];
+
+      // Filter by warehouse if provided
+      if (warehouseId) {
+        const whId = typeof warehouseId === 'string' ? parseInt(warehouseId, 10) : warehouseId;
+        if (!isNaN(whId)) {
+          domainParts.push(['picking_type_id.warehouse_id', '=', whId]);
+        }
+      }
 
       const domain = JSON.stringify(domainParts);
 
@@ -119,7 +127,7 @@ export const InboundModal: React.FC<InboundModalProps> = ({ isOpen, onClose, war
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [warehouseId]);
 
   // Fetch when modal opens
   useEffect(() => {
