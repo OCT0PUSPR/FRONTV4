@@ -582,7 +582,7 @@ function AppContent() {
                       <Route path="/roles" element={<ProtectedRoute pageId="roles"><RolesPage /></ProtectedRoute>} />
                       <Route path="/policies" element={<ProtectedRoute pageId="policies"><PoliciesPage /></ProtectedRoute>} />
                       <Route path="/policy-editor" element={<ProtectedRoute pageId={getPageIdFromRoute('/policy-editor') || 'policy-editor'}><PolicyEditorPage /></ProtectedRoute>} />
-                      <Route path='warehouse-management' element={<ProtectedRoute pageId={getPageIdFromRoute('/warehouse-management') || 'warehouse-management'}><WarehouseManagement inboundShipments={INBOUND_SHIPMENTS} /></ProtectedRoute>} />
+                      <Route path='warehouse-management' element={<ProtectedRoute pageId={getPageIdFromRoute('/warehouse-management') || 'warehouse-management'}><WarehouseManagement /></ProtectedRoute>} />
                       <Route path='/org-chart' element={<ProtectedRoute pageId="org-chart"><OrgChart /></ProtectedRoute>} />
                       <Route path='/fleet-management' element={<ProtectedRoute pageId="fleet-management"><FleetManagementPage /></ProtectedRoute>} />
                       <Route path='/all-vehicles' element={<ProtectedRoute pageId="all-vehicles"><AllVehicles onBack={() => window.history.back()} onSelectVehicle={(id) => console.log('Selected vehicle:', id)} /></ProtectedRoute>} />

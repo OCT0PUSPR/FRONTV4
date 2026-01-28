@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { WarehouseCanvas } from './components/warehouse/WarehouseCanvas';
-import { RackDetailsSidebar } from './components/warehouse/rackDetails';
+import { RackBinSidebar } from './components/warehouse/RackBinSidebar';
 import { AnalyticsPanel } from './components/warehouse/AnalyticsPortal';
 import { InboundModal } from './components/warehouse/InboundModal';
 import { Header } from './components/warehouse/Header';
-import { RackCell, Warehouse, InboundShipment, TimeRange, AisleColumn } from './components/warehouse/types';
+import { RackCell, Warehouse, TimeRange, AisleColumn } from './components/warehouse/types';
 import { WAREHOUSES } from './components/warehouse/constants';
 import { useTheme } from '../context/theme';
 import { AddWarehouseModal } from './components/warehouse/AddWarehouseModal';
@@ -14,12 +14,10 @@ import { convertOdooToAisleColumns, convertZonesToAisleColumns, calculateOdooSta
 
 
 interface WarehouseManagementProps {
-  inboundShipments: InboundShipment[];
+  // Props can be extended as needed
 }
 
-export const WarehouseManagement: React.FC<WarehouseManagementProps> = ({
-  inboundShipments
-}) => {
+export const WarehouseManagement: React.FC<WarehouseManagementProps> = () => {
   const { colors } = useTheme();
   const navigate = useNavigate();
 
@@ -31,6 +29,7 @@ export const WarehouseManagement: React.FC<WarehouseManagementProps> = ({
     error,
     fetchWarehouses,
     fetchLocations,
+    fetchStockForLocation,
   } = useWarehouseData();
 
   // State for Global Navigation
@@ -216,18 +215,20 @@ export const WarehouseManagement: React.FC<WarehouseManagementProps> = ({
             colors={colors}
           />
 
-          {/* Slide-over Sidebar (Right) */}
-          <RackDetailsSidebar 
-            rack={selectedRack} 
+          {/* Slide-over Sidebar (Right) - Rack > Bins > Items drill-down */}
+          <RackBinSidebar
+            rack={selectedRack}
             onClose={() => setSelectedRack(null)}
             colors={colors}
+            odooLocations={odooLocations}
+            fetchStockForLocation={fetchStockForLocation}
           />
 
           {/* Modals - Positioned within the main content area */}
-          <InboundModal 
-            isOpen={isInboundModalOpen} 
+          <InboundModal
+            isOpen={isInboundModalOpen}
             onClose={() => setIsInboundModalOpen(false)}
-            shipments={inboundShipments}
+            warehouseId={selectedWarehouseId}
             colors={colors}
           />
           

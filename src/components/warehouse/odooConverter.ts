@@ -61,6 +61,57 @@ function generateShelvesFromNode(node: LocationNode): Shelf[] {
 }
 
 /**
+ * Calculate aggregate stock status for a bay (from its children levels/bins)
+ */
+function getBayAggregateStock(bayNode: LocationNode): { hasStock: boolean; itemCount: number; totalQty: number } {
+  let itemCount = 0;
+  let totalQty = 0;
+
+  const collectStock = (node: LocationNode) => {
+    if (node.hasStock) {
+      itemCount += node.itemCount;
+      totalQty += node.totalQty;
+    }
+    node.children.forEach(collectStock);
+  };
+
+  collectStock(bayNode);
+
+  return { hasStock: itemCount > 0, itemCount, totalQty };
+}
+
+/**
+ * Convert a bay node to a RackCell (for top-level canvas view)
+ */
+function bayToRackCell(node: LocationNode, aisleId: string, columnId: string): RackCell {
+  // Aggregate stock from all children (levels/bins)
+  const stockInfo = getBayAggregateStock(node);
+
+  // Determine status based on aggregated stock
+  let status = RackStatus.EMPTY;
+  if (stockInfo.itemCount > 10 || stockInfo.totalQty > 500) {
+    status = RackStatus.FULL;
+  } else if (stockInfo.itemCount > 0) {
+    status = RackStatus.PARTIAL;
+  }
+
+  return {
+    id: `odoo-${node.id}`,
+    label: node.name,
+    aisleId,
+    columnId,
+    status,
+    shelves: [], // Shelves will be populated from children in sidebar
+    temperature: 22,
+    humidity: 45,
+    lastUpdated: new Date().toISOString(),
+    // Store original Odoo location ID for fetching children
+    odooLocationId: node.id,
+    odooLocationName: node.completeName,
+  };
+}
+
+/**
  * Convert a bin/level node to a RackCell
  */
 function nodeToRackCell(node: LocationNode, aisleId: string, columnId: string): RackCell {
@@ -81,7 +132,31 @@ function nodeToRackCell(node: LocationNode, aisleId: string, columnId: string): 
 }
 
 /**
- * Get all bins from a row node (traverses bays and levels)
+ * Get all bays from a row node (immediate children that are bays)
+ * This shows racks at a higher level for the top-down view
+ */
+function collectBaysFromRow(rowNode: LocationNode): LocationNode[] {
+  const bays: LocationNode[] = [];
+
+  // Collect direct children that are bays
+  rowNode.children.forEach(child => {
+    if (child.type === 'bay') {
+      bays.push(child);
+    }
+  });
+
+  // Sort bays numerically by name
+  bays.sort((a, b) => {
+    const aNum = parseInt(a.name, 10) || 0;
+    const bNum = parseInt(b.name, 10) || 0;
+    return aNum - bNum;
+  });
+
+  return bays;
+}
+
+/**
+ * Get all bins from a row node (traverses bays and levels) - used for stats
  */
 function collectBinsFromRow(rowNode: LocationNode): LocationNode[] {
   const bins: LocationNode[] = [];
@@ -112,6 +187,7 @@ function collectBinsFromRow(rowNode: LocationNode): LocationNode[] {
 
 /**
  * Convert Odoo LocationNode hierarchy to AisleColumn array for 2D canvas
+ * Shows ONLY bays (direct children of rows) - not levels or bins
  */
 export function convertOdooToAisleColumns(locations: LocationNode[]): AisleColumn[] {
   const aisles: AisleColumn[] = [];
@@ -134,20 +210,21 @@ export function convertOdooToAisleColumns(locations: LocationNode[]): AisleColum
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const pairIndex = Math.floor(i / 2);
     const isSecondInPair = i % 2 === 1;
 
-    // Get all bins from this row
-    const bins = collectBinsFromRow(row);
+    // Get ONLY bays (direct children of row) - NOT levels or bins
+    const bays = collectBaysFromRow(row);
 
-    if (bins.length === 0) {
-      console.log(`[odooConverter] Row ${row.name} has no bins, skipping`);
+    if (bays.length === 0) {
+      console.log(`[odooConverter] Row ${row.name} has no bays, skipping`);
       continue;
     }
 
-    // Convert bins to RackCells
-    const cells: RackCell[] = bins.map((bin, idx) =>
-      nodeToRackCell(bin, row.name, `${row.name}-${idx}`)
+    console.log(`[odooConverter] Row ${row.name} has ${bays.length} bays`);
+
+    // Convert bays to RackCells (aggregated stock from children)
+    const cells: RackCell[] = bays.map((bay, idx) =>
+      bayToRackCell(bay, row.name, `${row.name}-${idx}`)
     );
 
     // Calculate X position based on pair grouping
