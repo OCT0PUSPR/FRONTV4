@@ -365,7 +365,7 @@ export const AddWarehouseModal: React.FC<AddWarehouseModalProps> = ({
                 {t("Add Warehouse")}
               </h2>
               <p className="text-xs" style={{ color: colors.textSecondary }}>
-                {t("Create a new warehouse in Odoo")}
+                {t("Create a new warehouse")}
               </p>
             </div>
           </div>

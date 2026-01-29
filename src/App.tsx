@@ -83,6 +83,7 @@ import { WarehouseConfigurationPage } from './pages/WarehouseConfigurationPage'
 import ReportTemplatesPage from './pages/ReportTemplatesPage'
 import ReportTemplateEditorPage from './pages/ReportTemplateEditorPage'
 import GeneratedReportsPage from './pages/GeneratedReportsPage'
+import TemplateBuilderPage from './pages/TemplateBuilderPage'
 import ReportExportPage from './pages/ReportExportPage'
 import ReportTransferPage from './pages/ReportTransferPage'
 import IntegrationsPage from './pages/IntegrationsPage'
@@ -594,6 +595,9 @@ function AppContent() {
                       <Route path='/report-templates' element={<ProtectedRoute pageId="report-templates"><ReportTemplatesPage /></ProtectedRoute>} />
                       <Route path='/report-template-editor' element={<ProtectedRoute pageId="report-templates"><ReportTemplateEditorPage /></ProtectedRoute>} />
                       <Route path='/report-template-editor/:id' element={<ProtectedRoute pageId="report-templates"><ReportTemplateEditorPage /></ProtectedRoute>} />
+                      {/* Template Builder Routes */}
+                      <Route path='/template-builder/new' element={<ProtectedRoute pageId="report-templates"><TemplateBuilderPage /></ProtectedRoute>} />
+                      <Route path='/template-builder/:templateId' element={<ProtectedRoute pageId="report-templates"><TemplateBuilderPage /></ProtectedRoute>} />
                       <Route path='/report-export' element={<ProtectedRoute pageId="report-export"><ReportExportPage /></ProtectedRoute>} />
                       <Route path='/report-transfer' element={<ProtectedRoute pageId="report-transfer"><ReportTransferPage /></ProtectedRoute>} />
                       <Route path='/generated-reports' element={<ProtectedRoute pageId="generated-reports"><GeneratedReportsPage /></ProtectedRoute>} />

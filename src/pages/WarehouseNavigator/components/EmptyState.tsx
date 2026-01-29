@@ -39,7 +39,7 @@ export function EmptyState({ onConfigureClick }: EmptyStateProps) {
       >
         {t(
           'warehouse_navigator.empty_warehouse_desc',
-          'Configure storage locations in Odoo to visualize your warehouse.'
+          'Configure storage locations to visualize your warehouse.'
         )}
       </p>
 

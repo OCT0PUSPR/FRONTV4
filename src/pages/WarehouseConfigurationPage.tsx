@@ -486,9 +486,9 @@ export function WarehouseConfigurationPage() {
 
     // Check if config is saved first
     if (config.id === 0) {
-      setToast({ 
-        text: 'Please save the layout first before syncing to Odoo', 
-        type: 'error' 
+      setToast({
+        text: 'Please save the layout first before syncing',
+        type: 'error'
       });
       return;
     }
@@ -521,17 +521,17 @@ export function WarehouseConfigurationPage() {
 
       const data = await response.json();
       if (data.success) {
-        setToast({ 
-          text: `Synced to Odoo: ${data.locationsCreated} locations created`, 
-          type: 'success' 
+        setToast({
+          text: `Synced: ${data.locationsCreated} locations created`,
+          type: 'success'
         });
         fetchConfig(); // Refresh to get updated Odoo IDs
       } else {
-        setToast({ text: data.error || 'Failed to sync to Odoo', type: 'error' });
+        setToast({ text: data.error || 'Failed to sync locations', type: 'error' });
       }
     } catch (error) {
       console.error('Error syncing:', error);
-      setToast({ text: 'Failed to sync to Odoo', type: 'error' });
+      setToast({ text: 'Failed to sync locations', type: 'error' });
     } finally {
       setSyncing(false);
     }
@@ -993,7 +993,7 @@ export function WarehouseConfigurationPage() {
             style={{ backgroundColor: colors.mutedBg, color: colors.textPrimary, border: `1px solid ${colors.border}` }}
           >
             {syncing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-            {t("Sync to Odoo")}
+            {t("Sync Locations")}
           </button>
           <button
             onClick={handleSave}

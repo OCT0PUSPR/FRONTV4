@@ -417,7 +417,7 @@ export function FieldManagement() {
                                 value={selectedModel}
                                 onChange={setSelectedModel}
                                 options={modelOptions}
-                                placeholder="Choose an Odoo model..."
+                                placeholder="Choose a model..."
                                 loading={loadingModels}
                                 colors={colors}
                             />
@@ -756,7 +756,7 @@ function AddFieldModal({ isOpen, onClose, modelName, onSuccess, colors, sessionI
                                 Add New Field
                             </h2>
                             <p className="text-sm" style={{ color: colors.textSecondary }}>
-                                Create a custom field in Odoo for {modelName}
+                                Create a custom field for {modelName}
                             </p>
                         </div>
                         <button

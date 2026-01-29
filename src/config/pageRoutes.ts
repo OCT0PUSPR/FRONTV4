@@ -64,6 +64,9 @@ export const ROUTE_TO_PAGE_ID: Record<string, string> = {
   '/report-templates': 'report-templates',
   '/report-template-editor': 'report-template-editor',
   '/generated-reports': 'generated-reports',
+  // Template Builder (XML Template Builder)
+  '/template-builder/new': 'template-builder',
+  '/template-builder/:templateId': 'template-builder',
   // Integrations
   '/integrations': 'integrations',
   // Email

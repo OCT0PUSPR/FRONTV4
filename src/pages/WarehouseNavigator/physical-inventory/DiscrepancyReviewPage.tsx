@@ -735,7 +735,7 @@ export function DiscrepancyReviewPage() {
                   {t('physical_inventory.validate_order', 'Validate Order')}
                 </h3>
                 <p className="text-sm" style={{ color: colors.textSecondary }}>
-                  {t('physical_inventory.validate_confirm', 'This will apply all approved adjustments to Odoo.')}
+                  {t('physical_inventory.validate_confirm', 'This will apply all approved adjustments to inventory.')}
                 </p>
               </div>
             </div>

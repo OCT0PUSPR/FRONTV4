@@ -32,10 +32,21 @@ interface Product {
   list_price: number
   standard_price: number
   image_1920?: string
+  image_1024?: string
+  image_512?: string
+  image_256?: string
+  image_128?: string
   categ_id: [number, string]
   weight: number
   sale_ok: boolean
   barcode: string
+}
+
+// Helper function to get the best available product image
+const getProductImage = (product: Product | null): string | undefined => {
+  if (!product) return undefined
+  // Try image fields in order of preference (largest to smallest)
+  return product.image_1920 || product.image_1024 || product.image_512 || product.image_256 || product.image_128
 }
 
 interface PhysicalInventoryItem {
@@ -183,7 +194,7 @@ export default function PhysicalInventory() {
         user: "",
         unitPrice: productRec?.list_price ?? productRec?.standard_price ?? 0,
         productData: productRec as any,
-        productImage: productRec?.image_1920,
+        productImage: getProductImage(productRec),
       }
     })
 

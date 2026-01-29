@@ -191,7 +191,7 @@ export function DeliveryPickerPanel({
                   <p className="font-medium text-amber-600 dark:text-amber-400">Location Issue</p>
                   <p className="text-amber-700 dark:text-amber-300 mt-1 text-xs whitespace-pre-wrap">{error}</p>
                   <p className="text-amber-600 dark:text-amber-400 mt-2 text-xs">
-                    Tip: In Odoo, move products to specific bin locations (e.g., WH/Stock/AG/01/AA/01) to enable pick routing.
+                    Tip: Move products to specific bin locations (e.g., WH/Stock/AG/01/AA/01) to enable pick routing.
                   </p>
                 </div>
                 <button onClick={onClearError} className="text-amber-500 hover:text-amber-600">

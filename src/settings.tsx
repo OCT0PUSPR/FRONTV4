@@ -476,14 +476,14 @@ export default function SettingsPage() {
                         label="Notification Method"
                         options={[
                           { label: "Handle by Emails", value: "email" },
-                          { label: "Handle in Odoo", value: "inbox" }
+                          { label: "Handle in System", value: "inbox" }
                         ]}
-                        value={form.notification_type === "email" ? "Handle by Emails" : form.notification_type === "inbox" ? "Handle in Odoo" : ""}
+                        value={form.notification_type === "email" ? "Handle by Emails" : form.notification_type === "inbox" ? "Handle in System" : ""}
                         onChange={(v: string) => setForm(p => ({ ...p, notification_type: v === "Handle by Emails" ? "email" : "inbox" }))}
                         icon={Bell}
                       />
                       <PremiumSelect
-                        label="OdooBot Status"
+                        label="Bot Status"
                         options={[
                           "Not initialized", "Onboarding emoji", "Onboarding attachment", "Onboarding command",
                           "Onboarding ping", "Onboarding canned", "Idle", "Disabled"

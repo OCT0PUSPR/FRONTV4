@@ -48,6 +48,31 @@ export const RackBinSidebar: React.FC<RackBinSidebarProps> = ({
 }) => {
   const { t } = useTranslation();
   const [viewState, setViewState] = useState<ViewState>('levels');
+
+  // Inject animation styles
+  React.useEffect(() => {
+    const styleId = 'rack-bin-sidebar-animations';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        @keyframes rackSidebarSlideIn {
+          from {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        .animate-rack-slide-in {
+          animation: rackSidebarSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
   const [expandedLevels, setExpandedLevels] = useState<Set<number>>(new Set());
   const [selectedBin, setSelectedBin] = useState<BinData | null>(null);
   const [binItems, setBinItems] = useState<StockItem[]>([]);
@@ -168,7 +193,7 @@ export const RackBinSidebar: React.FC<RackBinSidebarProps> = ({
 
   return (
     <div
-      className="absolute right-0 top-0 bottom-0 z-40 w-[380px] shadow-2xl flex flex-col h-full animate-slide-in"
+      className="absolute right-0 top-0 bottom-0 z-40 w-[380px] shadow-2xl flex flex-col h-full animate-rack-slide-in"
       style={{
         background: colors.card,
         borderLeft: `1px solid ${colors.border}`

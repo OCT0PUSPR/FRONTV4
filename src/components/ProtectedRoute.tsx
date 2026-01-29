@@ -64,6 +64,8 @@ const MENU_ITEMS = [
   { url: '/warehouse-navigator', pageId: 'warehouse-navigator' },
   { url: '/report-templates', pageId: 'report-templates' },
   { url: '/generated-reports', pageId: 'generated-reports' },
+  { url: '/template-builder/new', pageId: 'template-builder' },
+  { url: '/template-builder/:templateId', pageId: 'template-builder' },
   { url: '/report-rules', pageId: 'report-rules' },
   { url: '/report-headers', pageId: 'report-headers' },
   { url: '/report-footers', pageId: 'report-footers' },

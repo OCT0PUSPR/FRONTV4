@@ -12,7 +12,7 @@ import { useWarehouseData } from './hooks/useWarehouseData';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useDeliveryRouting } from './hooks/useDeliveryRouting';
 import { findNodeById, getAncestorIds } from './utils/hierarchyBuilder';
-import { getCameraPositionForWarehouse, calculateWarehouseBounds, calculatePosition } from './utils/positionCalculator';
+import { getCameraPositionForWarehouse, calculateWarehouseBounds, calculatePosition, LAYOUT, getRowIndex, getLevelIndex } from './utils/positionCalculator';
 import { RoutingAlgorithm } from './utils/routingAlgorithm';
 import { Vector3 } from 'three';
 
@@ -166,37 +166,58 @@ export function WarehouseNavigator() {
 
     if (node.type === 'row') {
       // Row view - look at the row from the front
-      const rowIndex = locations.indexOf(node);
-      targetPosition = new Vector3(5, 2, rowIndex * 4);
-      cameraPosition = new Vector3(15, 8, rowIndex * 4 + 10);
+      // Use the row's name (e.g., "AG", "AH") to calculate position
+      const rowCode = node.name;
+      const rowIdx = getRowIndex(rowCode);
+      const pairIndex = Math.floor(rowIdx / 2);
+      const isSecondInPair = rowIdx % 2 === 1;
+      const z = pairIndex * (LAYOUT.ROW_SPACING + LAYOUT.BACK_TO_BACK_GAP * 2) +
+                (isSecondInPair ? LAYOUT.BACK_TO_BACK_GAP : 0);
+      const centerX = (LAYOUT.BAYS_PER_ROW * LAYOUT.BAY_WIDTH) / 2;
+      const centerY = (LAYOUT.LEVELS_PER_RACK * LAYOUT.LEVEL_HEIGHT) / 2;
+      targetPosition = new Vector3(centerX, centerY, z);
+      cameraPosition = new Vector3(centerX + 8, centerY + 5, z + 12);
       // Close sidebar when navigating to non-bin
       setBinSidebarOpen(false);
     } else if (node.type === 'bay') {
       // Rack/Bay view - look at the specific rack
       const bayNum = parseInt(node.name, 10) || 1;
       const parentRow = locations.find(r => r.children.some(c => c.id === id));
-      const rowIndex = parentRow ? locations.indexOf(parentRow) : 0;
-      targetPosition = new Vector3(bayNum * 1.2, 2, rowIndex * 4);
-      cameraPosition = new Vector3(bayNum * 1.2 + 3, 5, rowIndex * 4 + 6);
+      const rowCode = parentRow?.name || 'AG';
+      const rowIdx = getRowIndex(rowCode);
+      const pairIndex = Math.floor(rowIdx / 2);
+      const isSecondInPair = rowIdx % 2 === 1;
+      const z = pairIndex * (LAYOUT.ROW_SPACING + LAYOUT.BACK_TO_BACK_GAP * 2) +
+                (isSecondInPair ? LAYOUT.BACK_TO_BACK_GAP : 0);
+      const x = (bayNum - 1) * LAYOUT.BAY_WIDTH + LAYOUT.BAY_WIDTH / 2;
+      const centerY = (LAYOUT.LEVELS_PER_RACK * LAYOUT.LEVEL_HEIGHT) / 2;
+      targetPosition = new Vector3(x, centerY, z);
+      cameraPosition = new Vector3(x + 3, centerY + 3, z + 6);
       // Close sidebar when navigating to non-bin
       setBinSidebarOpen(false);
     } else if (node.type === 'level') {
       // Level view - look at the specific level of a rack
-      const levelIndex = ['AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG'].indexOf(node.name);
-      const levelY = levelIndex >= 0 ? levelIndex * 0.8 : 0;
+      const levelIdx = getLevelIndex(node.name);
+      const levelY = levelIdx * LAYOUT.LEVEL_HEIGHT;
       // Find parent bay and row
       let bayNum = 1;
-      let rowIndex = 0;
-      locations.forEach((row, ri) => {
+      let rowCode = 'AG';
+      locations.forEach((row) => {
         row.children.forEach(bay => {
           if (bay.children.some(lvl => lvl.id === id)) {
             bayNum = parseInt(bay.name, 10) || 1;
-            rowIndex = ri;
+            rowCode = row.name;
           }
         });
       });
-      targetPosition = new Vector3(bayNum * 1.2, levelY + 0.4, rowIndex * 4);
-      cameraPosition = new Vector3(bayNum * 1.2 + 2, levelY + 2, rowIndex * 4 + 4);
+      const rowIdx = getRowIndex(rowCode);
+      const pairIndex = Math.floor(rowIdx / 2);
+      const isSecondInPair = rowIdx % 2 === 1;
+      const z = pairIndex * (LAYOUT.ROW_SPACING + LAYOUT.BACK_TO_BACK_GAP * 2) +
+                (isSecondInPair ? LAYOUT.BACK_TO_BACK_GAP : 0);
+      const x = (bayNum - 1) * LAYOUT.BAY_WIDTH + LAYOUT.BAY_WIDTH / 2;
+      targetPosition = new Vector3(x, levelY + 0.4, z);
+      cameraPosition = new Vector3(x + 2, levelY + 2, z + 4);
       // Close sidebar when navigating to non-bin
       setBinSidebarOpen(false);
     } else if (node.type === 'bin' && node.parsed) {

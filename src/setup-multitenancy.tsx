@@ -236,7 +236,7 @@ export default function SetupMultitenancyPage() {
             </div>
             <div className="flex-1">
               <h3 className="font-bold text-slate-900 mb-1">Create New Instance</h3>
-              <p className="text-sm text-slate-500">Connect to a new Odoo server and create a fresh database</p>
+              <p className="text-sm text-slate-500">Connect to a new ERP server and create a fresh database</p>
             </div>
             <ArrowRight size={20} className="text-slate-400 group-hover:text-indigo-600 transition-colors mt-1" />
           </div>
@@ -315,7 +315,7 @@ export default function SetupMultitenancyPage() {
         </button>
         <div>
           <h2 className="text-xl font-bold text-slate-900">Create New Instance</h2>
-          <p className="text-sm text-slate-500">Connect to your Odoo server</p>
+          <p className="text-sm text-slate-500">Connect to your ERP server</p>
         </div>
       </div>
 
@@ -330,11 +330,11 @@ export default function SetupMultitenancyPage() {
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
             <Globe size={14} className="inline mr-2" />
-            Odoo URL
+            Server URL
           </label>
           <Input
             type="url"
-            placeholder="https://your-odoo.com"
+            placeholder="https://your-server.com"
             value={odooUrl}
             onChange={(e) => setOdooUrl(e.target.value)}
             className="w-full"
@@ -349,7 +349,7 @@ export default function SetupMultitenancyPage() {
           </label>
           <Input
             type="text"
-            placeholder="odoo_db"
+            placeholder="database_name"
             value={odooDb}
             onChange={(e) => setOdooDb(e.target.value)}
             className="w-full"
@@ -569,7 +569,7 @@ export default function SetupMultitenancyPage() {
         }`}>
           <div className="flex items-center gap-3">
             <RefreshCw size={18} className={setupPhase === 'syncing' ? 'text-indigo-600' : 'text-slate-400'} />
-            <span className="text-sm font-medium">Syncing Odoo data...</span>
+            <span className="text-sm font-medium">Syncing ERP data...</span>
             {setupPhase === 'syncing' && <Loader2 size={14} className="text-indigo-500 animate-spin ml-auto" />}
             {(setupPhase === 'migrating' || setupPhase === 'complete') && 
               <CheckCircle2 size={14} className="text-emerald-500 ml-auto" />}

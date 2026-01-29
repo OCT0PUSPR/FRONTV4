@@ -401,7 +401,7 @@ export default function ReportExportPage() {
             {t('Export Reports')}
           </h1>
           <p style={{ color: colors.textSecondary, fontSize: '0.8rem', margin: '0.25rem 0 0 0' }}>
-            {t('Create custom exports from any Odoo model')}
+            {t('Create custom exports from any model')}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
