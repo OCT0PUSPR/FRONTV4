@@ -71,6 +71,8 @@ export const ROUTE_TO_PAGE_ID: Record<string, string> = {
   '/integrations': 'integrations',
   // Email
   '/send-email': 'send-email',
+  // Master Lookups
+  '/master-lookups': 'master-lookups',
 };
 
 /**

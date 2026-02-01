@@ -100,6 +100,7 @@ import {
   OrderDetailPage as PIOrderDetailPage,
   DiscrepancyReviewPage,
 } from './pages/WarehouseNavigator/physical-inventory'
+import MasterLookupsPage from './pages/MasterLookupsPage'
 
 // Wrapper component for License page that conditionally renders layout
 function LicensePageWrapper() {
@@ -284,6 +285,7 @@ function AppContent() {
     '/integrations': 'Integrations',
     '/email-templates': 'Email Templates',
     '/email-template-editor': 'Template Editor',
+    '/master-lookups': 'Master Lookups',
   }), []);
 
 
@@ -607,6 +609,8 @@ function AppContent() {
                       <Route path='/email-templates/:id' element={<ProtectedRoute pageId="email-templates"><EmailTemplateEditorPage /></ProtectedRoute>} />
                       {/* Integrations Route */}
                       <Route path='/integrations' element={<ProtectedRoute pageId="integrations"><IntegrationsPage /></ProtectedRoute>} />
+                      {/* Master Lookups Route */}
+                      <Route path='/master-lookups' element={<ProtectedRoute pageId="master-lookups"><MasterLookupsPage /></ProtectedRoute>} />
                       {/* Send Email Route */} 
                       <Route path='/send-email' element={<ProtectedRoute pageId="send-email"><SendEmailPage /></ProtectedRoute>} />
                     </Routes>

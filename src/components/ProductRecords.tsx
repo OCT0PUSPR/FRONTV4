@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Package, DollarSign, Layers, TrendingUp, RefreshCcw, Plus, Banknote } from "lucide-react"
+import { Package, DollarSign, Layers, TrendingUp, RefreshCcw, Plus, Banknote, Upload } from "lucide-react"
+import { DynamicImportModal } from "./DynamicImportWizard/DynamicImportModal"
 import { StatCard } from "./StatCard"
 import { ProductRecordCard } from "./ProductRecordCard"
 import { Skeleton } from "@mui/material"
@@ -34,9 +35,10 @@ interface ProductRecordsProps {
   onRefresh?: () => void
   isLoading?: boolean
   error?: string | null
+  onImportComplete?: () => void
 }
 
-export function ProductRecords({ products, onAddProduct, onEditProduct, onRefresh, isLoading = false, error = null }: ProductRecordsProps) {
+export function ProductRecords({ products, onAddProduct, onEditProduct, onRefresh, isLoading = false, error = null, onImportComplete }: ProductRecordsProps) {
   const { t, i18n } = useTranslation()
   const isRTL = i18n.dir() === "rtl"
   const { colors } = useTheme()
@@ -50,6 +52,17 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
   const [itemsPerPage, setItemsPerPage] = useState(12)
   const [isRowModalOpen, setIsRowModalOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+
+  const handleImportComplete = () => {
+    setIsImportModalOpen(false)
+    if (onRefresh) {
+      onRefresh()
+    }
+    if (onImportComplete) {
+      onImportComplete()
+    }
+  }
 
   useEffect(() => {
     const checkMobile = () => {
@@ -210,6 +223,25 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
                 >
                   <RefreshCcw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
                   {isLoading ? t("Loading...") : t("Refresh")}
+                </Button>
+              )}
+              {canCreatePage("products") && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsImportModalOpen(true)}
+                  className="gap-2 font-semibold border"
+                  style={{
+                    background: colors.card,
+                    color: colors.textPrimary,
+                    borderColor: colors.border,
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                    width: isMobile ? "100%" : "auto",
+                  }}
+                >
+                  <Upload className="w-4 h-4" />
+                  {t("Import")}
                 </Button>
               )}
               {onAddProduct && canCreatePage("products") && (
@@ -536,6 +568,13 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
           </div>
         </div>
       </div>
+
+      {/* Dynamic Import Modal */}
+      <DynamicImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onComplete={handleImportComplete}
+      />
     </div>
   )
 }

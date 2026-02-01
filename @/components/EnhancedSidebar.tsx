@@ -158,6 +158,7 @@ const menuItems: MenuItem[] = [
     title: "Configuration",
     icon: Settings,
     items: [
+      { title: "Master Lookups", icon: Database, url: "/master-lookups" },
       { title: "UoM Categories", icon: Ruler, url: "/uom-categories" },
       { title: "Delivery Methods", icon: Truck, url: "/delivery-methods" },
       { title: "Package Types", icon: Package, url: "/package-types" },
