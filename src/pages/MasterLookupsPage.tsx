@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { useTheme } from "../../context/theme"
 import { useAuth } from "../../context/auth"
@@ -23,92 +23,160 @@ import {
   RefreshCw,
   Upload,
   Trash,
+  Settings,
+  Layers,
+  Link2,
+  Hash,
+  Type,
+  ToggleLeft,
+  Calendar,
+  FileText,
+  List,
 } from "lucide-react"
 import { Button } from "../../@/components/ui/button"
 import Toast from "../components/Toast"
 import { DynamicImportModal } from "../components/DynamicImportWizard/DynamicImportModal"
 import { sanitizeErrorMessage } from "../utils/errorSanitizer"
+import { StatCard } from "../components/StatCard"
+import { ColumnsSelector } from "../components/ColumnsSelector"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3006'
 
-// Master types configuration
-const MASTER_TYPES = [
-  { key: 'brand', label: 'Brands', labelAr: 'العلامات التجارية', icon: Tags, color: '#ea580c', model: 'x_brand' },
-  { key: 'manufacturer', label: 'Manufacturers', labelAr: 'الشركات المصنعة', icon: Factory, color: '#0284c7', model: 'x_manufacturer' },
-  { key: 'model', label: 'Models', labelAr: 'النماذج', icon: Box, color: '#ca8a04', model: 'x_model' },
+// Field type icons
+const FIELD_TYPE_ICONS: Record<string, any> = {
+  char: Type,
+  text: FileText,
+  integer: Hash,
+  float: Hash,
+  boolean: ToggleLeft,
+  date: Calendar,
+  datetime: Calendar,
+  many2one: Link2,
+  one2many: List,
+  many2many: Layers,
+  selection: List,
+}
+
+// Field types for creating new fields
+const FIELD_TYPES = [
+  { value: 'char', label: 'Text (Single Line)', icon: Type },
+  { value: 'text', label: 'Text (Multi Line)', icon: FileText },
+  { value: 'integer', label: 'Integer', icon: Hash },
+  { value: 'float', label: 'Decimal', icon: Hash },
+  { value: 'boolean', label: 'Checkbox', icon: ToggleLeft },
+  { value: 'date', label: 'Date', icon: Calendar },
+  { value: 'datetime', label: 'Date & Time', icon: Calendar },
+  { value: 'many2one', label: 'Many to One', icon: Link2 },
+  { value: 'one2many', label: 'One to Many', icon: List },
+  { value: 'many2many', label: 'Many to Many', icon: Layers },
 ]
+
+// Default icons for models
+const MODEL_ICONS = [Tags, Factory, Box, Database, Layers, Settings]
+
+// Gradient colors for models
+const MODEL_GRADIENTS = [
+  'linear-gradient(135deg, #ea580c 0%, #dc2626 100%)',
+  'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+  'linear-gradient(135deg, #ca8a04 0%, #a16207 100%)',
+  'linear-gradient(135deg, #059669 0%, #047857 100%)',
+  'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+  'linear-gradient(135deg, #db2777 0%, #be185d 100%)',
+]
+
+interface DynamicModel {
+  id: number
+  modelName: string
+  displayName: string
+  state?: string
+}
+
+interface ModelField {
+  name: string
+  string: string
+  type: string
+  required?: boolean
+  relation?: string
+}
 
 interface MasterRecord {
   id: number
-  x_name: string
-  x_name_ar?: string
-  x_code?: string
-  x_parent_id?: [number, string] | false
-  x_source_parent_id?: string
-  x_active?: boolean
+  [key: string]: any
 }
 
 interface EditModalProps {
   isOpen: boolean
   onClose: () => void
   record: MasterRecord | null
-  masterType: typeof MASTER_TYPES[0]
+  modelName: string
+  modelLabel: string
+  fields: ModelField[]
   allRecords: MasterRecord[]
   onSave: (data: Partial<MasterRecord>) => Promise<void>
   isLoading: boolean
   showToast: (text: string, state?: "success" | "error" | "warning" | "info") => void
 }
 
-function EditModal({ isOpen, onClose, record, masterType, allRecords, onSave, isLoading, showToast }: EditModalProps) {
+function EditModal({ isOpen, onClose, record, modelName, modelLabel, fields, allRecords, onSave, isLoading, showToast }: EditModalProps) {
   const { t, i18n } = useTranslation()
   const { mode, colors } = useTheme()
-  const isRTL = i18n.dir() === 'rtl'
-  const [formData, setFormData] = useState({
-    x_name: '',
-    x_name_ar: '',
-    x_code: '',
-    x_parent_id: 0,
-    x_active: true,
-  })
+  const [formData, setFormData] = useState<Record<string, any>>({})
 
   useEffect(() => {
     if (record) {
-      setFormData({
-        x_name: record.x_name || '',
-        x_name_ar: record.x_name_ar || '',
-        x_code: record.x_code || '',
-        x_parent_id: Array.isArray(record.x_parent_id) ? record.x_parent_id[0] : 0,
-        x_active: record.x_active !== false,
+      const data: Record<string, any> = {}
+      fields.forEach(field => {
+        if (field.type === 'many2one' && Array.isArray(record[field.name])) {
+          data[field.name] = record[field.name][0] || 0
+        } else {
+          data[field.name] = record[field.name] ?? ''
+        }
       })
+      setFormData(data)
     } else {
-      setFormData({
-        x_name: '',
-        x_name_ar: '',
-        x_code: '',
-        x_parent_id: 0,
-        x_active: true,
+      const data: Record<string, any> = {}
+      fields.forEach(field => {
+        data[field.name] = field.type === 'boolean' ? false : (field.type === 'integer' || field.type === 'float' ? 0 : '')
       })
+      setFormData(data)
     }
-  }, [record])
+  }, [record, fields])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.x_name.trim()) {
+    const nameField = fields.find(f => f.name === 'x_name' || f.name === 'name')
+    if (nameField && !formData[nameField.name]?.toString().trim()) {
       showToast(t('Name is required'), 'error')
       return
     }
-    await onSave({
-      x_name: formData.x_name.trim(),
-      x_name_ar: formData.x_name_ar.trim() || undefined,
-      x_code: formData.x_code.trim() || undefined,
-      x_parent_id: formData.x_parent_id || false,
-      x_active: formData.x_active,
-    } as any)
+
+    const saveData: Record<string, any> = {}
+    fields.forEach(field => {
+      if (field.type === 'many2one') {
+        saveData[field.name] = formData[field.name] || false
+      } else if (field.type === 'boolean') {
+        saveData[field.name] = !!formData[field.name]
+      } else if (field.type === 'integer') {
+        saveData[field.name] = parseInt(formData[field.name]) || 0
+      } else if (field.type === 'float') {
+        saveData[field.name] = parseFloat(formData[field.name]) || 0
+      } else {
+        saveData[field.name] = formData[field.name]
+      }
+    })
+
+    await onSave(saveData)
   }
 
   if (!isOpen) return null
 
-  const parentOptions = allRecords.filter(r => !record || r.id !== record.id)
+  // Get parent options for many2one fields that reference the same model
+  const getParentOptions = (field: ModelField) => {
+    if (field.relation === modelName) {
+      return allRecords.filter(r => !record || r.id !== record.id)
+    }
+    return []
+  }
 
   return (
     <div
@@ -117,7 +185,7 @@ function EditModal({ isOpen, onClose, record, masterType, allRecords, onSave, is
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg mx-4 rounded-2xl overflow-hidden"
+        className="w-full max-w-lg mx-4 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col"
         style={{
           backgroundColor: colors.card,
           border: `1px solid ${colors.border}`,
@@ -127,22 +195,22 @@ function EditModal({ isOpen, onClose, record, masterType, allRecords, onSave, is
       >
         {/* Header */}
         <div
-          className="px-6 py-4 flex items-center justify-between"
+          className="px-6 py-4 flex items-center justify-between flex-shrink-0"
           style={{ borderBottom: `1px solid ${colors.border}` }}
         >
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: `${masterType.color}15` }}
+              style={{ background: MODEL_GRADIENTS[0] }}
             >
-              <masterType.icon size={20} color={masterType.color} />
+              <Database size={20} color="#fff" />
             </div>
             <div>
               <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
                 {record ? t('Edit Record') : t('New Record')}
               </h3>
               <p className="text-sm" style={{ color: colors.textSecondary }}>
-                {t(masterType.label)}
+                {modelLabel}
               </p>
             </div>
           </div>
@@ -155,103 +223,108 @@ function EditModal({ isOpen, onClose, record, masterType, allRecords, onSave, is
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Name (English) */}
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
-              {t('Name (English)')} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.x_name}
-              onChange={e => setFormData(prev => ({ ...prev, x_name: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors"
-              style={{
-                backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                border: `1px solid ${colors.border}`,
-                color: colors.textPrimary,
-              }}
-              placeholder={t('Enter name in English')}
-              dir="ltr"
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+          {fields.map(field => {
+            const FieldIcon = FIELD_TYPE_ICONS[field.type] || Type
 
-          {/* Name (Arabic) */}
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
-              {t('Name (Arabic)')}
-            </label>
-            <input
-              type="text"
-              value={formData.x_name_ar}
-              onChange={e => setFormData(prev => ({ ...prev, x_name_ar: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors"
-              style={{
-                backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                border: `1px solid ${colors.border}`,
-                color: colors.textPrimary,
-              }}
-              placeholder={t('Enter name in Arabic')}
-              dir="rtl"
-            />
-          </div>
+            if (field.type === 'boolean') {
+              return (
+                <div key={field.name} className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id={field.name}
+                    checked={!!formData[field.name]}
+                    onChange={e => setFormData(prev => ({ ...prev, [field.name]: e.target.checked }))}
+                    className="w-5 h-5 rounded"
+                  />
+                  <label htmlFor={field.name} className="text-sm font-medium" style={{ color: colors.textPrimary }}>
+                    {field.string || field.name}
+                  </label>
+                </div>
+              )
+            }
 
-          {/* Code */}
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
-              {t('Code')}
-            </label>
-            <input
-              type="text"
-              value={formData.x_code}
-              onChange={e => setFormData(prev => ({ ...prev, x_code: e.target.value }))}
-              className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors"
-              style={{
-                backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                border: `1px solid ${colors.border}`,
-                color: colors.textPrimary,
-              }}
-              placeholder={t('Enter code (optional)')}
-            />
-          </div>
+            if (field.type === 'many2one') {
+              const options = getParentOptions(field)
+              return (
+                <div key={field.name}>
+                  <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                    <span className="flex items-center gap-2">
+                      <FieldIcon size={14} />
+                      {field.string || field.name}
+                      {field.required && <span className="text-red-500">*</span>}
+                    </span>
+                  </label>
+                  <select
+                    value={formData[field.name] || 0}
+                    onChange={e => setFormData(prev => ({ ...prev, [field.name]: Number(e.target.value) }))}
+                    className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors"
+                    style={{
+                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                      border: `1px solid ${colors.border}`,
+                      color: colors.textPrimary,
+                    }}
+                  >
+                    <option value={0}>{t('None')}</option>
+                    {options.map(opt => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.x_name || opt.name || opt.display_name || `#${opt.id}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )
+            }
 
-          {/* Parent */}
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
-              {t('Parent')}
-            </label>
-            <select
-              value={formData.x_parent_id}
-              onChange={e => setFormData(prev => ({ ...prev, x_parent_id: Number(e.target.value) }))}
-              className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors"
-              style={{
-                backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                border: `1px solid ${colors.border}`,
-                color: colors.textPrimary,
-              }}
-            >
-              <option value={0}>{t('No Parent')}</option>
-              {parentOptions.map(opt => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.x_name} {opt.x_name_ar ? `(${opt.x_name_ar})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+            if (field.type === 'text') {
+              return (
+                <div key={field.name}>
+                  <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                    <span className="flex items-center gap-2">
+                      <FieldIcon size={14} />
+                      {field.string || field.name}
+                      {field.required && <span className="text-red-500">*</span>}
+                    </span>
+                  </label>
+                  <textarea
+                    value={formData[field.name] || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, [field.name]: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors"
+                    rows={3}
+                    style={{
+                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                      border: `1px solid ${colors.border}`,
+                      color: colors.textPrimary,
+                    }}
+                  />
+                </div>
+              )
+            }
 
-          {/* Active */}
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="x_active"
-              checked={formData.x_active}
-              onChange={e => setFormData(prev => ({ ...prev, x_active: e.target.checked }))}
-              className="w-5 h-5 rounded"
-            />
-            <label htmlFor="x_active" className="text-sm font-medium" style={{ color: colors.textPrimary }}>
-              {t('Active')}
-            </label>
-          </div>
+            return (
+              <div key={field.name}>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  <span className="flex items-center gap-2">
+                    <FieldIcon size={14} />
+                    {field.string || field.name}
+                    {field.required && <span className="text-red-500">*</span>}
+                  </span>
+                </label>
+                <input
+                  type={field.type === 'integer' || field.type === 'float' ? 'number' : field.type === 'date' ? 'date' : field.type === 'datetime' ? 'datetime-local' : 'text'}
+                  value={formData[field.name] ?? ''}
+                  onChange={e => setFormData(prev => ({ ...prev, [field.name]: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors"
+                  style={{
+                    backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                    border: `1px solid ${colors.border}`,
+                    color: colors.textPrimary,
+                  }}
+                  dir={field.name.includes('_ar') ? 'rtl' : 'ltr'}
+                />
+              </div>
+            )
+          })}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4" style={{ borderTop: `1px solid ${colors.border}` }}>
@@ -272,7 +345,7 @@ function EditModal({ isOpen, onClose, record, masterType, allRecords, onSave, is
               disabled={isLoading}
               className="flex-1 flex items-center justify-center gap-2"
               style={{
-                backgroundColor: masterType.color,
+                background: MODEL_GRADIENTS[0],
                 color: '#fff',
               }}
             >
@@ -290,6 +363,387 @@ function EditModal({ isOpen, onClose, record, masterType, allRecords, onSave, is
   )
 }
 
+interface AddModelModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSuccess: () => void
+  showToast: (text: string, state?: "success" | "error" | "warning" | "info") => void
+  sessionId: string | null
+  tenantId: string | null
+  existingModels: DynamicModel[]
+}
+
+function AddModelModal({ isOpen, onClose, onSuccess, showToast, sessionId, tenantId, existingModels }: AddModelModalProps) {
+  const { t } = useTranslation()
+  const { mode, colors } = useTheme()
+  const [modelName, setModelName] = useState('')
+  const [modelLabel, setModelLabel] = useState('')
+  const [fields, setFields] = useState<{ name: string; label: string; type: string; required: boolean; relation?: string }[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [systemModels, setSystemModels] = useState<{ model: string; name: string }[]>([])
+
+  useEffect(() => {
+    if (isOpen && sessionId) {
+      fetchSystemModels()
+    }
+  }, [isOpen, sessionId])
+
+  const fetchSystemModels = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/dynamic-import/system-models`, {
+        headers: {
+          'X-Session-ID': sessionId || '',
+          'X-Tenant-ID': tenantId || '',
+        },
+      })
+      const data = await response.json()
+      if (data.success) {
+        setSystemModels(data.models || [])
+      }
+    } catch (error) {
+      console.error('Error fetching system models:', error)
+    }
+  }
+
+  const addField = () => {
+    setFields(prev => [...prev, { name: '', label: '', type: 'char', required: false }])
+  }
+
+  const removeField = (index: number) => {
+    setFields(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const updateField = (index: number, updates: Partial<typeof fields[0]>) => {
+    setFields(prev => prev.map((f, i) => i === index ? { ...f, ...updates } : f))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!modelName.trim()) {
+      showToast(t('Model name is required'), 'error')
+      return
+    }
+
+    const cleanName = modelName.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+    const fullModelName = cleanName.startsWith('x_') ? cleanName : `x_${cleanName}`
+
+    if (existingModels.some(m => m.modelName === fullModelName)) {
+      showToast(t('A model with this name already exists'), 'error')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/dynamic-import/create-lookup-model`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': sessionId || '',
+          'X-Tenant-ID': tenantId || '',
+        },
+        body: JSON.stringify({
+          modelName: fullModelName,
+          modelLabel: modelLabel || modelName,
+          fields: fields.filter(f => f.name.trim()).map(f => ({
+            name: f.name.startsWith('x_') ? f.name : `x_${f.name.toLowerCase().replace(/[^a-z0-9_]/g, '_')}`,
+            label: f.label || f.name,
+            type: f.type,
+            required: f.required,
+            relation: f.relation,
+          })),
+        }),
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        showToast(t('Model created successfully'), 'success')
+        onSuccess()
+        onClose()
+        setModelName('')
+        setModelLabel('')
+        setFields([])
+      } else {
+        showToast(sanitizeErrorMessage(result.message || t('Failed to create model')), 'error')
+      }
+    } catch (error) {
+      console.error('Error creating model:', error)
+      showToast(sanitizeErrorMessage(t('Failed to create model')), 'error')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl mx-4 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        style={{
+          backgroundColor: colors.card,
+          border: `1px solid ${colors.border}`,
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div
+          className="px-6 py-4 flex items-center justify-between flex-shrink-0"
+          style={{ borderBottom: `1px solid ${colors.border}` }}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' }}
+            >
+              <Plus size={20} color="#fff" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+                {t('Add Lookup Master')}
+              </h3>
+              <p className="text-sm" style={{ color: colors.textSecondary }}>
+                {t('Create a new lookup model with custom fields')}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+          >
+            <X size={20} color={colors.textSecondary} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
+          {/* Model Name */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                {t('Model Name')} <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-mono" style={{ color: colors.textSecondary }}>x_</span>
+                <input
+                  type="text"
+                  value={modelName}
+                  onChange={e => setModelName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm transition-colors"
+                  style={{
+                    backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                    border: `1px solid ${colors.border}`,
+                    color: colors.textPrimary,
+                  }}
+                  placeholder="model_name"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                {t('Display Label')}
+              </label>
+              <input
+                type="text"
+                value={modelLabel}
+                onChange={e => setModelLabel(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors"
+                style={{
+                  backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                  border: `1px solid ${colors.border}`,
+                  color: colors.textPrimary,
+                }}
+                placeholder="My Lookup Model"
+              />
+            </div>
+          </div>
+
+          {/* Fields Section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium" style={{ color: colors.textPrimary }}>
+                {t('Custom Fields')}
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addField}
+                className="flex items-center gap-1 text-xs"
+                style={{ borderColor: colors.border, color: colors.textPrimary }}
+              >
+                <Plus size={14} />
+                {t('Add Field')}
+              </Button>
+            </div>
+
+            <p className="text-xs mb-3" style={{ color: colors.textSecondary }}>
+              {t('A "Name" field (x_name) is automatically created. Add additional fields below.')}
+            </p>
+
+            {fields.length > 0 && (
+              <div className="space-y-3">
+                {fields.map((field, index) => (
+                  <div
+                    key={index}
+                    className="p-3 rounded-xl"
+                    style={{
+                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                      border: `1px solid ${colors.border}`,
+                    }}
+                  >
+                    <div className="grid grid-cols-12 gap-3">
+                      {/* Field Name */}
+                      <div className="col-span-3">
+                        <label className="text-xs mb-1 block" style={{ color: colors.textSecondary }}>{t('Field Name')}</label>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-mono" style={{ color: colors.textSecondary }}>x_</span>
+                          <input
+                            type="text"
+                            value={field.name.replace(/^x_/, '')}
+                            onChange={e => updateField(index, { name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs"
+                            style={{
+                              backgroundColor: colors.card,
+                              border: `1px solid ${colors.border}`,
+                              color: colors.textPrimary,
+                            }}
+                            placeholder="field_name"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Field Label */}
+                      <div className="col-span-3">
+                        <label className="text-xs mb-1 block" style={{ color: colors.textSecondary }}>{t('Label')}</label>
+                        <input
+                          type="text"
+                          value={field.label}
+                          onChange={e => updateField(index, { label: e.target.value })}
+                          className="w-full px-2 py-1.5 rounded-lg text-xs"
+                          style={{
+                            backgroundColor: colors.card,
+                            border: `1px solid ${colors.border}`,
+                            color: colors.textPrimary,
+                          }}
+                          placeholder="Field Label"
+                        />
+                      </div>
+
+                      {/* Field Type */}
+                      <div className="col-span-3">
+                        <label className="text-xs mb-1 block" style={{ color: colors.textSecondary }}>{t('Type')}</label>
+                        <select
+                          value={field.type}
+                          onChange={e => updateField(index, { type: e.target.value, relation: undefined })}
+                          className="w-full px-2 py-1.5 rounded-lg text-xs"
+                          style={{
+                            backgroundColor: colors.card,
+                            border: `1px solid ${colors.border}`,
+                            color: colors.textPrimary,
+                          }}
+                        >
+                          {FIELD_TYPES.map(ft => (
+                            <option key={ft.value} value={ft.value}>{ft.label}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Relation (for many2one/one2many/many2many) */}
+                      <div className="col-span-2">
+                        {['many2one', 'one2many', 'many2many'].includes(field.type) ? (
+                          <>
+                            <label className="text-xs mb-1 block" style={{ color: colors.textSecondary }}>{t('Related To')}</label>
+                            <select
+                              value={field.relation || ''}
+                              onChange={e => updateField(index, { relation: e.target.value })}
+                              className="w-full px-2 py-1.5 rounded-lg text-xs"
+                              style={{
+                                backgroundColor: colors.card,
+                                border: `1px solid ${colors.border}`,
+                                color: colors.textPrimary,
+                              }}
+                            >
+                              <option value="">{t('Select...')}</option>
+                              <option value="__self__">{t('Self (Parent-Child)')}</option>
+                              {systemModels.map(m => (
+                                <option key={m.model} value={m.model}>{m.name}</option>
+                              ))}
+                            </select>
+                          </>
+                        ) : (
+                          <>
+                            <label className="text-xs mb-1 block" style={{ color: colors.textSecondary }}>{t('Required')}</label>
+                            <div className="flex items-center gap-2 pt-1">
+                              <input
+                                type="checkbox"
+                                checked={field.required}
+                                onChange={e => updateField(index, { required: e.target.checked })}
+                                className="w-4 h-4 rounded"
+                              />
+                              <span className="text-xs" style={{ color: colors.textSecondary }}>{t('Required')}</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Remove Button */}
+                      <div className="col-span-1 flex items-end justify-end pb-1">
+                        <button
+                          type="button"
+                          onClick={() => removeField(index)}
+                          className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+                        >
+                          <Trash2 size={14} color="#dc2626" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-4" style={{ borderTop: `1px solid ${colors.border}` }}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+              style={{ borderColor: colors.border, color: colors.textPrimary }}
+              disabled={isLoading}
+            >
+              {t('Cancel')}
+            </Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 flex items-center justify-center gap-2"
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                color: '#fff',
+              }}
+            >
+              {isLoading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Plus size={18} />
+              )}
+              {t('Create Model')}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function MasterLookupsPage() {
   const { t, i18n } = useTranslation()
   const { mode, colors } = useTheme()
@@ -297,34 +751,91 @@ export default function MasterLookupsPage() {
   const isRTL = i18n.dir() === 'rtl'
   const tenantId = typeof window !== 'undefined' ? localStorage.getItem('current_tenant_id') : null
 
-  const [activeTab, setActiveTab] = useState(MASTER_TYPES[0].key)
-  const [records, setRecords] = useState<Record<string, MasterRecord[]>>({})
-  const [loading, setLoading] = useState<Record<string, boolean>>({})
+  const [dynamicModels, setDynamicModels] = useState<DynamicModel[]>([])
+  const [selectedModel, setSelectedModel] = useState<DynamicModel | null>(null)
+  const [modelFields, setModelFields] = useState<ModelField[]>([])
+  const [records, setRecords] = useState<MasterRecord[]>([])
+  const [loading, setLoading] = useState(false)
+  const [fieldsLoading, setFieldsLoading] = useState(false)
+  const [modelsLoading, setModelsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [editModal, setEditModal] = useState<{ open: boolean; record: MasterRecord | null }>({ open: false, record: null })
   const [saving, setSaving] = useState(false)
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [isCleanupModalOpen, setIsCleanupModalOpen] = useState(false)
+  const [isAddModelModalOpen, setIsAddModelModalOpen] = useState(false)
   const [cleanupLoading, setCleanupLoading] = useState(false)
-  const [customModels, setCustomModels] = useState<{ id: number; modelName: string; displayName: string }[]>([])
   const [selectedModelsForCleanup, setSelectedModelsForCleanup] = useState<string[]>([])
   const [toastData, setToastData] = useState<{ text: string; state: "success" | "error" | "warning" | "info" } | null>(null)
-
-  const activeMasterType = MASTER_TYPES.find(m => m.key === activeTab) || MASTER_TYPES[0]
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false)
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([])
 
   const showToast = (text: string, state: "success" | "error" | "warning" | "info" = "success") => {
     setToastData({ text, state })
   }
 
-  // Fetch records for a master type
-  const fetchRecords = useCallback(async (masterKey: string) => {
-    const masterType = MASTER_TYPES.find(m => m.key === masterKey)
-    if (!masterType || !sessionId) return
-
-    setLoading(prev => ({ ...prev, [masterKey]: true }))
+  // Fetch all dynamic models
+  const fetchDynamicModels = useCallback(async () => {
+    if (!sessionId) return
+    setModelsLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/master-lookups/${masterType.model}`, {
+      const response = await fetch(`${API_BASE_URL}/dynamic-import/models`, {
+        headers: {
+          'X-Session-ID': sessionId,
+          'X-Tenant-ID': tenantId || '',
+        },
+      })
+      const data = await response.json()
+      if (data.success) {
+        setDynamicModels(data.models || [])
+        // Auto-select first model if none selected
+        if (!selectedModel && data.models?.length > 0) {
+          setSelectedModel(data.models[0])
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching models:', error)
+    } finally {
+      setModelsLoading(false)
+    }
+  }, [sessionId, tenantId, selectedModel])
+
+  // Fetch fields for selected model
+  const fetchModelFields = useCallback(async (modelName: string) => {
+    if (!sessionId) return
+    setFieldsLoading(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/dynamic-import/model-fields/${modelName}`, {
+        headers: {
+          'X-Session-ID': sessionId,
+          'X-Tenant-ID': tenantId || '',
+        },
+      })
+      const data = await response.json()
+      if (data.success) {
+        // Filter out internal fields
+        const filteredFields = (data.fields || []).filter((f: ModelField) =>
+          !['id', '__last_update', 'display_name', 'create_uid', 'create_date', 'write_uid', 'write_date'].includes(f.name)
+        )
+        setModelFields(filteredFields)
+        // Initialize visible columns to all fields + id
+        setVisibleColumns(['id', ...filteredFields.map((f: ModelField) => f.name)])
+      }
+    } catch (error) {
+      console.error('Error fetching model fields:', error)
+      setModelFields([])
+    } finally {
+      setFieldsLoading(false)
+    }
+  }, [sessionId, tenantId])
+
+  // Fetch records for selected model
+  const fetchRecords = useCallback(async () => {
+    if (!sessionId || !selectedModel) return
+    setLoading(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/master-lookups/${selectedModel.modelName}`, {
         headers: {
           'Content-Type': 'application/json',
           'X-Session-ID': sessionId,
@@ -333,46 +844,77 @@ export default function MasterLookupsPage() {
       })
       const data = await response.json()
       if (data.success) {
-        setRecords(prev => ({ ...prev, [masterKey]: data.data || [] }))
+        setRecords(data.data || [])
       } else {
-        showToast(sanitizeErrorMessage(data.message || t('Failed to load records')), 'error')
+        // Try generic endpoint
+        const genericResponse = await fetch(`${API_BASE_URL}/odoo/search-read`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Session-ID': sessionId,
+            'X-Tenant-ID': tenantId || '',
+          },
+          body: JSON.stringify({
+            model: selectedModel.modelName,
+            sessionId,
+            args: [],
+            kwargs: {},
+          }),
+        })
+        const genericData = await genericResponse.json()
+        if (genericData.success || Array.isArray(genericData)) {
+          setRecords(Array.isArray(genericData) ? genericData : genericData.data || [])
+        }
       }
     } catch (error) {
       console.error('Error fetching records:', error)
-      showToast(sanitizeErrorMessage(t('Failed to load records')), 'error')
+      setRecords([])
     } finally {
-      setLoading(prev => ({ ...prev, [masterKey]: false }))
+      setLoading(false)
     }
-  }, [sessionId, tenantId, t])
+  }, [sessionId, tenantId, selectedModel])
 
-  // Load records when tab changes
+  // Initial load
   useEffect(() => {
-    if (!records[activeTab]) {
-      fetchRecords(activeTab)
+    fetchDynamicModels()
+  }, [fetchDynamicModels])
+
+  // Load fields and records when model changes
+  useEffect(() => {
+    if (selectedModel) {
+      fetchModelFields(selectedModel.modelName)
+      fetchRecords()
     }
-  }, [activeTab, fetchRecords, records])
+  }, [selectedModel, fetchModelFields, fetchRecords])
 
   // Filter records by search
-  const filteredRecords = (records[activeTab] || []).filter(record => {
-    if (!searchQuery) return true
+  const filteredRecords = useMemo(() => {
+    if (!searchQuery) return records
     const query = searchQuery.toLowerCase()
-    return (
-      record.x_name?.toLowerCase().includes(query) ||
-      record.x_name_ar?.toLowerCase().includes(query) ||
-      record.x_code?.toLowerCase().includes(query)
-    )
-  })
+    return records.filter(record => {
+      return Object.values(record).some(val => {
+        if (val === null || val === undefined) return false
+        if (Array.isArray(val)) {
+          return val.some(v => String(v).toLowerCase().includes(query))
+        }
+        return String(val).toLowerCase().includes(query)
+      })
+    })
+  }, [records, searchQuery])
 
-  // Build hierarchy
-  const buildHierarchy = (items: MasterRecord[]): (MasterRecord & { children: MasterRecord[] })[] => {
+  // Build hierarchy for parent-child relationships
+  const hierarchicalRecords = useMemo(() => {
+    const parentField = modelFields.find(f => f.name === 'x_parent_id' && f.type === 'many2one')
+    if (!parentField) return filteredRecords.map(r => ({ ...r, children: [] }))
+
     const itemMap = new Map<number, MasterRecord & { children: MasterRecord[] }>()
     const roots: (MasterRecord & { children: MasterRecord[] })[] = []
 
-    items.forEach(item => {
+    filteredRecords.forEach(item => {
       itemMap.set(item.id, { ...item, children: [] })
     })
 
-    items.forEach(item => {
+    filteredRecords.forEach(item => {
       const node = itemMap.get(item.id)!
       const parentId = Array.isArray(item.x_parent_id) ? item.x_parent_id[0] : null
       if (parentId && itemMap.has(parentId)) {
@@ -383,17 +925,25 @@ export default function MasterLookupsPage() {
     })
 
     return roots
-  }
+  }, [filteredRecords, modelFields])
 
-  const hierarchicalRecords = buildHierarchy(filteredRecords)
+  // Available columns for selector
+  const availableColumns = useMemo(() => {
+    const cols = [{ id: 'id', label: 'ID' }]
+    modelFields.forEach(field => {
+      cols.push({ id: field.name, label: field.string || field.name })
+    })
+    return cols
+  }, [modelFields])
 
   // Save record
   const handleSave = async (data: Partial<MasterRecord>) => {
+    if (!selectedModel) return
     setSaving(true)
     try {
       const url = editModal.record
-        ? `${API_BASE_URL}/master-lookups/${activeMasterType.model}/${editModal.record.id}`
-        : `${API_BASE_URL}/master-lookups/${activeMasterType.model}`
+        ? `${API_BASE_URL}/master-lookups/${selectedModel.modelName}/${editModal.record.id}`
+        : `${API_BASE_URL}/master-lookups/${selectedModel.modelName}`
 
       const response = await fetch(url, {
         method: editModal.record ? 'PUT' : 'POST',
@@ -409,7 +959,7 @@ export default function MasterLookupsPage() {
       if (result.success) {
         showToast(editModal.record ? t('Record updated successfully') : t('Record created successfully'), 'success')
         setEditModal({ open: false, record: null })
-        fetchRecords(activeTab)
+        fetchRecords()
       } else {
         showToast(sanitizeErrorMessage(result.message || t('Failed to save record')), 'error')
       }
@@ -423,10 +973,11 @@ export default function MasterLookupsPage() {
 
   // Delete record
   const handleDelete = async (record: MasterRecord) => {
+    if (!selectedModel) return
     if (!confirm(t('Are you sure you want to delete this record?'))) return
 
     try {
-      const response = await fetch(`${API_BASE_URL}/master-lookups/${activeMasterType.model}/${record.id}`, {
+      const response = await fetch(`${API_BASE_URL}/master-lookups/${selectedModel.modelName}/${record.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -438,7 +989,7 @@ export default function MasterLookupsPage() {
       const result = await response.json()
       if (result.success) {
         showToast(t('Record deleted successfully'), 'success')
-        fetchRecords(activeTab)
+        fetchRecords()
       } else {
         showToast(sanitizeErrorMessage(result.message || t('Failed to delete record')), 'error')
       }
@@ -458,31 +1009,6 @@ export default function MasterLookupsPage() {
       }
       return next
     })
-  }
-
-  // Fetch custom models for cleanup
-  const fetchCustomModels = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/dynamic-import/models`, {
-        headers: {
-          'X-Session-ID': sessionId || '',
-          'X-Tenant-ID': tenantId || '',
-        },
-      })
-      const data = await response.json()
-      console.log('[MasterLookups] Fetch models response:', data)
-      if (data.success) {
-        setCustomModels(data.models || [])
-      } else {
-        console.error('[MasterLookups] API error:', data.message)
-        showToast(sanitizeErrorMessage(data.message || t('Failed to fetch models')), 'error')
-        setCustomModels([])
-      }
-    } catch (error) {
-      console.error('Error fetching custom models:', error)
-      showToast(sanitizeErrorMessage(t('Failed to fetch models')), 'error')
-      setCustomModels([])
-    }
   }
 
   // Handle cleanup
@@ -509,9 +1035,7 @@ export default function MasterLookupsPage() {
       })
 
       const result = await response.json()
-      console.log('[MasterLookups] Cleanup result:', result)
       if (result.success) {
-        // Check if any models were actually processed
         if (result.results?.modelsProcessed > 0 || result.results?.recordsDeleted > 0) {
           showToast(result.message || t('Data cleaned successfully'), 'success')
         } else {
@@ -519,10 +1043,9 @@ export default function MasterLookupsPage() {
         }
         setIsCleanupModalOpen(false)
         setSelectedModelsForCleanup([])
-        // Refresh all records
-        MASTER_TYPES.forEach(type => fetchRecords(type.key))
+        fetchDynamicModels()
+        if (selectedModel) fetchRecords()
       } else {
-        // Show detailed error info
         const errorDetails = result.results?.errors?.length > 0
           ? `: ${result.results.errors.map((e: { model: string; error: string }) => `${e.model}: ${sanitizeErrorMessage(e.error)}`).join(', ')}`
           : ''
@@ -539,9 +1062,23 @@ export default function MasterLookupsPage() {
   // Handle import complete
   const handleImportComplete = () => {
     setIsImportModalOpen(false)
-    // Refresh all records
-    MASTER_TYPES.forEach(type => fetchRecords(type.key))
+    fetchDynamicModels()
+    if (selectedModel) fetchRecords()
     showToast(t('Import completed! Refreshing data...'), 'success')
+  }
+
+  // Get display value for a field
+  const getDisplayValue = (record: MasterRecord, fieldName: string) => {
+    const value = record[fieldName]
+    if (value === null || value === undefined) return '-'
+    if (Array.isArray(value)) {
+      // Many2one field returns [id, name]
+      return value[1] || value[0] || '-'
+    }
+    if (typeof value === 'boolean') {
+      return value ? '✓' : '✗'
+    }
+    return String(value)
   }
 
   // Render record row
@@ -559,7 +1096,7 @@ export default function MasterLookupsPage() {
           }}
         >
           {/* Expand/Collapse */}
-          <div className="w-6">
+          <div className="w-6 flex-shrink-0">
             {hasChildren ? (
               <button
                 onClick={() => toggleExpand(record.id)}
@@ -574,46 +1111,26 @@ export default function MasterLookupsPage() {
             ) : null}
           </div>
 
-          {/* Name */}
-          <div className="flex-1 min-w-0">
-            <div className="font-medium truncate" style={{ color: colors.textPrimary }}>
-              {record.x_name}
+          {/* ID */}
+          {visibleColumns.includes('id') && (
+            <div className="w-16 text-sm font-mono flex-shrink-0" style={{ color: colors.textSecondary }}>
+              #{record.id}
             </div>
-            {record.x_name_ar && (
-              <div className="text-sm truncate" style={{ color: colors.textSecondary }} dir="rtl">
-                {record.x_name_ar}
-              </div>
-            )}
-          </div>
+          )}
 
-          {/* Code */}
-          <div className="w-32 text-sm" style={{ color: colors.textSecondary }}>
-            {record.x_code || '-'}
-          </div>
-
-          {/* Status */}
-          <div className="w-20">
-            {record.x_active !== false ? (
-              <span
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
-                style={{ backgroundColor: '#16a34a15', color: '#16a34a' }}
-              >
-                <CheckCircle size={12} />
-                {t('Active')}
-              </span>
-            ) : (
-              <span
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
-                style={{ backgroundColor: '#dc262615', color: '#dc2626' }}
-              >
-                <AlertCircle size={12} />
-                {t('Inactive')}
-              </span>
-            )}
-          </div>
+          {/* Dynamic Fields */}
+          {modelFields.filter(f => visibleColumns.includes(f.name)).map((field, idx) => (
+            <div
+              key={field.name}
+              className={`${idx === 0 ? 'flex-1 min-w-0' : 'w-32'} text-sm ${idx === 0 ? 'font-medium' : ''}`}
+              style={{ color: idx === 0 ? colors.textPrimary : colors.textSecondary }}
+            >
+              <span className="truncate block">{getDisplayValue(record, field.name)}</span>
+            </div>
+          ))}
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setEditModal({ open: true, record })}
               className="p-2 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
@@ -641,8 +1158,24 @@ export default function MasterLookupsPage() {
     )
   }
 
+  // Stats
+  const totalModels = dynamicModels.length
+  const totalRecords = records.length
+  const totalFields = modelFields.length
+
   return (
     <div className="p-6 space-y-6">
+      {/* CSS for animations */}
+      <style>
+        {`
+          @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+        `}
+      </style>
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -650,16 +1183,13 @@ export default function MasterLookupsPage() {
             {t('Master Lookups')}
           </h1>
           <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-            {t('Manage brands, manufacturers, models and other master data')}
+            {t('Manage lookup models and master data')}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            onClick={() => {
-              fetchCustomModels()
-              setIsCleanupModalOpen(true)
-            }}
+            onClick={() => setIsCleanupModalOpen(true)}
             className="flex items-center gap-2"
             style={{
               borderColor: colors.border,
@@ -684,150 +1214,337 @@ export default function MasterLookupsPage() {
             {t('Import')}
           </Button>
           <Button
-            onClick={() => setEditModal({ open: true, record: null })}
+            onClick={() => setIsAddModelModalOpen(true)}
             className="flex items-center gap-2"
-            style={{ backgroundColor: activeMasterType.color, color: '#fff' }}
+            style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', color: '#fff' }}
           >
             <Plus size={18} />
-            {t('Add New')}
+            {t('Add Lookup Master')}
           </Button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div
-        className="flex gap-1 p-1 rounded-xl"
-        style={{ backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }}
-      >
-        {MASTER_TYPES.map(type => {
-          const isActive = activeTab === type.key
-          const count = records[type.key]?.length || 0
-          return (
-            <button
-              key={type.key}
-              onClick={() => setActiveTab(type.key)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all ${
-                isActive ? 'shadow-sm' : ''
-              }`}
-              style={{
-                backgroundColor: isActive ? colors.card : 'transparent',
-                color: isActive ? type.color : colors.textSecondary,
-                fontWeight: isActive ? 600 : 500,
-              }}
-            >
-              <type.icon size={18} />
-              <span>{t(type.label)}</span>
-              {count > 0 && (
-                <span
-                  className="px-2 py-0.5 rounded-full text-xs"
-                  style={{
-                    backgroundColor: isActive ? `${type.color}15` : 'rgba(0,0,0,0.1)',
-                    color: isActive ? type.color : colors.textSecondary,
-                  }}
-                >
-                  {count}
-                </span>
-              )}
-            </button>
-          )
-        })}
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label={t("Total Models")}
+          value={totalModels}
+          icon={Layers}
+          gradient="linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)"
+          delay={0}
+        />
+        <StatCard
+          label={selectedModel ? selectedModel.displayName : t("Records")}
+          value={totalRecords}
+          icon={Database}
+          gradient="linear-gradient(135deg, #059669 0%, #047857 100%)"
+          delay={1}
+        />
+        <StatCard
+          label={t("Fields")}
+          value={totalFields}
+          icon={Settings}
+          gradient="linear-gradient(135deg, #0284c7 0%, #0369a1 100%)"
+          delay={2}
+        />
+        <StatCard
+          label={t("Active Model")}
+          value={selectedModel?.displayName || '-'}
+          icon={CheckCircle}
+          gradient="linear-gradient(135deg, #ea580c 0%, #dc2626 100%)"
+          delay={3}
+        />
       </div>
 
-      {/* Search & Actions */}
-      <div className="flex items-center gap-4">
-        <div
-          className="flex-1 flex items-center gap-3 px-4 py-2.5 rounded-xl"
-          style={{
-            backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-            border: `1px solid ${colors.border}`,
-          }}
-        >
-          <Search size={18} color={colors.textSecondary} />
-          <input
-            type="text"
-            placeholder={t('Search by name or code...')}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="flex-1 bg-transparent outline-none text-sm"
-            style={{ color: colors.textPrimary }}
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')}>
-              <X size={16} color={colors.textSecondary} />
-            </button>
-          )}
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => fetchRecords(activeTab)}
-          className="flex items-center gap-2"
-          style={{ borderColor: colors.border, color: colors.textPrimary }}
-        >
-          <RefreshCw size={16} className={loading[activeTab] ? 'animate-spin' : ''} />
-          {t('Refresh')}
-        </Button>
-      </div>
-
-      {/* Table */}
+      {/* Model Selector */}
       <div
-        className="rounded-xl overflow-hidden"
+        className="p-4 rounded-xl"
         style={{
           backgroundColor: colors.card,
           border: `1px solid ${colors.border}`,
         }}
       >
-        {/* Table Header */}
-        <div
-          className="flex items-center gap-4 px-4 py-3 text-sm font-medium"
-          style={{
-            backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-            borderBottom: `1px solid ${colors.border}`,
-            color: colors.textSecondary,
-          }}
-        >
-          <div className="w-6"></div>
-          <div className="flex-1">{t('Name')}</div>
-          <div className="w-32">{t('Code')}</div>
-          <div className="w-20">{t('Status')}</div>
-          <div className="w-24">{t('Actions')}</div>
-        </div>
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Database size={18} color={colors.textSecondary} />
+            <span className="text-sm font-medium" style={{ color: colors.textPrimary }}>
+              {t('Select Model')}:
+            </span>
+          </div>
 
-        {/* Table Body */}
-        {loading[activeTab] ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 size={32} className="animate-spin" color={activeMasterType.color} />
-          </div>
-        ) : hierarchicalRecords.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <Database size={48} color={colors.textSecondary} style={{ opacity: 0.5 }} />
-            <p style={{ color: colors.textSecondary }}>{t('No records found')}</p>
-            <Button
-              onClick={() => setEditModal({ open: true, record: null })}
-              variant="outline"
-              className="flex items-center gap-2 mt-2"
-              style={{ borderColor: colors.border, color: colors.textPrimary }}
+          {/* Model Dropdown */}
+          <div className="relative flex-1 max-w-md">
+            <button
+              onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+              className="w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl text-sm transition-colors"
+              style={{
+                backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                border: `1px solid ${colors.border}`,
+                color: colors.textPrimary,
+              }}
             >
-              <Plus size={16} />
-              {t('Add First Record')}
-            </Button>
+              <span className="flex items-center gap-2 truncate">
+                {selectedModel ? (
+                  <>
+                    <span className="font-medium">{selectedModel.displayName}</span>
+                    <span className="text-xs opacity-60 font-mono">{selectedModel.modelName}</span>
+                  </>
+                ) : (
+                  <span style={{ color: colors.textSecondary }}>{t('Select a model...')}</span>
+                )}
+              </span>
+              <ChevronDown size={16} color={colors.textSecondary} className={`transition-transform ${isModelDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isModelDropdownOpen && (
+              <div
+                className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-50"
+                style={{
+                  backgroundColor: colors.card,
+                  border: `1px solid ${colors.border}`,
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                }}
+              >
+                {modelsLoading ? (
+                  <div className="p-4 flex items-center justify-center">
+                    <Loader2 size={20} className="animate-spin" color={colors.textSecondary} />
+                  </div>
+                ) : dynamicModels.length === 0 ? (
+                  <div className="p-4 text-center text-sm" style={{ color: colors.textSecondary }}>
+                    {t('No models found')}
+                  </div>
+                ) : (
+                  dynamicModels.map((model, idx) => {
+                    const Icon = MODEL_ICONS[idx % MODEL_ICONS.length]
+                    const gradient = MODEL_GRADIENTS[idx % MODEL_GRADIENTS.length]
+                    const isSelected = selectedModel?.modelName === model.modelName
+
+                    return (
+                      <button
+                        key={model.id}
+                        onClick={() => {
+                          setSelectedModel(model)
+                          setIsModelDropdownOpen(false)
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                        style={{
+                          backgroundColor: isSelected ? (mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)') : 'transparent',
+                          borderBottom: idx < dynamicModels.length - 1 ? `1px solid ${colors.border}` : 'none',
+                        }}
+                      >
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ background: gradient }}
+                        >
+                          <Icon size={16} color="#fff" />
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="font-medium text-sm truncate" style={{ color: colors.textPrimary }}>
+                            {model.displayName}
+                          </div>
+                          <div className="text-xs font-mono truncate" style={{ color: colors.textSecondary }}>
+                            {model.modelName}
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <CheckCircle size={16} color="#059669" />
+                        )}
+                      </button>
+                    )
+                  })
+                )}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
-            {hierarchicalRecords.map(record => renderRow(record))}
-          </div>
-        )}
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              fetchDynamicModels()
+              if (selectedModel) {
+                fetchModelFields(selectedModel.modelName)
+                fetchRecords()
+              }
+            }}
+            className="flex items-center gap-2"
+            style={{ borderColor: colors.border, color: colors.textPrimary }}
+          >
+            <RefreshCw size={16} className={modelsLoading || loading ? 'animate-spin' : ''} />
+            {t('Refresh')}
+          </Button>
+        </div>
       </div>
 
+      {/* Search & Column Selector */}
+      {selectedModel && (
+        <div className="flex items-center gap-4">
+          <div
+            className="flex-1 flex items-center gap-3 px-4 py-2.5 rounded-xl"
+            style={{
+              backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+              border: `1px solid ${colors.border}`,
+            }}
+          >
+            <Search size={18} color={colors.textSecondary} />
+            <input
+              type="text"
+              placeholder={t('Search records...')}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent outline-none text-sm"
+              style={{ color: colors.textPrimary }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')}>
+                <X size={16} color={colors.textSecondary} />
+              </button>
+            )}
+          </div>
+
+          {/* Column Selector */}
+          <ColumnsSelector
+            columns={availableColumns}
+            selectedColumns={visibleColumns}
+            onSelectionChange={setVisibleColumns}
+            label={t('Columns')}
+          />
+
+          <Button
+            onClick={() => setEditModal({ open: true, record: null })}
+            className="flex items-center gap-2"
+            style={{ background: MODEL_GRADIENTS[0], color: '#fff' }}
+          >
+            <Plus size={18} />
+            {t('Add New')}
+          </Button>
+        </div>
+      )}
+
+      {/* Table */}
+      {selectedModel && (
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{
+            backgroundColor: colors.card,
+            border: `1px solid ${colors.border}`,
+          }}
+        >
+          {/* Table Header */}
+          <div
+            className="flex items-center gap-4 px-4 py-3 text-sm font-medium"
+            style={{
+              backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+              borderBottom: `1px solid ${colors.border}`,
+              color: colors.textSecondary,
+            }}
+          >
+            <div className="w-6"></div>
+            {visibleColumns.includes('id') && <div className="w-16">{t('ID')}</div>}
+            {modelFields.filter(f => visibleColumns.includes(f.name)).map((field, idx) => (
+              <div key={field.name} className={idx === 0 ? 'flex-1' : 'w-32'}>
+                {field.string || field.name}
+              </div>
+            ))}
+            <div className="w-24">{t('Actions')}</div>
+          </div>
+
+          {/* Table Body */}
+          {loading || fieldsLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 size={32} className="animate-spin" color={colors.textSecondary} />
+            </div>
+          ) : hierarchicalRecords.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <Database size={48} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+              <p style={{ color: colors.textSecondary }}>{t('No records found')}</p>
+              <Button
+                onClick={() => setEditModal({ open: true, record: null })}
+                variant="outline"
+                className="flex items-center gap-2 mt-2"
+                style={{ borderColor: colors.border, color: colors.textPrimary }}
+              >
+                <Plus size={16} />
+                {t('Add First Record')}
+              </Button>
+            </div>
+          ) : (
+            <div className="max-h-[calc(100vh-500px)] overflow-y-auto">
+              {hierarchicalRecords.map(record => renderRow(record))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* No Model Selected */}
+      {!selectedModel && !modelsLoading && (
+        <div
+          className="rounded-xl p-12 text-center"
+          style={{
+            backgroundColor: colors.card,
+            border: `1px solid ${colors.border}`,
+          }}
+        >
+          <Database size={64} color={colors.textSecondary} style={{ opacity: 0.3, margin: '0 auto' }} />
+          <h3 className="text-lg font-semibold mt-4" style={{ color: colors.textPrimary }}>
+            {dynamicModels.length === 0 ? t('No Lookup Models Found') : t('Select a Model')}
+          </h3>
+          <p className="text-sm mt-2" style={{ color: colors.textSecondary }}>
+            {dynamicModels.length === 0
+              ? t('Create a new lookup model or import data to get started.')
+              : t('Choose a model from the dropdown above to view and manage its records.')
+            }
+          </p>
+          {dynamicModels.length === 0 && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <Button
+                onClick={() => setIsAddModelModalOpen(true)}
+                className="flex items-center gap-2"
+                style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', color: '#fff' }}
+              >
+                <Plus size={18} />
+                {t('Add Lookup Master')}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex items-center gap-2"
+                style={{ borderColor: colors.border, color: colors.textPrimary }}
+              >
+                <Upload size={18} />
+                {t('Import Data')}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Edit Modal */}
-      <EditModal
-        isOpen={editModal.open}
-        onClose={() => setEditModal({ open: false, record: null })}
-        record={editModal.record}
-        masterType={activeMasterType}
-        allRecords={records[activeTab] || []}
-        onSave={handleSave}
-        isLoading={saving}
+      {selectedModel && (
+        <EditModal
+          isOpen={editModal.open}
+          onClose={() => setEditModal({ open: false, record: null })}
+          record={editModal.record}
+          modelName={selectedModel.modelName}
+          modelLabel={selectedModel.displayName}
+          fields={modelFields}
+          allRecords={records}
+          onSave={handleSave}
+          isLoading={saving}
+          showToast={showToast}
+        />
+      )}
+
+      {/* Add Model Modal */}
+      <AddModelModal
+        isOpen={isAddModelModalOpen}
+        onClose={() => setIsAddModelModalOpen(false)}
+        onSuccess={() => fetchDynamicModels()}
         showToast={showToast}
+        sessionId={sessionId}
+        tenantId={tenantId}
+        existingModels={dynamicModels}
       />
 
       {/* Import Modal */}
@@ -896,7 +1613,7 @@ export default function MasterLookupsPage() {
                 className="rounded-xl overflow-hidden mb-4"
                 style={{ border: `1px solid ${colors.border}`, maxHeight: '300px', overflowY: 'auto' }}
               >
-                {customModels.length === 0 ? (
+                {dynamicModels.length === 0 ? (
                   <div className="py-8 text-center">
                     <Database size={32} color={colors.textSecondary} style={{ opacity: 0.5, margin: '0 auto 0.75rem' }} />
                     <p style={{ color: colors.textSecondary, fontSize: '0.875rem' }}>
@@ -915,10 +1632,10 @@ export default function MasterLookupsPage() {
                     >
                       <input
                         type="checkbox"
-                        checked={selectedModelsForCleanup.length === customModels.length && customModels.length > 0}
+                        checked={selectedModelsForCleanup.length === dynamicModels.length && dynamicModels.length > 0}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setSelectedModelsForCleanup(customModels.map(m => m.modelName))
+                            setSelectedModelsForCleanup(dynamicModels.map(m => m.modelName))
                           } else {
                             setSelectedModelsForCleanup([])
                           }
@@ -926,12 +1643,12 @@ export default function MasterLookupsPage() {
                         className="w-4 h-4 rounded"
                       />
                       <span className="text-sm font-medium" style={{ color: colors.textPrimary }}>
-                        {t('Select All')} ({customModels.length})
+                        {t('Select All')} ({dynamicModels.length})
                       </span>
                     </div>
 
                     {/* Models */}
-                    {customModels.map((model) => (
+                    {dynamicModels.map((model) => (
                       <div
                         key={model.id}
                         className="flex items-center gap-3 px-4 py-3"
