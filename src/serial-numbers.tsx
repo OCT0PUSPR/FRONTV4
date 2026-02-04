@@ -1533,106 +1533,11 @@ export default function LotsSerialNumbersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(12)
 
-  // Filter dropdowns state
-  const [filterLookups, setFilterLookups] = useState<SerialLookups>({
-    lookups: {},
-    relationships: {},
-    brands: [],
-    manufacturers: [],
-    models: [],
-    custodians: [],
-    conditions: [],
-    disposalStatuses: [],
-  })
-  const [selectedFilters, setSelectedFilters] = useState<Record<string, number | string | null>>({
-    x_category_id: null,
-    x_subcategory_id: null,
-    x_group_id: null,
-    x_subgroup_id: null,
-    x_brand_id: null,
-    x_manufacturer_id: null,
-    x_model_id: null,
-    x_custodian_id: null,
-    x_condition: null,
-    x_disposal_status: null,
-  })
-  const [showFilters, setShowFilters] = useState(false)
-
-  // MUI theme for filter Autocomplete
-  const muiTheme = useMemo(() => createTheme({
-    palette: {
-      mode: isDark ? 'dark' : 'light',
-    },
-    components: {
-      MuiAutocomplete: {
-        styleOverrides: {
-          paper: {
-            backgroundColor: colors.card,
-            border: `1px solid ${colors.border}`,
-            boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.12)',
-          },
-          listbox: {
-            backgroundColor: colors.card,
-          },
-          option: {
-            '&[aria-selected="true"]': {
-              backgroundColor: isDark ? 'rgba(14, 165, 233, 0.2)' : 'rgba(14, 165, 233, 0.12)',
-            },
-            '&:hover': {
-              backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-            },
-          },
-        },
-      },
-    },
-  }), [isDark, colors])
-
-  // Get headers for API calls
-  const getHeaders = useCallback((): Record<string, string> => {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    }
-    const tenantId = localStorage.getItem('current_tenant_id')
-    if (tenantId) headers['X-Tenant-ID'] = tenantId
-    if (sessionId) headers['X-Odoo-Session'] = sessionId
-    const odooBase = localStorage.getItem('odooBase')
-    const odooDb = localStorage.getItem('odooDb')
-    if (odooBase) headers['x-odoo-base'] = odooBase
-    if (odooDb) headers['x-odoo-db'] = odooDb
-    return headers
-  }, [sessionId])
-
-  // Fetch lookup data for filters
-  const fetchFilterLookups = useCallback(async () => {
-    if (!sessionId) return
-    try {
-      const headers = getHeaders()
-      const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/import/serial-lookups-dynamic`, {
-        method: 'GET',
-        headers,
-      })
-      const data = await res.json()
-      if (data.success && data.data) {
-        setFilterLookups({
-          lookups: data.data.lookups || {},
-          relationships: data.data.relationships || {},
-          brands: data.data.brands || [],
-          manufacturers: data.data.manufacturers || [],
-          models: data.data.models || [],
-          custodians: data.data.custodians || [],
-          conditions: data.data.conditions || [],
-          disposalStatuses: data.data.disposalStatuses || [],
-        })
-      }
-    } catch (err) {
-      console.warn('[SerialNumbers] Error fetching filter lookups:', err)
-    }
-  }, [sessionId, getHeaders])
-
-  // Fetch lookups on mount
-  useEffect(() => {
-    fetchFilterLookups()
-  }, [fetchFilterLookups])
+  // Simple filter state (like receipts.tsx)
+  const [productFilter, setProductFilter] = useState<string[]>([])
+  const [locationFilter, setLocationFilter] = useState<string[]>([])
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([])
+  const [subgroupFilter, setSubgroupFilter] = useState<string[]>([])
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 640)
@@ -1696,6 +1601,39 @@ export default function LotsSerialNumbersPage() {
     }))
   }, [availableColumns, colors, i18n.language])
 
+  // Generate unique filter options from data
+  const uniqueProducts = useMemo(() => {
+    return Array.from(new Set(
+      serialRecords
+        .map((lot: any) => Array.isArray(lot.product_id) ? lot.product_id[1] : '')
+        .filter(Boolean)
+    ))
+  }, [serialRecords])
+
+  const uniqueLocations = useMemo(() => {
+    return Array.from(new Set(
+      serialRecords
+        .map((lot: any) => Array.isArray(lot.location_id) ? lot.location_id[1] : '')
+        .filter(Boolean)
+    ))
+  }, [serialRecords])
+
+  const uniqueCategories = useMemo(() => {
+    return Array.from(new Set(
+      serialRecords
+        .map((lot: any) => Array.isArray(lot.x_category_id) ? lot.x_category_id[1] : '')
+        .filter(Boolean)
+    ))
+  }, [serialRecords])
+
+  const uniqueSubgroups = useMemo(() => {
+    return Array.from(new Set(
+      serialRecords
+        .map((lot: any) => Array.isArray(lot.x_subgroup_id) ? lot.x_subgroup_id[1] : '')
+        .filter(Boolean)
+    ))
+  }, [serialRecords])
+
   // Filter records
   const filteredLots = useMemo(() => {
     return (serialRecords || []).filter((lot: any) => {
@@ -1711,52 +1649,19 @@ export default function LotsSerialNumbersPage() {
              product.includes(searchLower) ||
              location.includes(searchLower)
 
-      if (!matchesSearch) return false
+      // Dropdown filters
+      const matchesProduct = productFilter.length === 0 ||
+        productFilter.includes(Array.isArray(lot.product_id) ? lot.product_id[1] : '')
+      const matchesLocation = locationFilter.length === 0 ||
+        locationFilter.includes(Array.isArray(lot.location_id) ? lot.location_id[1] : '')
+      const matchesCategory = categoryFilter.length === 0 ||
+        categoryFilter.includes(Array.isArray(lot.x_category_id) ? lot.x_category_id[1] : '')
+      const matchesSubgroup = subgroupFilter.length === 0 ||
+        subgroupFilter.includes(Array.isArray(lot.x_subgroup_id) ? lot.x_subgroup_id[1] : '')
 
-      // Dropdown filters - check each selected filter
-      for (const [filterKey, filterValue] of Object.entries(selectedFilters)) {
-        if (filterValue === null || filterValue === '') continue
-
-        const lotValue = lot[filterKey]
-
-        // Handle many2one fields (arrays like [id, name])
-        if (Array.isArray(lotValue)) {
-          if (lotValue[0] !== filterValue) return false
-        }
-        // Handle selection fields (strings)
-        else if (typeof filterValue === 'string') {
-          if (lotValue !== filterValue) return false
-        }
-        // Handle direct ID comparison
-        else if (lotValue !== filterValue) {
-          return false
-        }
-      }
-
-      return true
+      return matchesSearch && matchesProduct && matchesLocation && matchesCategory && matchesSubgroup
     })
-  }, [serialRecords, searchQuery, selectedFilters])
-
-  // Count active filters
-  const activeFilterCount = useMemo(() => {
-    return Object.values(selectedFilters).filter(v => v !== null && v !== '').length
-  }, [selectedFilters])
-
-  // Clear all filters
-  const clearAllFilters = () => {
-    setSelectedFilters({
-      x_category_id: null,
-      x_subcategory_id: null,
-      x_group_id: null,
-      x_subgroup_id: null,
-      x_brand_id: null,
-      x_manufacturer_id: null,
-      x_model_id: null,
-      x_custodian_id: null,
-      x_condition: null,
-      x_disposal_status: null,
-    })
-  }
+  }, [serialRecords, searchQuery, productFilter, locationFilter, categoryFilter, subgroupFilter])
 
   // Pagination for cards
   const paginatedLots = useMemo(() => {
@@ -1771,7 +1676,7 @@ export default function LotsSerialNumbersPage() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery])
+  }, [searchQuery, productFilter, locationFilter, categoryFilter, subgroupFilter])
 
   const { exportData } = useExport()
 
@@ -1978,447 +1883,29 @@ export default function LotsSerialNumbersPage() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             searchPlaceholder={t("Search by serial number, RFID, product, or location...")}
-            statusFilter={[]}
-            onStatusChange={() => {}}
-            statusOptions={[]}
-            toFilter={[]}
-            onToChange={() => {}}
-            toOptions={[]}
-            fromFilter={[]}
-            onFromChange={() => {}}
-            fromOptions={[]}
+            statusFilter={productFilter}
+            onStatusChange={setProductFilter}
+            statusOptions={uniqueProducts}
+            statusPlaceholder={t("Product")}
+            toFilter={locationFilter}
+            onToChange={setLocationFilter}
+            toOptions={uniqueLocations}
+            toPlaceholder={t("Location")}
+            fromFilter={categoryFilter}
+            onFromChange={setCategoryFilter}
+            fromOptions={uniqueCategories}
+            fromPlaceholder={t("Category")}
             showDateRange={false}
             isMobile={isMobile}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
             showViewToggle={true}
+            rulesCountFilter={subgroupFilter}
+            onRulesCountChange={setSubgroupFilter}
+            rulesCountOptions={uniqueSubgroups}
+            rulesCountPlaceholder={t("Subgroup")}
+            showRulesCountFilter={uniqueSubgroups.length > 0}
           />
-
-          {/* Advanced Filters Toggle */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            marginBottom: '1rem',
-          }}>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                background: showFilters ? (isDark ? 'rgba(14, 165, 233, 0.15)' : 'rgba(14, 165, 233, 0.1)') : 'transparent',
-                border: `1px solid ${showFilters ? '#0ea5e9' : colors.border}`,
-                borderRadius: '10px',
-                color: showFilters ? '#0ea5e9' : colors.textSecondary,
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              <ChevronDown
-                size={16}
-                style={{
-                  transform: showFilters ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.2s',
-                }}
-              />
-              {t('Filters')}
-              {activeFilterCount > 0 && (
-                <span style={{
-                  background: '#0ea5e9',
-                  color: '#fff',
-                  fontSize: '0.75rem',
-                  fontWeight: '600',
-                  padding: '2px 8px',
-                  borderRadius: '10px',
-                  minWidth: '20px',
-                  textAlign: 'center',
-                }}>
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-
-            {activeFilterCount > 0 && (
-              <button
-                onClick={clearAllFilters}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 12px',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#ef4444',
-                  fontSize: '0.8125rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                }}
-              >
-                <X size={14} />
-                {t('Clear all')}
-              </button>
-            )}
-          </div>
-
-          {/* Filter Dropdowns */}
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                style={{ overflow: 'hidden' }}
-              >
-                <ThemeProvider theme={muiTheme}>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(200px, 1fr))',
-                    gap: '12px',
-                    padding: '16px',
-                    background: colors.card,
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: '12px',
-                    marginBottom: '1rem',
-                  }}>
-                    {/* Category Filter */}
-                    {filterLookups.lookups.x_category_id?.data?.length > 0 && (
-                      <Autocomplete
-                        size="small"
-                        options={filterLookups.lookups.x_category_id.data}
-                        getOptionLabel={(option) => option.name || ''}
-                        value={filterLookups.lookups.x_category_id.data.find(
-                          (item: LookupOption) => item.id === selectedFilters.x_category_id
-                        ) || null}
-                        onChange={(_, newValue) => {
-                          setSelectedFilters(prev => ({
-                            ...prev,
-                            x_category_id: newValue?.id || null,
-                            x_subcategory_id: null, // Clear child
-                          }))
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label={filterLookups.lookups.x_category_id.label || t('Category')}
-                            placeholder={t('All')}
-                          />
-                        )}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            background: colors.background,
-                            '& fieldset': { borderColor: colors.border },
-                          },
-                          '& .MuiInputLabel-root': { color: colors.textSecondary, fontSize: '0.875rem' },
-                          '& .MuiInputBase-input': { color: colors.textPrimary, fontSize: '0.875rem' },
-                        }}
-                      />
-                    )}
-
-                    {/* Subcategory Filter */}
-                    {filterLookups.lookups.x_subcategory_id?.data?.length > 0 && (
-                      <Autocomplete
-                        size="small"
-                        options={selectedFilters.x_category_id
-                          ? filterLookups.lookups.x_subcategory_id.data.filter(
-                              (item: LookupOption) => item.parent_id === selectedFilters.x_category_id || !item.parent_id
-                            )
-                          : filterLookups.lookups.x_subcategory_id.data
-                        }
-                        getOptionLabel={(option) => option.name || ''}
-                        value={filterLookups.lookups.x_subcategory_id.data.find(
-                          (item: LookupOption) => item.id === selectedFilters.x_subcategory_id
-                        ) || null}
-                        onChange={(_, newValue) => {
-                          setSelectedFilters(prev => ({ ...prev, x_subcategory_id: newValue?.id || null }))
-                        }}
-                        disabled={!selectedFilters.x_category_id}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label={filterLookups.lookups.x_subcategory_id.label || t('Subcategory')}
-                            placeholder={!selectedFilters.x_category_id ? t('Select category first') : t('All')}
-                          />
-                        )}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            background: colors.background,
-                            '& fieldset': { borderColor: colors.border },
-                          },
-                          '& .MuiInputLabel-root': { color: colors.textSecondary, fontSize: '0.875rem' },
-                          '& .MuiInputBase-input': { color: colors.textPrimary, fontSize: '0.875rem' },
-                        }}
-                      />
-                    )}
-
-                    {/* Group Filter */}
-                    {filterLookups.lookups.x_group_id?.data?.length > 0 && (
-                      <Autocomplete
-                        size="small"
-                        options={filterLookups.lookups.x_group_id.data}
-                        getOptionLabel={(option) => option.name || ''}
-                        value={filterLookups.lookups.x_group_id.data.find(
-                          (item: LookupOption) => item.id === selectedFilters.x_group_id
-                        ) || null}
-                        onChange={(_, newValue) => {
-                          setSelectedFilters(prev => ({
-                            ...prev,
-                            x_group_id: newValue?.id || null,
-                            x_subgroup_id: null, // Clear child
-                          }))
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label={filterLookups.lookups.x_group_id.label || t('Group')}
-                            placeholder={t('All')}
-                          />
-                        )}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            background: colors.background,
-                            '& fieldset': { borderColor: colors.border },
-                          },
-                          '& .MuiInputLabel-root': { color: colors.textSecondary, fontSize: '0.875rem' },
-                          '& .MuiInputBase-input': { color: colors.textPrimary, fontSize: '0.875rem' },
-                        }}
-                      />
-                    )}
-
-                    {/* Subgroup Filter */}
-                    {filterLookups.lookups.x_subgroup_id?.data?.length > 0 && (
-                      <Autocomplete
-                        size="small"
-                        options={selectedFilters.x_group_id
-                          ? filterLookups.lookups.x_subgroup_id.data.filter(
-                              (item: LookupOption) => item.parent_id === selectedFilters.x_group_id || !item.parent_id
-                            )
-                          : filterLookups.lookups.x_subgroup_id.data
-                        }
-                        getOptionLabel={(option) => option.name || ''}
-                        value={filterLookups.lookups.x_subgroup_id.data.find(
-                          (item: LookupOption) => item.id === selectedFilters.x_subgroup_id
-                        ) || null}
-                        onChange={(_, newValue) => {
-                          setSelectedFilters(prev => ({ ...prev, x_subgroup_id: newValue?.id || null }))
-                        }}
-                        disabled={!selectedFilters.x_group_id}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label={filterLookups.lookups.x_subgroup_id.label || t('Subgroup')}
-                            placeholder={!selectedFilters.x_group_id ? t('Select group first') : t('All')}
-                          />
-                        )}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            background: colors.background,
-                            '& fieldset': { borderColor: colors.border },
-                          },
-                          '& .MuiInputLabel-root': { color: colors.textSecondary, fontSize: '0.875rem' },
-                          '& .MuiInputBase-input': { color: colors.textPrimary, fontSize: '0.875rem' },
-                        }}
-                      />
-                    )}
-
-                    {/* Brand Filter */}
-                    {filterLookups.lookups.x_brand_id?.data?.length > 0 && (
-                      <Autocomplete
-                        size="small"
-                        options={filterLookups.lookups.x_brand_id.data}
-                        getOptionLabel={(option) => option.name || ''}
-                        value={filterLookups.lookups.x_brand_id.data.find(
-                          (item: LookupOption) => item.id === selectedFilters.x_brand_id
-                        ) || null}
-                        onChange={(_, newValue) => {
-                          setSelectedFilters(prev => ({ ...prev, x_brand_id: newValue?.id || null }))
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label={filterLookups.lookups.x_brand_id.label || t('Brand')}
-                            placeholder={t('All')}
-                          />
-                        )}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            background: colors.background,
-                            '& fieldset': { borderColor: colors.border },
-                          },
-                          '& .MuiInputLabel-root': { color: colors.textSecondary, fontSize: '0.875rem' },
-                          '& .MuiInputBase-input': { color: colors.textPrimary, fontSize: '0.875rem' },
-                        }}
-                      />
-                    )}
-
-                    {/* Manufacturer Filter */}
-                    {filterLookups.lookups.x_manufacturer_id?.data?.length > 0 && (
-                      <Autocomplete
-                        size="small"
-                        options={filterLookups.lookups.x_manufacturer_id.data}
-                        getOptionLabel={(option) => option.name || ''}
-                        value={filterLookups.lookups.x_manufacturer_id.data.find(
-                          (item: LookupOption) => item.id === selectedFilters.x_manufacturer_id
-                        ) || null}
-                        onChange={(_, newValue) => {
-                          setSelectedFilters(prev => ({ ...prev, x_manufacturer_id: newValue?.id || null }))
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label={filterLookups.lookups.x_manufacturer_id.label || t('Manufacturer')}
-                            placeholder={t('All')}
-                          />
-                        )}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            background: colors.background,
-                            '& fieldset': { borderColor: colors.border },
-                          },
-                          '& .MuiInputLabel-root': { color: colors.textSecondary, fontSize: '0.875rem' },
-                          '& .MuiInputBase-input': { color: colors.textPrimary, fontSize: '0.875rem' },
-                        }}
-                      />
-                    )}
-
-                    {/* Model Filter */}
-                    {filterLookups.lookups.x_model_id?.data?.length > 0 && (
-                      <Autocomplete
-                        size="small"
-                        options={filterLookups.lookups.x_model_id.data}
-                        getOptionLabel={(option) => option.name || ''}
-                        value={filterLookups.lookups.x_model_id.data.find(
-                          (item: LookupOption) => item.id === selectedFilters.x_model_id
-                        ) || null}
-                        onChange={(_, newValue) => {
-                          setSelectedFilters(prev => ({ ...prev, x_model_id: newValue?.id || null }))
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label={filterLookups.lookups.x_model_id.label || t('Model')}
-                            placeholder={t('All')}
-                          />
-                        )}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            background: colors.background,
-                            '& fieldset': { borderColor: colors.border },
-                          },
-                          '& .MuiInputLabel-root': { color: colors.textSecondary, fontSize: '0.875rem' },
-                          '& .MuiInputBase-input': { color: colors.textPrimary, fontSize: '0.875rem' },
-                        }}
-                      />
-                    )}
-
-                    {/* Custodian Filter */}
-                    {filterLookups.lookups.x_custodian_id?.data?.length > 0 && (
-                      <Autocomplete
-                        size="small"
-                        options={filterLookups.lookups.x_custodian_id.data}
-                        getOptionLabel={(option) => option.name || ''}
-                        value={filterLookups.lookups.x_custodian_id.data.find(
-                          (item: LookupOption) => item.id === selectedFilters.x_custodian_id
-                        ) || null}
-                        onChange={(_, newValue) => {
-                          setSelectedFilters(prev => ({ ...prev, x_custodian_id: newValue?.id || null }))
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label={filterLookups.lookups.x_custodian_id.label || t('Custodian')}
-                            placeholder={t('All')}
-                          />
-                        )}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            background: colors.background,
-                            '& fieldset': { borderColor: colors.border },
-                          },
-                          '& .MuiInputLabel-root': { color: colors.textSecondary, fontSize: '0.875rem' },
-                          '& .MuiInputBase-input': { color: colors.textPrimary, fontSize: '0.875rem' },
-                        }}
-                      />
-                    )}
-
-                    {/* Condition Filter */}
-                    {filterLookups.conditions.length > 0 && (
-                      <Autocomplete
-                        size="small"
-                        options={filterLookups.conditions}
-                        getOptionLabel={(option) => option.label || ''}
-                        value={filterLookups.conditions.find(
-                          (item: SelectionOption) => item.value === selectedFilters.x_condition
-                        ) || null}
-                        onChange={(_, newValue) => {
-                          setSelectedFilters(prev => ({ ...prev, x_condition: newValue?.value || null }))
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label={t('Condition')}
-                            placeholder={t('All')}
-                          />
-                        )}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            background: colors.background,
-                            '& fieldset': { borderColor: colors.border },
-                          },
-                          '& .MuiInputLabel-root': { color: colors.textSecondary, fontSize: '0.875rem' },
-                          '& .MuiInputBase-input': { color: colors.textPrimary, fontSize: '0.875rem' },
-                        }}
-                      />
-                    )}
-
-                    {/* Disposal Status Filter */}
-                    {filterLookups.disposalStatuses.length > 0 && (
-                      <Autocomplete
-                        size="small"
-                        options={filterLookups.disposalStatuses}
-                        getOptionLabel={(option) => option.label || ''}
-                        value={filterLookups.disposalStatuses.find(
-                          (item: SelectionOption) => item.value === selectedFilters.x_disposal_status
-                        ) || null}
-                        onChange={(_, newValue) => {
-                          setSelectedFilters(prev => ({ ...prev, x_disposal_status: newValue?.value || null }))
-                        }}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label={t('Disposal Status')}
-                            placeholder={t('All')}
-                          />
-                        )}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            background: colors.background,
-                            '& fieldset': { borderColor: colors.border },
-                          },
-                          '& .MuiInputLabel-root': { color: colors.textSecondary, fontSize: '0.875rem' },
-                          '& .MuiInputBase-input': { color: colors.textPrimary, fontSize: '0.875rem' },
-                        }}
-                      />
-                    )}
-                  </div>
-                </ThemeProvider>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Content */}
           {viewMode === "cards" ? (
