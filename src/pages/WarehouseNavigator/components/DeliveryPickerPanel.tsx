@@ -1,12 +1,9 @@
 // Delivery Picker Panel - Select delivery and view pick route
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Truck,
-  Package,
-  MapPin,
-  Clock,
   ChevronDown,
   ChevronUp,
   Route,
@@ -17,7 +14,6 @@ import {
   Loader2,
   Navigation,
   Layers,
-  Zap,
 } from 'lucide-react';
 import { Vector3 } from 'three';
 import { useTheme } from '../../../../context/theme';
@@ -53,7 +49,7 @@ interface DeliveryPickerPanelProps {
   onStepClick?: (step: number) => void;
 }
 
-const ALGORITHM_LABELS: Record<RoutingAlgorithm, { label: string; description: string; icon: any }> = {
+const ALGORITHM_LABELS: Record<RoutingAlgorithm, { label: string; description: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }> }> = {
   nearest: {
     label: 'Nearest First',
     description: 'Always go to closest item',
@@ -106,7 +102,6 @@ export function DeliveryPickerPanel({
 
   const [isExpanded, setIsExpanded] = useState(true);
   const [showDeliveryList, setShowDeliveryList] = useState(true);
-  const [showAlgorithmPicker, setShowAlgorithmPicker] = useState(false);
   const [hoveredDeliveryId, setHoveredDeliveryId] = useState<number | null>(null);
   const [hoveredStepIdx, setHoveredStepIdx] = useState<number | null>(null);
   const [hoveredAlgoIdx, setHoveredAlgoIdx] = useState<number | null>(null);
@@ -117,23 +112,13 @@ export function DeliveryPickerPanel({
     if (deliveries.length === 0 && !isLoadingDeliveries) {
       onRefreshDeliveries();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCalculateRoute = () => {
     // Default start position (entrance/dock area)
     const startPosition = new Vector3(0, 0, -5);
     onCalculateRoute(startPosition);
-  };
-
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
   };
 
   return (

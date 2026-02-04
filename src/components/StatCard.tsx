@@ -30,32 +30,6 @@ export function StatCard({ label, value, icon: Icon, gradient, delay = 0 }: Stat
         minHeight: "120px",
       }}
     >
-      {/* Decorative background elements */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          [isRTL ? 'left' : 'right']: 0,
-          width: "140px",
-          height: "140px",
-          background: "rgba(255,255,255,0.15)",
-          borderRadius: "50%",
-          transform: isRTL ? "translate(-40%, -40%)" : "translate(40%, -40%)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          [isRTL ? 'right' : 'left']: 0,
-          width: "80px",
-          height: "80px",
-          background: "rgba(255,255,255,0.08)",
-          borderRadius: "50%",
-          transform: isRTL ? "translate(30%, 30%)" : "translate(-30%, 30%)",
-        }}
-      />
-
       {/* Content */}
       <div style={{ position: "relative", zIndex: 1 }}>
         <div

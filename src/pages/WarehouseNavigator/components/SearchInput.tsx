@@ -13,8 +13,7 @@ interface SearchInputProps {
 
 export function SearchInput({ value, onChange, placeholder }: SearchInputProps) {
   const { t } = useTranslation();
-  const { colors, mode } = useTheme();
-  const isDark = mode === 'dark';
+  const { colors } = useTheme();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isFocused, setIsFocused] = useState(false);
 

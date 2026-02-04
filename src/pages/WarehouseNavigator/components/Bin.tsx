@@ -96,7 +96,7 @@ export function Bin({
   const binHeight = LEVEL_HEIGHT * 0.7;
 
   // Only animate selected/highlighted bins for performance
-  useFrame((_, delta) => {
+  useFrame(() => {
     if ((isSelected || isHighlighted) && meshRef.current) {
       const scale = 1 + Math.sin(Date.now() * 0.003) * 0.03;
       meshRef.current.scale.setScalar(scale);

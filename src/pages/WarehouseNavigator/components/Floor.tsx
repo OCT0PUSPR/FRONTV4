@@ -95,7 +95,7 @@ interface ConcreteFloorProps {
   isDark: boolean;
 }
 
-function ConcreteFloor({ width, depth, thickness, centerX, centerZ, colors, isDark }: ConcreteFloorProps) {
+function ConcreteFloor({ width, depth, thickness, centerX, centerZ, colors }: ConcreteFloorProps) {
   // Create concrete slab with subtle variations
   const floorColor = hexToNumber(colors.floor);
   const floorDarkColor = hexToNumber(colors.floorDark);
@@ -334,7 +334,7 @@ interface WallBaseProps {
   color: number;
 }
 
-function WallBase({ width, depth, thickness, offsetX, offsetZ, color }: WallBaseProps) {
+function WallBase({ width, depth, offsetX, offsetZ, color }: WallBaseProps) {
   const baseHeight = 0.2;
   const baseDepth = 0.1;
   const centerX = width / 2 + offsetX;

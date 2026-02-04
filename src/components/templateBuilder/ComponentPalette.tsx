@@ -32,8 +32,7 @@ import {
   HEADER_COMPONENTS,
   BODY_COMPONENTS,
   FOOTER_COMPONENTS,
-  SectionType,
-  ComponentType
+  SectionType
 } from '../../types/templateBuilder.types';
 import { LucideIcon } from 'lucide-react';
 

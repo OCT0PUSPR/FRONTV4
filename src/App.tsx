@@ -553,8 +553,9 @@ function AppContent() {
                       <Route path="/product-variants/edit/:id" element={<ProtectedRoute pageId="product-variants"><DynamicRecordPage modelName="product.product" pageTitle="Product Variant" backRoute="/product-variants" /></ProtectedRoute>} />
                       <Route path="/product-variants/create" element={<ProtectedRoute pageId="product-variants"><DynamicRecordPage modelName="product.product" pageTitle="Product Variant" backRoute="/product-variants" /></ProtectedRoute>} />
                       <Route path="/lots-serial" element={<ProtectedRoute pageId={getPageIdFromRoute('/lots-serial') || 'lots-serial'}><LotsSerialNumbersPage /></ProtectedRoute>} />
-                      <Route path="/lots-serial/edit/:id" element={<ProtectedRoute pageId="lots-serial"><DynamicRecordPage modelName="stock.lot" pageTitle="Lot/Serial Number" backRoute="/lots-serial" /></ProtectedRoute>} />
-                      <Route path="/lots-serial/create" element={<ProtectedRoute pageId="lots-serial"><DynamicRecordPage modelName="stock.lot" pageTitle="Lot/Serial Number" backRoute="/lots-serial" /></ProtectedRoute>} />
+                      <Route path="/lots-serial/view/:id" element={<ProtectedRoute pageId="lots-serial"><LotsSerialNumbersPage /></ProtectedRoute>} />
+                      <Route path="/lots-serial/edit/:id" element={<ProtectedRoute pageId="lots-serial"><LotsSerialNumbersPage /></ProtectedRoute>} />
+                      <Route path="/lots-serial/create" element={<ProtectedRoute pageId="lots-serial"><LotsSerialNumbersPage /></ProtectedRoute>} />
                       <Route path="/product-packages" element={<ProtectedRoute pageId={getPageIdFromRoute('/product-packages') || 'product-packages'}><PackagesPage /></ProtectedRoute>} />
                       <Route path="/product-packages/edit/:id" element={<ProtectedRoute pageId="product-packages"><DynamicRecordPage modelName="product.package" pageTitle="Package" backRoute="/product-packages" /></ProtectedRoute>} />
                       <Route path="/product-packages/create" element={<ProtectedRoute pageId="product-packages"><DynamicRecordPage modelName="product.package" pageTitle="Package" backRoute="/product-packages" /></ProtectedRoute>} />

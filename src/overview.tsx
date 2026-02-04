@@ -1,456 +1,560 @@
-import React, { useEffect, useRef } from 'react';
-import { Package, Truck, BarChart3, LayoutDashboard, Warehouse, GitBranch, Settings, Shield } from 'lucide-react';
+
+import React, { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Database, Scan, Layers } from 'lucide-react';
 import { useTheme } from '../context/theme';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useCasl } from '../context/casl';
-import { ROUTE_TO_PAGE_ID } from './config/pageRoutes';
 
 interface Props {
   onEnter?: () => void;
   theme?: 'dark' | 'light';
+  toggleTheme?: () => void;
 }
 
-const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme }) => {
+const LandingPage: React.FC<Props> = ({ onEnter, theme: propTheme, toggleTheme }) => {
   const { mode, colors } = useTheme();
-  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { canViewPage } = useCasl();
   const theme = propTheme || mode;
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Rotating Operational Text State
+  const [opTextIndex, setOpTextIndex] = useState(0);
+  const opTexts = ["AUTOMATED STORAGE", "PREDICTIVE PICKING", "REAL-TIME INVENTORY"];
 
-  const isRTL = i18n.dir() === 'rtl';
-  const isDark = theme === 'dark';
+  useEffect(() => {
+      const interval = setInterval(() => {
+          setOpTextIndex(prev => (prev + 1) % opTexts.length);
+      }, 3000);
+      return () => clearInterval(interval);
+  }, []);
 
-  // Check permission for a route
-  const canViewRoute = (url: string): boolean => {
-    const pageId = ROUTE_TO_PAGE_ID[url];
-    if (!pageId) return true; // Allow if no mapping exists
-    return canViewPage(pageId);
-  };
-
-  // Warehouse Storage Grid Animation
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let animId: number;
-    let time = 0;
-    let width = 0;
-    let height = 0;
-
-    // Grid configuration - warehouse storage bins
-    const cellSize = 50;
-    const cellGap = 8;
-    const cellSpacing = cellSize + cellGap;
-
-    interface StorageCell {
-      x: number;
-      y: number;
-      row: number;
-      col: number;
-      occupied: boolean;
-      pulsePhase: number;
-      activityLevel: number;
+    // --- Warehouse Particle Logic ---
+    
+    interface Particle {
+        x: number;
+        y: number;
+        z: number;
+        size: number;
+        type: 'pallet' | 'rack' | 'floor';
+        colorVar: number; // For slight color variation
     }
 
-    interface MovingPackage {
-      fromX: number;
-      fromY: number;
-      toX: number;
-      toY: number;
-      progress: number;
-      speed: number;
+    interface Robot {
+        x: number;
+        y: number;
+        z: number;
+        targetX: number;
+        targetY: number;
+        targetZ: number;
+        speed: number;
+        state: 'MOVING' | 'LIFTING' | 'LOWERING';
+        holdTime: number;
+        color: string;
     }
 
-    let grid: StorageCell[] = [];
-    let packages: MovingPackage[] = [];
+    let particles: Particle[] = [];
+    let robots: Robot[] = [];
 
-    const primaryColor = isDark ? { r: 99, g: 102, b: 241 } : { r: 79, g: 70, b: 229 };
-    const accentColor = isDark ? { r: 6, g: 182, b: 212 } : { r: 8, g: 145, b: 178 };
-    const successColor = { r: 34, g: 197, b: 94 };
+    // Configuration
+    const rackRows = 5;       // Number of double-sided rack rows
+    const rackCols = 24;      // Deepness
+    const rackLevels = 7;     // Height
+    const spacingX = 25;      // Width of a pallet slot
+    const spacingY = 18;      // Height of a shelf
+    const spacingZ = 25;      // Depth of a pallet slot
+    const aisleWidth = 60;    // Width between racks for robots
 
-    const initGrid = () => {
-      grid = [];
-      packages = [];
+    // Calculate Grid Offsets to center the warehouse
+    // A "Row" consists of 2 racks back-to-back + 1 aisle
+    const rowUnitWidth = (spacingX * 2) + aisleWidth;
+    const totalWidth = (rackRows * rowUnitWidth) - aisleWidth; 
+    const totalDepth = rackCols * spacingZ;
+    const totalHeight = rackLevels * spacingY;
 
-      const cols = Math.ceil(width / cellSpacing) + 2;
-      const rows = Math.ceil(height / cellSpacing) + 2;
+    // Generate Static Warehouse Structure
+    const initWarehouse = () => {
+        particles = [];
+        robots = [];
 
-      const offsetX = (width - (cols - 1) * cellSpacing) / 2;
-      const offsetY = (height - (rows - 1) * cellSpacing) / 2;
+        for (let r = 0; r < rackRows; r++) {
+            const rowStartX = (r * rowUnitWidth) - (totalWidth / 2);
 
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          const x = col * cellSpacing + offsetX;
-          const y = row * cellSpacing + offsetY;
+            // Double sided rack (Side A and Side B)
+            for (let side = 0; side < 2; side++) {
+                const rackX = rowStartX + (side * spacingX);
 
-          const distFromCenter = Math.sqrt(
-            Math.pow(x - width / 2, 2) + Math.pow(y - height / 2, 2)
-          );
-          const maxDist = Math.min(width, height) * 0.55;
+                for (let c = 0; c < rackCols; c++) {
+                    const z = (c * spacingZ) - (totalDepth / 2);
 
-          if (distFromCenter < maxDist) {
-            grid.push({
-              x,
-              y,
-              row,
-              col,
-              occupied: Math.random() > 0.4,
-              pulsePhase: Math.random() * Math.PI * 2,
-              activityLevel: Math.random(),
-            });
-          }
+                    // Vertical Levels
+                    for (let l = 0; l < rackLevels; l++) {
+                        const y = (l * spacingY) - (totalHeight / 3); // Shift down slightly
+
+                        // RACK POSTS (Vertical Lines visual)
+                        if (l === 0 && (c % 4 === 0)) {
+                             // Create a vertical pillar effect by adding points
+                             for(let h=0; h<rackLevels*spacingY; h+=spacingY/2) {
+                                 particles.push({
+                                     x: rackX + (side===0?-2:2), // slightly offset
+                                     y: h - (totalHeight/3),
+                                     z: z + spacingZ/2,
+                                     size: 0.8,
+                                     type: 'rack',
+                                     colorVar: 0
+                                 });
+                             }
+                        }
+
+                        // PALETTES
+                        // Randomly skip some spots to make it look realistic (80% full)
+                        if (Math.random() > 0.15) {
+                            particles.push({
+                                x: rackX,
+                                y: y,
+                                z: z,
+                                size: Math.random() * 1.5 + 1,
+                                type: 'pallet',
+                                colorVar: Math.random()
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // Generate Robots in the Aisle (to the right of the double rack)
+            if (r < rackRows - 1) { // Don't put aisle after last rack if we want symmetry? Actually usually aisles are between.
+                 const aisleX = rowStartX + (spacingX * 2) + (aisleWidth / 2);
+                 // Spawn 1-2 robots per aisle
+                 for(let i=0; i<Math.max(1, Math.random()*5); i++) {
+                     const startZ = (Math.random() * totalDepth) - (totalDepth/2);
+                     robots.push({
+                         x: aisleX,
+                         y: -(totalHeight / 3), // Floor level
+                         z: startZ,
+                         targetX: aisleX,
+                         targetY: -(totalHeight / 3),
+                         targetZ: (Math.random() * totalDepth) - (totalDepth/2),
+                         speed: 2 + Math.random(),
+                         state: 'MOVING',
+                         holdTime: 0,
+                         color: Math.random() > 0.5 ? '#f43f5e' : '#fbbf24' // Red/Amber lights
+                     });
+                 }
+            }
         }
-      }
+        
+        // Floor Grid (Subtle)
+        for(let x = -totalWidth/2 - 100; x <= totalWidth/2 + 100; x+=100) {
+            for(let z = -totalDepth/2 - 100; z <= totalDepth/2 + 100; z+=100) {
+                 if (Math.random() > 0.5) {
+                    particles.push({
+                        x: x,
+                        y: -(totalHeight / 3) - 10,
+                        z: z,
+                        size: 0.5,
+                        type: 'floor',
+                        colorVar: 0
+                    });
+                 }
+            }
+        }
     };
 
-    const drawRoundedRect = (
-      x: number,
-      y: number,
-      w: number,
-      h: number,
-      radius: number,
-      fillColor: string | null,
-      strokeColor: string | null,
-      lineWidth: number = 1
-    ) => {
-      ctx.beginPath();
-      ctx.roundRect(x, y, w, h, radius);
-      if (fillColor) {
-        ctx.fillStyle = fillColor;
-        ctx.fill();
-      }
-      if (strokeColor) {
-        ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = lineWidth;
-        ctx.stroke();
-      }
-    };
+    initWarehouse();
 
-    const resize = () => {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      width = rect.width;
-      height = rect.height;
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      ctx.scale(dpr, dpr);
-      initGrid();
-    };
-
-    const observer = new ResizeObserver(resize);
-    observer.observe(canvas);
-    resize();
+    let angleY = -0.5; // Initial angle
+    let animId: number;
 
     const animate = () => {
-      if (!canvas || !ctx) return;
+        if (!canvas || !ctx) return;
+        
+        const { width, height } = canvas;
+        const cx = width / 2;
+        const cy = height / 2;
 
-      ctx.clearRect(0, 0, width, height);
-      time += 0.012;
+        ctx.clearRect(0, 0, width, height);
 
-      // Draw storage grid
-      grid.forEach((cell) => {
-        const distFromCenter = Math.sqrt(
-          Math.pow(cell.x - width / 2, 2) + Math.pow(cell.y - height / 2, 2)
-        );
-        const maxDist = Math.min(width, height) * 0.5;
-        const fadeAlpha = Math.max(0, 1 - distFromCenter / maxDist);
+        // Rotation
+        angleY += 0.002;
 
-        const pulse = Math.sin(time * 1.5 + cell.pulsePhase) * 0.5 + 0.5;
-        const halfSize = cellSize / 2;
+        const isDark = theme === 'dark';
+        
+        // Dynamic Colors based on Theme
+        const palletColorBase = isDark ? {r: 99, g: 102, b: 241} : {r: 14, g: 165, b: 233}; // Indigo / Sky
+        const rackColor = isDark ? 'rgba(71, 85, 105, 0.3)' : 'rgba(203, 213, 225, 0.5)';
+        const floorColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
 
-        // Draw storage bin outline
-        const outlineAlpha = 0.08 * fadeAlpha;
-        drawRoundedRect(
-          cell.x - halfSize,
-          cell.y - halfSize,
-          cellSize,
-          cellSize,
-          6,
-          null,
-          `rgba(${primaryColor.r}, ${primaryColor.g}, ${primaryColor.b}, ${outlineAlpha})`,
-          1.5
-        );
+        // 3D Projection
+        const project = (x: number, y: number, z: number) => {
+            // Rotate Y
+            const cos = Math.cos(angleY);
+            const sin = Math.sin(angleY);
+            const rx = x * cos - z * sin;
+            const rz = x * sin + z * cos;
+            
+            // Simple Isometric-ish Tilt
+            // Rotate X slightly (look down)
+            const tilt = 0.4; // rads
+            const ry = y * Math.cos(tilt) - rz * Math.sin(tilt);
+            const rz2 = y * Math.sin(tilt) + rz * Math.cos(tilt);
 
-        // Draw occupied bins with fill
-        if (cell.occupied) {
-          const fillAlpha = (0.04 + pulse * 0.03) * cell.activityLevel * fadeAlpha;
-          const innerSize = cellSize - 8;
+            const fov = 1200;
+            const scale = fov / (fov + rz2 + 400); // +400 to push back
+            
+            return {
+                x: cx + rx * scale,
+                y: cy + ry * scale,
+                scale: scale,
+                depth: rz2
+            };
+        };
 
-          drawRoundedRect(
-            cell.x - innerSize / 2,
-            cell.y - innerSize / 2,
-            innerSize,
-            innerSize,
-            4,
-            `rgba(${primaryColor.r}, ${primaryColor.g}, ${primaryColor.b}, ${fillAlpha})`,
-            null
-          );
+        // Render Lists
+        const renderList: {
+            x: number, y: number, z: number, 
+            size: number, color: string, depth: number
+        }[] = [];
 
-          // Activity indicator for high-activity bins
-          if (cell.activityLevel > 0.7) {
-            const indicatorAlpha = (0.3 + pulse * 0.4) * fadeAlpha;
-            const indicatorSize = 6;
+        // 1. Process Static Particles
+        particles.forEach(p => {
+            const proj = project(p.x, p.y, p.z);
+            if (proj.scale > 0) {
+                let color = '';
+                if (p.type === 'floor') color = floorColor;
+                else if (p.type === 'rack') color = rackColor;
+                else {
+                    // Pallet Color Variation
+                    const alpha = 0.6 + (p.colorVar * 0.4);
+                    // Occasional "Special" crate
+                    if (p.colorVar > 0.95) {
+                         color = isDark ? `rgba(244, 63, 94, ${alpha})` : `rgba(225, 29, 72, ${alpha})`; // Rose
+                    } else if (p.colorVar > 0.90) {
+                         color = isDark ? `rgba(251, 191, 36, ${alpha})` : `rgba(245, 158, 11, ${alpha})`; // Amber
+                    } else {
+                         color = `rgba(${palletColorBase.r}, ${palletColorBase.g}, ${palletColorBase.b}, ${alpha})`;
+                    }
+                }
+
+                renderList.push({
+                    x: proj.x,
+                    y: proj.y,
+                    z: proj.depth,
+                    size: p.size * proj.scale,
+                    color: color,
+                    depth: proj.depth
+                });
+            }
+        });
+
+        // 2. Process & Update Robots
+        robots.forEach(robot => {
+            // State Machine
+            if (robot.state === 'MOVING') {
+                const dx = robot.targetX - robot.x;
+                const dz = robot.targetZ - robot.z;
+                const dist = Math.sqrt(dx*dx + dz*dz);
+                
+                if (dist < 5) {
+                    // Arrived
+                    robot.x = robot.targetX;
+                    robot.z = robot.targetZ;
+                    // Random chance to lift up to a shelf
+                    if (Math.random() > 0.3) {
+                         robot.state = 'LIFTING';
+                         robot.targetY = (Math.floor(Math.random() * (rackLevels-1)) + 1) * spacingY - (totalHeight / 3);
+                    } else {
+                         // Pick new floor target
+                         robot.targetZ = (Math.random() * totalDepth) - (totalDepth/2);
+                    }
+                } else {
+                    robot.x += (dx / dist) * robot.speed;
+                    robot.z += (dz / dist) * robot.speed;
+                }
+            } else if (robot.state === 'LIFTING') {
+                 if (robot.y < robot.targetY) {
+                     robot.y += 2; // Lift speed
+                 } else {
+                     robot.state = 'LOWERING';
+                     robot.holdTime = 20; // Frames to wait
+                 }
+            } else if (robot.state === 'LOWERING') {
+                 if (robot.holdTime > 0) {
+                     robot.holdTime--;
+                 } else {
+                     if (robot.y > -(totalHeight / 3)) {
+                         robot.y -= 2;
+                     } else {
+                         robot.state = 'MOVING';
+                         robot.targetZ = (Math.random() * totalDepth) - (totalDepth/2);
+                     }
+                 }
+            }
+
+            const proj = project(robot.x, robot.y, robot.z);
+            
+            // Draw Robot Body
+            renderList.push({
+                x: proj.x,
+                y: proj.y,
+                z: proj.depth,
+                size: 6 * proj.scale, // Bigger than pallets
+                color: robot.color,
+                depth: proj.depth
+            });
+
+            // Draw Beam (optional visual effect when lifting)
+            if (robot.state === 'LIFTING' || robot.state === 'LOWERING') {
+                 // We can't push lines to renderList easily, so draw immediately? 
+                 // No, standard Z-sort won't work perfectly but for particles it's fine.
+                 // Let's create a trail particle
+                 renderList.push({
+                    x: proj.x,
+                    y: proj.y + 10 * proj.scale, // Below robot
+                    z: proj.depth,
+                    size: 2 * proj.scale,
+                    color: `rgba(255,255,255,0.5)`,
+                    depth: proj.depth
+                });
+            }
+        });
+
+        // 3. Sort by Depth (Painter's Algorithm)
+        renderList.sort((a, b) => b.depth - a.depth);
+
+        // 4. Draw
+        renderList.forEach(p => {
+            ctx.fillStyle = p.color;
             ctx.beginPath();
-            ctx.arc(cell.x + halfSize - 10, cell.y - halfSize + 10, indicatorSize / 2, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${successColor.r}, ${successColor.g}, ${successColor.b}, ${indicatorAlpha})`;
+            // Draw squares for warehouse feel instead of circles?
+            // Circles are faster and look like "data points"
+            ctx.arc(p.x, p.y, Math.max(0.1, p.size), 0, Math.PI * 2);
             ctx.fill();
-          }
-        }
-      });
+        });
 
-      // Spawn moving packages occasionally
-      if (Math.random() < 0.015 && packages.length < 5 && grid.length > 1) {
-        const fromCell = grid[Math.floor(Math.random() * grid.length)];
-        const toCells = grid.filter(c =>
-          c !== fromCell &&
-          Math.abs(c.row - fromCell.row) <= 3 &&
-          Math.abs(c.col - fromCell.col) <= 3
-        );
-
-        if (toCells.length > 0) {
-          const toCell = toCells[Math.floor(Math.random() * toCells.length)];
-          packages.push({
-            fromX: fromCell.x,
-            fromY: fromCell.y,
-            toX: toCell.x,
-            toY: toCell.y,
-            progress: 0,
-            speed: 0.008 + Math.random() * 0.01,
-          });
-        }
-      }
-
-      // Draw and update moving packages
-      packages = packages.filter((pkg) => {
-        pkg.progress += pkg.speed;
-        if (pkg.progress >= 1) return false;
-
-        const x = pkg.fromX + (pkg.toX - pkg.fromX) * pkg.progress;
-        const y = pkg.fromY + (pkg.toY - pkg.fromY) * pkg.progress;
-
-        const distFromCenter = Math.sqrt(
-          Math.pow(x - width / 2, 2) + Math.pow(y - height / 2, 2)
-        );
-        const maxDist = Math.min(width, height) * 0.5;
-        const alpha = Math.max(0, 1 - distFromCenter / maxDist);
-
-        // Draw package
-        const pkgSize = 14;
-        drawRoundedRect(
-          x - pkgSize / 2,
-          y - pkgSize / 2,
-          pkgSize,
-          pkgSize,
-          3,
-          `rgba(${accentColor.r}, ${accentColor.g}, ${accentColor.b}, ${alpha * 0.9})`,
-          `rgba(255, 255, 255, ${alpha * 0.5})`,
-          1
-        );
-
-        // Draw motion trail
-        const trailLength = 20;
-        const dx = pkg.toX - pkg.fromX;
-        const dy = pkg.toY - pkg.fromY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const nx = -dx / dist;
-        const ny = -dy / dist;
-
-        const gradient = ctx.createLinearGradient(
-          x, y,
-          x + nx * trailLength, y + ny * trailLength
-        );
-        gradient.addColorStop(0, `rgba(${accentColor.r}, ${accentColor.g}, ${accentColor.b}, ${alpha * 0.4})`);
-        gradient.addColorStop(1, 'transparent');
-
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + nx * trailLength, y + ny * trailLength);
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        return true;
-      });
-
-      // Subtle center glow
-      const centerGradient = ctx.createRadialGradient(
-        width / 2, height / 2, 0,
-        width / 2, height / 2, Math.min(width, height) * 0.35
-      );
-      centerGradient.addColorStop(0, `rgba(${primaryColor.r}, ${primaryColor.g}, ${primaryColor.b}, 0.06)`);
-      centerGradient.addColorStop(1, 'transparent');
-
-      ctx.fillStyle = centerGradient;
-      ctx.beginPath();
-      ctx.arc(width / 2, height / 2, Math.min(width, height) * 0.35, 0, Math.PI * 2);
-      ctx.fill();
-
-      animId = requestAnimationFrame(animate);
+        animId = requestAnimationFrame(animate);
     };
 
+    // Use ResizeObserver for robust sizing
+    const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+             const { width, height } = entry.contentRect;
+             canvas.width = width;
+             canvas.height = height;
+        }
+    });
+    
+    observer.observe(canvas);
     animId = requestAnimationFrame(animate);
 
     return () => {
-      observer.disconnect();
-      cancelAnimationFrame(animId);
+        observer.disconnect();
+        cancelAnimationFrame(animId);
     };
-  }, [theme, isDark]);
+  }, [theme]);
 
-  // Quick action buttons with proper order and permission checking
-  const allQuickActions = [
-    { icon: LayoutDashboard, label: t('Dashboard'), path: '/dashboard', color: '#10b981' },
-    { icon: Truck, label: t('Transfers'), path: '/receipts', color: '#8b5cf6' },
-    { icon: Package, label: t('Products'), path: '/products', color: '#6366f1' },
-    { icon: Warehouse, label: t('Warehouse Management'), path: '/warehouse-management', color: '#f59e0b' },
-    { icon: BarChart3, label: t('Reports'), path: '/stocks', color: '#06b6d4' },
-    { icon: GitBranch, label: t('Workflow'), path: '/workflow-v2', color: '#ec4899' },
-    { icon: Settings, label: t('Configuration'), path: '/uom-categories', color: '#64748b' },
-    { icon: Shield, label: t('User Management'), path: '/users', color: '#ef4444' },
-  ];
-
-  // Filter quick actions based on permissions
-  const quickActions = allQuickActions.filter(action => canViewRoute(action.path));
+  const isDark = theme === 'dark';
+  const handleEnter = () => {
+    if (onEnter) {
+      onEnter();
+    } else {
+      navigate('/dashboard');
+    }
+  };
 
   return (
-    <div
-      className="w-full h-[calc(100vh-64px)] flex flex-col items-center justify-center relative overflow-hidden"
-      style={{
+    <div 
+      className="w-full h-[calc(100vh-64px)] flex flex-col lg:flex-row font-sans transition-colors duration-500 overflow-hidden"
+      style={{ 
         backgroundColor: colors.background,
-        color: colors.textPrimary,
+        color: colors.textPrimary
       }}
     >
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(24px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
 
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
+        {/* Left Content - Scrolls naturally with the page */}
+        <div className="w-full lg:w-1/2 pt-8 pb-12 px-12 lg:pt-8 lg:pb-16 lg:px-16 flex flex-col relative z-20">
+            
+            {/* Main Hero */}
+            <div className="flex-1 flex flex-col justify-center max-w-xl">
+                
+                {/* Branding */}
+                <div className="mb-6 animate-enter">
+                    <div className="font-bold tracking-tight text-3xl" style={{ color: colors.textPrimary }}>
+                        Octopus<span style={{ color: colors.action }}>WMS</span>
+                    </div>
+                    <div className="text-xs font-medium tracking-widest uppercase" style={{ color: colors.textSecondary }}>Enterprise Edition</div>
+                </div>
 
-        @keyframes scaleIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
+                <div 
+                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full border w-fit mb-8 animate-enter"
+                    style={{
+                        animationDelay: '0.05s',
+                        backgroundColor: colors.card,
+                        borderColor: colors.border
+                    }}
+                >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="text-xs font-medium" style={{ color: colors.textSecondary }}>System Operational • v14.1.3</span>
+                </div>
+                
+                <h1 className="text-6xl lg:text-7xl font-extrabold tracking-tighter leading-[1.1] mb-8 animate-enter" style={{animationDelay: '0.1s', color: colors.textPrimary}}>
+                    Next-Gen <br />
+                    <span style={{ 
+                        background: `linear-gradient(to right, ${colors.action}, #06b6d4)`,
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text'
+                    }}>Warehouse MS.</span>
+                </h1>
+                
+                <p className="text-lg lg:text-xl mb-12 leading-relaxed animate-enter" style={{animationDelay: '0.2s', color: colors.textSecondary}}>
+                    Orchestrate your entire inventory lifecycle. From automated put-away and smart binning to predictive picking and fleet loading. 
+                    Experience the future of fulfillment.
+                </p>
 
-        @keyframes shimmer {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-        }
+                <div className="flex gap-4 animate-enter" style={{animationDelay: '0.3s'}}>
+                    <button 
+                        onClick={handleEnter}
+                        className="group font-bold py-4 px-10 rounded-full flex items-center gap-3 transition-all active:scale-95 shadow-lg"
+                        style={{
+                            backgroundColor: isDark ? '#ffffff' : colors.textPrimary,
+                            color: isDark ? '#000000' : '#ffffff',
+                            boxShadow: isDark 
+                                ? '0 0 20px rgba(255,255,255,0.2)' 
+                                : '0 10px 15px -3px rgba(0,0,0,0.1)'
+                        }}
+                        onMouseEnter={(e) => {
+                            if (isDark) {
+                                e.currentTarget.style.backgroundColor = '#f4f4f5';
+                                e.currentTarget.style.color = '#000000';
+                            } else {
+                                // Darken the button color on hover in light mode (use a darker shade)
+                                const baseColor = colors.textPrimary || '#1a1a1a';
+                                // Simple darkening: reduce RGB values by 20
+                                if (baseColor.startsWith('#')) {
+                                    const hex = baseColor.replace('#', '');
+                                    const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - 20);
+                                    const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - 20);
+                                    const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - 20);
+                                    e.currentTarget.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+                                } else {
+                                    // Fallback to a darker shade
+                                    e.currentTarget.style.backgroundColor = '#0a0a0a';
+                                }
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = isDark ? '#ffffff' : colors.textPrimary;
+                        }}
+                    >
+                        Access Dashboard <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                    </button>
+                </div>
 
-        .animate-fade-in-up {
-          animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          opacity: 0;
-        }
+                {/* Stats Grid */}
+                <div 
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-20 border-t pt-10 animate-enter"
+                    style={{
+                        animationDelay: '0.4s',
+                        borderColor: colors.border
+                    }}
+                >
+                    
+                    {/* Stat 1 */}
+                    <div className="flex items-center gap-4 group">
+                        <div className="w-12 h-12 flex-shrink-0 rounded-2xl flex items-center justify-center bg-gradient-to-tr from-indigo-500 to-cyan-400 text-white shadow-lg">
+                             <Database size={22} />
+                        </div>
+                        <div>
+                            <div className="text-3xl font-bold leading-none mb-1" style={{ color: colors.textPrimary }}>1.2M</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: colors.textSecondary }}>Active SKUs</div>
+                        </div>
+                    </div>
 
-        .animate-fade-in {
-          animation: fadeIn 0.8s ease-out forwards;
-          opacity: 0;
-        }
+                    {/* Stat 2 */}
+                    <div className="flex items-center gap-4 group">
+                        <div className="w-12 h-12 flex-shrink-0 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#fa709a] to-[#fee140] text-white shadow-lg">
+                             <Scan size={22} />
+                        </div>
+                        <div>
+                            <div className="text-3xl font-bold leading-none mb-1" style={{ color: colors.textPrimary }}>45k</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: colors.textSecondary }}>Throughput</div>
+                        </div>
+                    </div>
 
-        .animate-scale-in {
-          animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          opacity: 0;
-        }
-
-        .delay-1 { animation-delay: 0.1s; }
-        .delay-2 { animation-delay: 0.2s; }
-        .delay-3 { animation-delay: 0.3s; }
-        .delay-4 { animation-delay: 0.4s; }
-        .delay-5 { animation-delay: 0.5s; }
-
-        .text-gradient {
-          background: linear-gradient(
-            135deg,
-            ${colors.action} 0%,
-            #06b6d4 50%,
-            ${colors.action} 100%
-          );
-          background-size: 200% 200%;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          animation: shimmer 4s ease-in-out infinite;
-        }
-      `}</style>
-
-      {/* Animated Background Canvas */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full"
-      />
-
-      {/* Content Container */}
-      <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-        {/* Pre-title */}
-        <p
-          className="text-xs md:text-sm font-semibold tracking-[0.2em] uppercase mb-6 animate-fade-in-up"
-          style={{ color: colors.textSecondary }}
-        >
-          {t('Enterprise Edition')}
-        </p>
-
-        {/* Main Heading */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 animate-fade-in-up delay-1">
-          <span style={{ color: colors.textPrimary }}>{t('Next Generation of')}</span>
-          <br />
-          <span className="text-gradient">{t('Warehouse Management')}</span>
-        </h1>
-
-        {/* Subheading */}
-        <p
-          className="text-base md:text-lg lg:text-xl mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in-up delay-2"
-          style={{ color: colors.textSecondary }}
-        >
-          {t('Real-time inventory tracking, intelligent automation, predictive analytics, and seamless operations — all in one powerful platform.')}
-        </p>
-
-        {/* Quick Actions */}
-        <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 animate-fade-in-up delay-3 mt-8">
-          {quickActions.map((action) => (
-            <button
-              key={action.path}
-              onClick={() => navigate(action.path)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-[1.02]"
-              style={{
-                backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
-              }}
-            >
-              <action.icon size={16} style={{ color: action.color }} />
-              <span className="text-sm font-medium" style={{ color: colors.textPrimary }}>
-                {action.label}
-              </span>
-            </button>
-          ))}
+                    {/* Stat 3 */}
+                    <div className="flex items-center gap-4 group">
+                         <div className="w-12 h-12 flex-shrink-0 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#f093fb] to-[#f5576c] text-white shadow-lg">
+                             <Layers size={22} />
+                        </div>
+                        <div>
+                            <div className="text-3xl font-bold leading-none mb-1" style={{ color: colors.textPrimary }}>99%</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: colors.textSecondary }}>Accuracy</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="mt-20 lg:mt-auto text-xs pt-12 flex gap-6 font-medium" style={{ color: colors.textSecondary }}>
+                <span>&copy; 2024 OctopusWMS Inc.</span>
+                <span className="cursor-pointer hover:opacity-70 transition-opacity">Security Protocol</span>
+                <span className="cursor-pointer hover:opacity-70 transition-opacity">API Status</span>
+            </div>
         </div>
-      </div>
 
-      {/* Footer */}
-      <div
-        className="absolute bottom-5 left-1/2 -translate-x-1/2 text-xs animate-fade-in delay-5"
-        style={{ color: colors.textSecondary }}
-      >
-        &copy; 2024 OctopusWMS &middot; v14.1.0
-      </div>
+        {/* Right Visuals - 3D Warehouse Canvas */}
+        <div 
+            className="hidden lg:block lg:w-1/2 relative overflow-hidden transition-colors duration-500 h-full"
+            style={{ 
+                backgroundColor: colors.background,
+            }}
+        >
+            {/* Gradient Overlay */}
+            <div 
+                className="absolute inset-0 bg-gradient-to-l z-10 pointer-events-none"
+                style={{
+                    background: `linear-gradient(to left, transparent, transparent, ${colors.background})`
+                }}
+            ></div>
+            
+            {/* The Particle Canvas */}
+            <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-100" />
+            
+            {/* Overlay Elements */}
+            <div className="absolute bottom-12 right-12 z-20 flex flex-col items-end pointer-events-none">
+                <div className="text-xs font-mono mb-2 font-bold transition-all duration-500" style={{ color: colors.textSecondary }}>
+                    {opTexts[opTextIndex]}
+                </div>
+                <div className="flex gap-1.5">
+                    <div 
+                        className="w-1.5 h-1.5 rounded-full transition-all duration-500"
+                        style={{
+                            backgroundColor: opTextIndex === 0 ? colors.action : `${colors.action}80`,
+                            transform: opTextIndex === 0 ? 'scale(1.25)' : 'scale(1)'
+                        }}
+                    ></div>
+                    <div 
+                        className="w-1.5 h-1.5 rounded-full transition-all duration-500"
+                        style={{
+                            backgroundColor: opTextIndex === 1 ? colors.action : `${colors.action}80`,
+                            transform: opTextIndex === 1 ? 'scale(1.25)' : 'scale(1)'
+                        }}
+                    ></div>
+                    <div 
+                        className="w-1.5 h-1.5 rounded-full transition-all duration-500"
+                        style={{
+                            backgroundColor: opTextIndex === 2 ? colors.action : `${colors.action}80`,
+                            transform: opTextIndex === 2 ? 'scale(1.25)' : 'scale(1)'
+                        }}
+                    ></div>
+                </div>
+            </div>
+        </div>
     </div>
   );
 };

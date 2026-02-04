@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { RefreshCcw, Home } from "lucide-react"
+import { RefreshCcw, Home, ServerOff } from "lucide-react"
 import { API_CONFIG } from "./config/api"
 
 export default function Error500() {
@@ -10,6 +10,38 @@ export default function Error500() {
   const [isRetrying, setIsRetrying] = useState(false)
   const [isChecking, setIsChecking] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
+
+  // Get theme from localStorage (can't use context on error page as providers may have failed)
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme_mode')
+      return savedTheme === 'dark'
+    }
+    return false
+  })
+
+  // Theme colors based on mode
+  const colors = isDark
+    ? {
+        background: '#09090b',
+        textPrimary: '#fafafa',
+        textSecondary: '#a1a1aa',
+        card: '#18181b',
+        border: '#27272a',
+        action: '#3b82f6',
+        actionHover: '#2563eb',
+        muted: '#27272a',
+      }
+    : {
+        background: '#ffffff',
+        textPrimary: '#09090b',
+        textSecondary: '#71717a',
+        card: '#f4f4f5',
+        border: '#e4e4e7',
+        action: '#3b82f6',
+        actionHover: '#2563eb',
+        muted: '#f4f4f5',
+      }
 
   useEffect(() => {
     setIsLoaded(true)
@@ -20,7 +52,7 @@ export default function Error500() {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 3000)
 
-        const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/license/check`, {
+        const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/health`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
@@ -49,7 +81,7 @@ export default function Error500() {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 3000)
 
-      const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/license/check`, {
+      const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/health`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
@@ -73,14 +105,42 @@ export default function Error500() {
 
   if (isChecking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white" />
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: colors.background,
+        }}
+      >
+        <div
+          style={{
+            width: '32px',
+            height: '32px',
+            border: `2px solid ${colors.border}`,
+            borderTopColor: colors.action,
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+          }}
+        />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gray-50 dark:bg-gray-900">
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px',
+        background: colors.background,
+      }}
+    >
       <style>{`
         @keyframes fade-in {
           from { opacity: 0; transform: translateY(20px); }
@@ -88,8 +148,12 @@ export default function Error500() {
         }
 
         @keyframes pulse-slow {
-          0%, 100% { opacity: 0.06; }
-          50% { opacity: 0.1; }
+          0%, 100% { opacity: 0.08; }
+          50% { opacity: 0.15; }
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
 
         .animate-fade-in {
@@ -103,13 +167,39 @@ export default function Error500() {
         .delay-1 { animation-delay: 0.1s; opacity: 0; }
         .delay-2 { animation-delay: 0.2s; opacity: 0; }
         .delay-3 { animation-delay: 0.3s; opacity: 0; }
+        .delay-4 { animation-delay: 0.4s; opacity: 0; }
       `}</style>
+
+      {/* Server Icon */}
+      <div
+        className={isLoaded ? 'animate-fade-in' : ''}
+        style={{
+          width: '80px',
+          height: '80px',
+          borderRadius: '20px',
+          background: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '24px',
+          opacity: isLoaded ? 1 : 0,
+        }}
+      >
+        <ServerOff size={40} color="#ef4444" strokeWidth={1.5} />
+      </div>
 
       {/* 500 Number */}
       <h1
-        className={`text-[180px] md:text-[240px] font-black leading-none tracking-tighter text-black/[0.06] dark:text-white/10 ${isLoaded ? 'animate-fade-in animate-pulse-slow' : 'opacity-0'}`}
+        className={isLoaded ? 'animate-fade-in animate-pulse-slow delay-1' : ''}
         style={{
+          fontSize: 'clamp(120px, 25vw, 200px)',
+          fontWeight: 900,
+          lineHeight: 1,
+          letterSpacing: '-0.05em',
+          color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
           fontFamily: 'system-ui, -apple-system, sans-serif',
+          margin: '-20px 0 0 0',
+          animationFillMode: 'forwards',
         }}
       >
         500
@@ -117,40 +207,104 @@ export default function Error500() {
 
       {/* Title */}
       <h2
-        className={`text-2xl md:text-3xl font-semibold -mt-8 mb-3 text-gray-900 dark:text-white ${isLoaded ? 'animate-fade-in delay-1' : 'opacity-0'}`}
-        style={{ animationFillMode: 'forwards' }}
+        className={isLoaded ? 'animate-fade-in delay-2' : ''}
+        style={{
+          fontSize: 'clamp(1.25rem, 4vw, 1.75rem)',
+          fontWeight: 600,
+          marginTop: '-10px',
+          marginBottom: '12px',
+          color: colors.textPrimary,
+          animationFillMode: 'forwards',
+        }}
       >
         Server Unavailable
       </h2>
 
       {/* Description */}
       <p
-        className={`text-base text-center max-w-md mb-8 text-gray-500 dark:text-gray-400 ${isLoaded ? 'animate-fade-in delay-2' : 'opacity-0'}`}
-        style={{ animationFillMode: 'forwards' }}
+        className={isLoaded ? 'animate-fade-in delay-3' : ''}
+        style={{
+          fontSize: '1rem',
+          textAlign: 'center',
+          maxWidth: '400px',
+          marginBottom: '32px',
+          color: colors.textSecondary,
+          lineHeight: 1.6,
+          animationFillMode: 'forwards',
+        }}
       >
-        The server is currently unavailable. Please try again.
+        We're having trouble connecting to the server. This might be a temporary issue. Please try again in a moment.
       </p>
 
       {/* Buttons */}
       <div
-        className={`flex items-center gap-4 ${isLoaded ? 'animate-fade-in delay-3' : 'opacity-0'}`}
-        style={{ animationFillMode: 'forwards' }}
+        className={isLoaded ? 'animate-fade-in delay-4' : ''}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          animationFillMode: 'forwards',
+        }}
       >
         <button
           onClick={handleRetry}
           disabled={isRetrying}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700 transition-all disabled:opacity-60"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 24px',
+            borderRadius: '12px',
+            fontWeight: 600,
+            fontSize: '0.9375rem',
+            color: '#ffffff',
+            background: colors.action,
+            border: 'none',
+            cursor: isRetrying ? 'wait' : 'pointer',
+            opacity: isRetrying ? 0.7 : 1,
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (!isRetrying) (e.currentTarget as HTMLButtonElement).style.background = colors.actionHover
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = colors.action
+          }}
         >
-          <RefreshCcw size={18} className={isRetrying ? 'animate-spin' : ''} />
+          <RefreshCcw
+            size={18}
+            style={{
+              animation: isRetrying ? 'spin 1s linear infinite' : 'none',
+            }}
+          />
           {isRetrying ? 'Retrying...' : 'Retry'}
         </button>
 
         <button
-          onClick={() => navigate('/overview')}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:opacity-80 transition-all"
+          onClick={() => navigate('/signin')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 24px',
+            borderRadius: '12px',
+            fontWeight: 600,
+            fontSize: '0.9375rem',
+            color: colors.textPrimary,
+            background: colors.muted,
+            border: `1px solid ${colors.border}`,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.opacity = '0.8'
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.opacity = '1'
+          }}
         >
           <Home size={18} />
-          Home
+          Sign In
         </button>
       </div>
     </div>

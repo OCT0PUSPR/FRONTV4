@@ -13,7 +13,6 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { useDeliveryRouting } from './hooks/useDeliveryRouting';
 import { findNodeById, getAncestorIds } from './utils/hierarchyBuilder';
 import { getCameraPositionForWarehouse, calculateWarehouseBounds, calculatePosition, LAYOUT, getRowIndex, getLevelIndex } from './utils/positionCalculator';
-import { RoutingAlgorithm } from './utils/routingAlgorithm';
 import { Vector3 } from 'three';
 
 // Components
@@ -97,7 +96,7 @@ export function WarehouseNavigator() {
   const [binSidebarStockItems, setBinSidebarStockItems] = useState<StockItem[]>([]);
 
   // WebSocket for real-time updates
-  const { status: wsStatus } = useWebSocket({
+  useWebSocket({
     warehouseId: selectedWarehouseId,
     onStockUpdate: (update) => {
       // Show toast notification

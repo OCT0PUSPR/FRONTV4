@@ -36,7 +36,7 @@ import * as templateBuilderService from "../services/templateBuilder.service"
 import { XmlTemplateListItem, DocumentType } from "../types/templateBuilder.types"
 
 // Custom warehouse report icons
-const customReportIcons: Record<string, any> = {
+const customReportIcons: Record<string, LucideIcon> = {
   delivery_note: Truck,
   goods_receipt_note: Receipt,
   stock_internal_transfer: ArrowRightLeft,
@@ -170,7 +170,7 @@ export default function ReportTemplatesPage() {
     try {
       await templateBuilderService.toggleFavorite(templateId)
       loadXmlTemplates()
-    } catch (err) {
+    } catch {
       setToast({ text: "Failed to update favorite", state: "error" })
     }
     setActiveMenu(null)
@@ -181,7 +181,7 @@ export default function ReportTemplatesPage() {
       await templateBuilderService.duplicateTemplate(templateId)
       loadXmlTemplates()
       setToast({ text: "Template duplicated successfully", state: "success" })
-    } catch (err) {
+    } catch {
       setToast({ text: "Failed to duplicate template", state: "error" })
     }
     setActiveMenu(null)
@@ -194,7 +194,7 @@ export default function ReportTemplatesPage() {
       await templateBuilderService.deleteTemplate(templateId)
       loadXmlTemplates()
       setToast({ text: "Template deleted successfully", state: "success" })
-    } catch (err) {
+    } catch {
       setToast({ text: "Failed to delete template", state: "error" })
     }
     setActiveMenu(null)
@@ -205,7 +205,7 @@ export default function ReportTemplatesPage() {
       const blob = await templateBuilderService.exportTemplate(templateId)
       const template = xmlTemplates.find(t => t.id === templateId)
       templateBuilderService.downloadBlob(blob, `${template?.template_key || 'template'}.xml`)
-    } catch (err) {
+    } catch {
       setToast({ text: "Failed to export template", state: "error" })
     }
     setActiveMenu(null)

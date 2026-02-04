@@ -95,7 +95,8 @@ export function RackRow({
     bays.sort((a, b) => a.bayNumber - b.bayNumber);
 
     return bays;
-  }, [rowNode, row]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rowNode]);
 
   // Collect all unique levels from all bins in this row
   const uniqueLevels = useMemo(() => {

@@ -1,7 +1,8 @@
 // Pick Route Path - 3D visualization of the pick route
 
 import { useMemo, useRef } from 'react';
-import { Vector3, CatmullRomCurve3, TubeGeometry, BufferGeometry, LineBasicMaterial, Line } from 'three';
+import * as THREE from 'three';
+import { Vector3, CatmullRomCurve3 } from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Text, Billboard } from '@react-three/drei';
 import { useTheme } from '../../../../context/theme';
@@ -13,24 +14,6 @@ interface PickRoutePathProps {
   highlightedStep?: number;
   onStepClick?: (stepIndex: number) => void;
   showLabels?: boolean;
-}
-
-// Animated arrow along the path
-function PathArrow({ position, direction }: { position: Vector3; direction: Vector3 }) {
-  const meshRef = useRef<any>(null);
-
-  useFrame((_, delta) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y += delta * 2;
-    }
-  });
-
-  return (
-    <mesh ref={meshRef} position={position}>
-      <coneGeometry args={[0.15, 0.4, 8]} />
-      <meshStandardMaterial color="#3b82f6" emissive="#3b82f6" emissiveIntensity={0.5} />
-    </mesh>
-  );
 }
 
 // Step marker at each pick location
@@ -53,7 +36,7 @@ function StepMarker({
   quantity: number;
   showLabel: boolean;
 }) {
-  const meshRef = useRef<any>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
   const { mode } = useTheme();
   const isDark = mode === 'dark';
 
@@ -79,7 +62,7 @@ function StepMarker({
   const arrowRotationZ = frontDirection === 'lower' ? Math.PI / 2 : -Math.PI / 2;
 
   // Pulse animation for highlighted marker
-  useFrame((_, delta) => {
+  useFrame(() => {
     if (meshRef.current && isHighlighted) {
       const scale = 1 + Math.sin(Date.now() * 0.005) * 0.3;
       meshRef.current.scale.setScalar(scale);
@@ -290,9 +273,7 @@ export function PickRoutePath({
   onStepClick,
   showLabels = true,
 }: PickRoutePathProps) {
-  const { mode } = useTheme();
-  const isDark = mode === 'dark';
-  const tubeRef = useRef<any>(null);
+  const tubeRef = useRef<THREE.Mesh>(null);
 
   // Generate smooth path curve
   const pathCurve = useMemo(() => {
@@ -308,9 +289,9 @@ export function PickRoutePath({
   }, [route]);
 
   // Animated dash offset for path
-  useFrame((_, delta) => {
-    if (tubeRef.current?.material) {
-      tubeRef.current.material.dashOffset -= delta * 2;
+  useFrame((_state, delta) => {
+    if (tubeRef.current?.material && 'dashOffset' in tubeRef.current.material) {
+      (tubeRef.current.material as THREE.MeshStandardMaterial & { dashOffset: number }).dashOffset -= delta * 2;
     }
   });
 

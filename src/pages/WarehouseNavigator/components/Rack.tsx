@@ -58,7 +58,7 @@ export function Rack({
   // Label colors
   const labelColors = isDark ? LABEL_COLORS.dark : LABEL_COLORS.light;
 
-  const { BAY_WIDTH, LEVEL_HEIGHT, BIN_WIDTH, BIN_DEPTH } = LAYOUT;
+  const { BAY_WIDTH, LEVEL_HEIGHT, BIN_DEPTH } = LAYOUT;
 
   // Organize bins by level
   const levelsData = useMemo(() => {
@@ -94,7 +94,8 @@ export function Rack({
     levels.sort((a, b) => a.levelIndex - b.levelIndex);
 
     return levels;
-  }, [bins, bay]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bins]);
 
   // Calculate rack dimensions based on data
   const rackDimensions = useMemo(() => {
@@ -129,7 +130,8 @@ export function Rack({
       levelCount,
       allLevelIndices: validLevelIndices,
     };
-  }, [levelsData, BAY_WIDTH, BIN_DEPTH, LEVEL_HEIGHT, bay]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [levelsData, BAY_WIDTH, BIN_DEPTH, LEVEL_HEIGHT]);
 
   const { width: rackWidth, depth: rackDepth, height: rackHeight, levelCount, allLevelIndices } = rackDimensions;
 
@@ -353,7 +355,7 @@ export function Rack({
         // Position bin on top of the shelf decking
         const levelY = levelData.levelIndex * LEVEL_HEIGHT + beamHeight + 0.02;
 
-        return levelData.bins.map((bin, binIndex) => {
+        return levelData.bins.map((bin) => {
           // Get side from parsed data, or default to 1 (left position)
           // Side 1 = left half of shelf, Side 2 = right half of shelf
           const side = bin.parsed?.side || 1;

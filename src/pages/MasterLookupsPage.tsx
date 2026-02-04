@@ -97,6 +97,14 @@ interface ModelField {
   type: string
   required?: boolean
   relation?: string
+  domain?: any[]
+}
+
+// Track which fields are related (for hierarchical lookups)
+interface FieldRelationship {
+  childField: string
+  parentField: string
+  parentModel: string
 }
 
 interface MasterRecord {
@@ -120,8 +128,83 @@ interface EditModalProps {
 function EditModal({ isOpen, onClose, record, modelName, modelLabel, fields, allRecords, onSave, isLoading, showToast }: EditModalProps) {
   const { t, i18n } = useTranslation()
   const { mode, colors } = useTheme()
+  const { sessionId } = useAuth()
+  const tenantId = typeof window !== 'undefined' ? localStorage.getItem('current_tenant_id') : null
   const [formData, setFormData] = useState<Record<string, any>>({})
+  const [relationOptions, setRelationOptions] = useState<Record<string, { id: number; name: string }[]>>({})
+  const [loadingOptions, setLoadingOptions] = useState<Record<string, boolean>>({})
 
+  // Identify many2one fields and their relationships
+  const many2oneFields = useMemo(() => {
+    return fields.filter(f => f.type === 'many2one' && f.relation)
+  }, [fields])
+
+  // Detect parent-child relationships between fields
+  // E.g., if x_subcategory_id has relation to x_subcategory model which has x_category_id field
+  const fieldRelationships = useMemo((): FieldRelationship[] => {
+    const relationships: FieldRelationship[] = []
+
+    // Look for fields that might depend on other fields in this same form
+    // Common patterns:
+    // - x_subcategory has a field pointing to x_category (the parent)
+    // - The field name often contains "_id" and matches another field's relation model
+
+    for (const field of many2oneFields) {
+      // Check if this field's model is the same as the current model (self-reference)
+      if (field.relation === modelName) {
+        // Self-reference (like x_parent_id) - already handled
+        continue
+      }
+
+      // Check if there's a potential parent field for this one
+      // E.g., if field is x_subgroup_id (relation: x_subgroup),
+      // look for x_group_id (relation: x_group) where x_subgroup has x_group_id
+      const fieldBaseName = field.name.replace('_id', '').replace('x_', '')
+
+      // Look for fields that might be parents (e.g., x_category_id for x_subcategory_id)
+      for (const potentialParent of many2oneFields) {
+        if (potentialParent.name === field.name) continue
+
+        const parentBaseName = potentialParent.name.replace('_id', '').replace('x_', '')
+
+        // Check if field name suggests a parent-child relationship
+        // Common patterns: category/subcategory, group/subgroup
+        if (
+          fieldBaseName.includes(parentBaseName) ||
+          fieldBaseName.startsWith('sub' + parentBaseName)
+        ) {
+          relationships.push({
+            childField: field.name,
+            parentField: potentialParent.name,
+            parentModel: potentialParent.relation || ''
+          })
+        }
+      }
+    }
+
+    return relationships
+  }, [many2oneFields, modelName])
+
+  // Get parent field for a given child field
+  const getParentFieldName = useCallback((childFieldName: string): string | null => {
+    const rel = fieldRelationships.find(r => r.childField === childFieldName)
+    return rel?.parentField || null
+  }, [fieldRelationships])
+
+  // Check if a field is a child field (has a parent dependency)
+  const isChildField = useCallback((fieldName: string): boolean => {
+    return fieldRelationships.some(r => r.childField === fieldName)
+  }, [fieldRelationships])
+
+  // Check if parent is selected for a child field
+  const isParentSelected = useCallback((childFieldName: string): boolean => {
+    const parentFieldName = getParentFieldName(childFieldName)
+    if (!parentFieldName) return true
+    const parentValue = formData[parentFieldName]
+    return parentValue !== null && parentValue !== undefined && parentValue !== 0 && parentValue !== ''
+  }, [getParentFieldName, formData])
+
+  // Initialize form data
   useEffect(() => {
     if (record) {
       const data: Record<string, any> = {}
@@ -141,6 +224,111 @@ function EditModal({ isOpen, onClose, record, modelName, modelLabel, fields, all
       setFormData(data)
     }
   }, [record, fields])
+
+  // Fetch options for a many2one field
+  const fetchRelationOptions = useCallback(async (field: ModelField, parentId?: number) => {
+    if (!field.relation || !sessionId) return
+
+    // For self-referencing fields (like x_parent_id), use allRecords
+    if (field.relation === modelName) {
+      const options = allRecords
+        .filter(r => !record || r.id !== record.id)
+        .map(r => ({
+          id: r.id,
+          name: r.x_name || r.name || r.display_name || `#${r.id}`
+        }))
+      setRelationOptions(prev => ({ ...prev, [field.name]: options }))
+      return
+    }
+
+    setLoadingOptions(prev => ({ ...prev, [field.name]: true }))
+
+    try {
+      // Check if this field is a child field that needs filtering
+      const parentFieldName = getParentFieldName(field.name)
+      let url = `${API_BASE_URL}/master-lookups/${field.relation}`
+
+      // If there's a parent dependency and a parent is selected, use filtered endpoint
+      if (parentFieldName && parentId) {
+        // The parent field name in the child model is typically x_{parentModelName}_id
+        const parentModel = fields.find(f => f.name === parentFieldName)?.relation
+        if (parentModel) {
+          const parentFieldInChildModel = `x_${parentModel.replace('x_', '')}_id`
+          url = `${API_BASE_URL}/master-lookups/${field.relation}/filtered?parentField=${parentFieldInChildModel}&parentId=${parentId}`
+        }
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': sessionId || '',
+          'X-Tenant-ID': tenantId || '',
+        },
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        const options = (data.data || []).map((r: any) => ({
+          id: r.id,
+          name: r.x_name || r.name || r.display_name || `#${r.id}`
+        }))
+        setRelationOptions(prev => ({ ...prev, [field.name]: options }))
+      }
+    } catch (error) {
+      console.error(`Error fetching options for ${field.name}:`, error)
+      setRelationOptions(prev => ({ ...prev, [field.name]: [] }))
+    } finally {
+      setLoadingOptions(prev => ({ ...prev, [field.name]: false }))
+    }
+  }, [sessionId, tenantId, modelName, allRecords, record, getParentFieldName, fields])
+
+  // Fetch initial options for all many2one fields
+  useEffect(() => {
+    if (!isOpen) return
+
+    for (const field of many2oneFields) {
+      // For child fields, only fetch if parent is selected
+      if (isChildField(field.name)) {
+        if (isParentSelected(field.name)) {
+          const parentFieldName = getParentFieldName(field.name)
+          const parentValue = parentFieldName ? formData[parentFieldName] : null
+          fetchRelationOptions(field, parentValue || undefined)
+        } else {
+          // Clear options for child fields when parent not selected
+          setRelationOptions(prev => ({ ...prev, [field.name]: [] }))
+        }
+      } else {
+        // Non-child fields: fetch all options
+        fetchRelationOptions(field)
+      }
+    }
+  }, [isOpen, many2oneFields, fetchRelationOptions, isChildField, isParentSelected, formData, getParentFieldName])
+
+  // Handle field value change
+  const handleFieldChange = useCallback((fieldName: string, value: any) => {
+    setFormData(prev => {
+      const newData = { ...prev, [fieldName]: value }
+
+      // If this field is a parent, clear all its dependent children
+      const dependentChildren = fieldRelationships.filter(r => r.parentField === fieldName)
+      for (const child of dependentChildren) {
+        newData[child.childField] = 0
+      }
+
+      return newData
+    })
+
+    // If this field is a parent, refetch options for dependent children
+    const dependentChildren = fieldRelationships.filter(r => r.parentField === fieldName)
+    for (const child of dependentChildren) {
+      const childField = fields.find(f => f.name === child.childField)
+      if (childField && value) {
+        fetchRelationOptions(childField, value)
+      } else if (childField) {
+        setRelationOptions(prev => ({ ...prev, [child.childField]: [] }))
+      }
+    }
+  }, [fieldRelationships, fields, fetchRelationOptions])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -170,12 +358,155 @@ function EditModal({ isOpen, onClose, record, modelName, modelLabel, fields, all
 
   if (!isOpen) return null
 
-  // Get parent options for many2one fields that reference the same model
-  const getParentOptions = (field: ModelField) => {
-    if (field.relation === modelName) {
-      return allRecords.filter(r => !record || r.id !== record.id)
+  // Group fields for better layout
+  const textFields = fields.filter(f =>
+    f.type === 'char' || f.type === 'text' ||
+    f.name === 'x_name' || f.name.includes('name') || f.name.includes('code')
+  )
+  const relationFieldsList = fields.filter(f => f.type === 'many2one')
+  const numberFields = fields.filter(f => f.type === 'integer' || f.type === 'float')
+  const booleanFields = fields.filter(f => f.type === 'boolean')
+  const dateFields = fields.filter(f => f.type === 'date' || f.type === 'datetime')
+  const otherFields = fields.filter(f =>
+    !textFields.includes(f) &&
+    !relationFieldsList.includes(f) &&
+    !numberFields.includes(f) &&
+    !booleanFields.includes(f) &&
+    !dateFields.includes(f)
+  )
+
+  const renderField = (field: ModelField) => {
+    const FieldIcon = FIELD_TYPE_ICONS[field.type] || Type
+    const isChild = isChildField(field.name)
+    const parentSelected = isParentSelected(field.name)
+    const parentFieldName = getParentFieldName(field.name)
+    const parentField = parentFieldName ? fields.find(f => f.name === parentFieldName) : null
+
+    if (field.type === 'boolean') {
+      return (
+        <div key={field.name} className="flex items-center gap-3 py-2">
+          <input
+            type="checkbox"
+            id={field.name}
+            checked={!!formData[field.name]}
+            onChange={e => handleFieldChange(field.name, e.target.checked)}
+            className="w-5 h-5 rounded"
+          />
+          <label htmlFor={field.name} className="text-sm font-medium" style={{ color: colors.textPrimary }}>
+            {field.string || field.name}
+          </label>
+        </div>
+      )
     }
-    return []
+
+    if (field.type === 'many2one') {
+      const options = relationOptions[field.name] || []
+      const isDisabled = isChild && !parentSelected
+      const isLoadingField = loadingOptions[field.name]
+
+      return (
+        <div key={field.name} className="relative">
+          <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+            <span className="flex items-center gap-2">
+              <FieldIcon size={14} />
+              {field.string || field.name}
+              {field.required && <span className="text-red-500">*</span>}
+            </span>
+          </label>
+          <div className="relative">
+            <select
+              value={formData[field.name] || 0}
+              onChange={e => handleFieldChange(field.name, Number(e.target.value))}
+              disabled={isDisabled || isLoadingField}
+              className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors appearance-none"
+              style={{
+                backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                border: `1px solid ${colors.border}`,
+                color: isDisabled ? colors.textSecondary : colors.textPrimary,
+                opacity: isDisabled ? 0.6 : 1,
+                cursor: isDisabled ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <option value={0}>
+                {isDisabled
+                  ? t('Select {{parent}} first', { parent: parentField?.string || 'parent' })
+                  : isLoadingField
+                  ? t('Loading...')
+                  : t('Select...')
+                }
+              </option>
+              {options.map(opt => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.name}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              {isLoadingField ? (
+                <Loader2 size={16} className="animate-spin" style={{ color: colors.textSecondary }} />
+              ) : (
+                <ChevronDown size={16} style={{ color: colors.textSecondary }} />
+              )}
+            </div>
+          </div>
+          {isChild && !parentSelected && (
+            <p className="mt-1 text-xs flex items-center gap-1" style={{ color: colors.textSecondary }}>
+              <AlertCircle size={12} />
+              {t('Depends on')} {parentField?.string || parentFieldName}
+            </p>
+          )}
+        </div>
+      )
+    }
+
+    if (field.type === 'text') {
+      return (
+        <div key={field.name}>
+          <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+            <span className="flex items-center gap-2">
+              <FieldIcon size={14} />
+              {field.string || field.name}
+              {field.required && <span className="text-red-500">*</span>}
+            </span>
+          </label>
+          <textarea
+            value={formData[field.name] || ''}
+            onChange={e => handleFieldChange(field.name, e.target.value)}
+            className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors"
+            rows={3}
+            style={{
+              backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+              border: `1px solid ${colors.border}`,
+              color: colors.textPrimary,
+            }}
+          />
+        </div>
+      )
+    }
+
+    return (
+      <div key={field.name}>
+        <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+          <span className="flex items-center gap-2">
+            <FieldIcon size={14} />
+            {field.string || field.name}
+            {field.required && <span className="text-red-500">*</span>}
+          </span>
+        </label>
+        <input
+          type={field.type === 'integer' || field.type === 'float' ? 'number' : field.type === 'date' ? 'date' : field.type === 'datetime' ? 'datetime-local' : 'text'}
+          value={formData[field.name] ?? ''}
+          onChange={e => handleFieldChange(field.name, e.target.value)}
+          className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors"
+          style={{
+            backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+            border: `1px solid ${colors.border}`,
+            color: colors.textPrimary,
+          }}
+          dir={field.name.includes('_ar') ? 'rtl' : 'ltr'}
+        />
+      </div>
+    )
   }
 
   return (
@@ -185,7 +516,7 @@ function EditModal({ isOpen, onClose, record, modelName, modelLabel, fields, all
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg mx-4 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        className="w-full max-w-2xl mx-4 rounded-2xl overflow-hidden max-h-[90vh] flex flex-col"
         style={{
           backgroundColor: colors.card,
           border: `1px solid ${colors.border}`,
@@ -223,108 +554,93 @@ function EditModal({ isOpen, onClose, record, modelName, modelLabel, fields, all
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-          {fields.map(field => {
-            const FieldIcon = FIELD_TYPE_ICONS[field.type] || Type
-
-            if (field.type === 'boolean') {
-              return (
-                <div key={field.name} className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id={field.name}
-                    checked={!!formData[field.name]}
-                    onChange={e => setFormData(prev => ({ ...prev, [field.name]: e.target.checked }))}
-                    className="w-5 h-5 rounded"
-                  />
-                  <label htmlFor={field.name} className="text-sm font-medium" style={{ color: colors.textPrimary }}>
-                    {field.string || field.name}
-                  </label>
-                </div>
-              )
-            }
-
-            if (field.type === 'many2one') {
-              const options = getParentOptions(field)
-              return (
-                <div key={field.name}>
-                  <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
-                    <span className="flex items-center gap-2">
-                      <FieldIcon size={14} />
-                      {field.string || field.name}
-                      {field.required && <span className="text-red-500">*</span>}
-                    </span>
-                  </label>
-                  <select
-                    value={formData[field.name] || 0}
-                    onChange={e => setFormData(prev => ({ ...prev, [field.name]: Number(e.target.value) }))}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors"
-                    style={{
-                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                      border: `1px solid ${colors.border}`,
-                      color: colors.textPrimary,
-                    }}
-                  >
-                    <option value={0}>{t('None')}</option>
-                    {options.map(opt => (
-                      <option key={opt.id} value={opt.id}>
-                        {opt.x_name || opt.name || opt.display_name || `#${opt.id}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )
-            }
-
-            if (field.type === 'text') {
-              return (
-                <div key={field.name}>
-                  <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
-                    <span className="flex items-center gap-2">
-                      <FieldIcon size={14} />
-                      {field.string || field.name}
-                      {field.required && <span className="text-red-500">*</span>}
-                    </span>
-                  </label>
-                  <textarea
-                    value={formData[field.name] || ''}
-                    onChange={e => setFormData(prev => ({ ...prev, [field.name]: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors"
-                    rows={3}
-                    style={{
-                      backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                      border: `1px solid ${colors.border}`,
-                      color: colors.textPrimary,
-                    }}
-                  />
-                </div>
-              )
-            }
-
-            return (
-              <div key={field.name}>
-                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
-                  <span className="flex items-center gap-2">
-                    <FieldIcon size={14} />
-                    {field.string || field.name}
-                    {field.required && <span className="text-red-500">*</span>}
-                  </span>
-                </label>
-                <input
-                  type={field.type === 'integer' || field.type === 'float' ? 'number' : field.type === 'date' ? 'date' : field.type === 'datetime' ? 'datetime-local' : 'text'}
-                  value={formData[field.name] ?? ''}
-                  onChange={e => setFormData(prev => ({ ...prev, [field.name]: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors"
-                  style={{
-                    backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                    border: `1px solid ${colors.border}`,
-                    color: colors.textPrimary,
-                  }}
-                  dir={field.name.includes('_ar') ? 'rtl' : 'ltr'}
-                />
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1">
+          {/* Text Fields - Full Width */}
+          {textFields.length > 0 && (
+            <div className="space-y-4 mb-6">
+              <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textSecondary }}>
+                {t('Basic Information')}
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {textFields.map(field => renderField(field))}
               </div>
-            )
-          })}
+            </div>
+          )}
+
+          {/* Relation Fields - Grid Layout */}
+          {relationFieldsList.length > 0 && (
+            <div className="space-y-4 mb-6">
+              <h4 className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: colors.textSecondary }}>
+                <Link2 size={14} />
+                {t('Relationships')}
+              </h4>
+              <div
+                className="p-4 rounded-xl"
+                style={{
+                  backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                  border: `1px solid ${colors.border}`,
+                }}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {relationFieldsList.map(field => renderField(field))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Number Fields */}
+          {numberFields.length > 0 && (
+            <div className="space-y-4 mb-6">
+              <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textSecondary }}>
+                {t('Numbers')}
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {numberFields.map(field => renderField(field))}
+              </div>
+            </div>
+          )}
+
+          {/* Date Fields */}
+          {dateFields.length > 0 && (
+            <div className="space-y-4 mb-6">
+              <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textSecondary }}>
+                {t('Dates')}
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {dateFields.map(field => renderField(field))}
+              </div>
+            </div>
+          )}
+
+          {/* Boolean Fields */}
+          {booleanFields.length > 0 && (
+            <div className="space-y-4 mb-6">
+              <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textSecondary }}>
+                {t('Options')}
+              </h4>
+              <div
+                className="p-4 rounded-xl flex flex-wrap gap-4"
+                style={{
+                  backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                  border: `1px solid ${colors.border}`,
+                }}
+              >
+                {booleanFields.map(field => renderField(field))}
+              </div>
+            </div>
+          )}
+
+          {/* Other Fields */}
+          {otherFields.length > 0 && (
+            <div className="space-y-4 mb-6">
+              <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.textSecondary }}>
+                {t('Other')}
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {otherFields.map(field => renderField(field))}
+              </div>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4" style={{ borderTop: `1px solid ${colors.border}` }}>

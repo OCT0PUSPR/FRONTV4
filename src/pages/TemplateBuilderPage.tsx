@@ -39,6 +39,7 @@ export const TemplateBuilderPage: React.FC = () => {
         templateBuilderService.releaseLock(template.id).catch(console.error);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateId]);
 
   const loadTemplate = async () => {

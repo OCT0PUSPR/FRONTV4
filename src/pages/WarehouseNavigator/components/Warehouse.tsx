@@ -70,19 +70,10 @@ export function Warehouse({
 
   // Calculate actual warehouse dimensions from data
   const warehouseDimensions = useMemo(() => {
-    let maxBays = 0;
     let maxLevelIndex = 0;
 
     // Traverse all locations to find max dimensions
     const traverseNode = (node: LocationNode) => {
-      if (node.type === 'bay') {
-        const bayNum = parseInt(node.name, 10);
-        if (!isNaN(bayNum) && bayNum > maxBays) {
-          // We're counting number of bays, not bay number
-          // For now, just count total bays per row
-        }
-      }
-
       if (node.parsed) {
         // Use parsed level to determine height
         const levelIndex = LEVEL_CODES.indexOf(node.parsed.level as typeof LEVEL_CODES[number]);
@@ -96,7 +87,7 @@ export function Warehouse({
 
     // Count bays per row and traverse for levels
     let totalBaysAcrossAllRows = 0;
-    rows.forEach(([_, rowNode]) => {
+    rows.forEach(([, rowNode]) => {
       const bayCount = rowNode.children.filter(c => c.type === 'bay').length;
       if (bayCount > totalBaysAcrossAllRows) {
         totalBaysAcrossAllRows = bayCount;

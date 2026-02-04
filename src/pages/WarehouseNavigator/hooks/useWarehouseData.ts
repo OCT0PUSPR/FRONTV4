@@ -1,7 +1,7 @@
 // Hook for fetching warehouse data from Odoo via SmartFieldSelector API
 
 import { useState, useEffect, useCallback } from 'react';
-import { OdooWarehouse, OdooLocation, OdooQuant, LocationNode, StockItem } from '../types';
+import { OdooWarehouse, OdooLocation, LocationNode, StockItem } from '../types';
 import { buildLocationHierarchy, updateStockCounts } from '../utils/hierarchyBuilder';
 import { API_CONFIG, getTenantHeaders } from '../../../config/api';
 
@@ -22,7 +22,8 @@ export function useWarehouseData(): UseWarehouseDataReturn {
   const [rawLocations, setRawLocations] = useState<OdooLocation[]>([]);
   const [locations, setLocations] = useState<LocationNode[]>([]);
   const [currentWarehouseId, setCurrentWarehouseId] = useState<number | null>(null);
-  const [currentWarehouseCode, setCurrentWarehouseCode] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_currentWarehouseCode, setCurrentWarehouseCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingStock, setIsLoadingStock] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -10,6 +10,8 @@ interface UseSmartFieldRecordsOptions {
   modelName: string
   pickingTypeCode?: 'incoming' | 'outgoing' | 'internal' | 'dropship'
   enabled?: boolean
+  // If true, extract columns from actual record data instead of just configured fields
+  extractColumnsFromData?: boolean
 }
 
 interface SmartField {
@@ -30,10 +32,27 @@ interface UseSmartFieldRecordsReturn {
   refetch: () => Promise<void>
 }
 
+/**
+ * Convert field name to a readable label
+ * e.g., "x_category_id" -> "Category", "product_qty" -> "Product Qty"
+ */
+function fieldNameToLabel(fieldName: string): string {
+  // Remove x_ prefix
+  let label = fieldName.replace(/^x_/, '')
+  // Remove _id suffix for relation fields
+  label = label.replace(/_id$/, '')
+  // Replace underscores with spaces and capitalize each word
+  return label
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
 export function useSmartFieldRecords({
   modelName,
   pickingTypeCode,
   enabled = true,
+  extractColumnsFromData = true, // Default to true for better column discovery
 }: UseSmartFieldRecordsOptions): UseSmartFieldRecordsReturn {
   const { sessionId } = useAuth()
   const [records, setRecords] = useState<SmartFieldRecord[]>([])
@@ -80,7 +99,8 @@ export function useSmartFieldRecords({
       }
 
       // Fetch records using SmartFieldSelector API
-      const recordsUrl = `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/${modelName}?domain=${encodeURIComponent(JSON.stringify(domain))}&limit=1000&context=list`
+      // Use fetchAllFields=true to get all fields from Odoo, not just pre-configured ones
+      const recordsUrl = `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/${modelName}?domain=${encodeURIComponent(JSON.stringify(domain))}&limit=1000&context=list&fetchAllFields=true`
       
       const recordsResponse = await fetch(recordsUrl, {
         method: 'GET',
@@ -93,11 +113,12 @@ export function useSmartFieldRecords({
         throw new Error(recordsData.error || 'Failed to fetch records')
       }
 
-      setRecords(recordsData.records || [])
+      const fetchedRecords = recordsData.records || []
+      setRecords(fetchedRecords)
 
       // Fetch available columns from SmartFieldSelector (fields marked as show_in_list)
       const fieldsUrl = `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/${modelName}/selected?context=list`
-      
+
       const fieldsResponse = await fetch(fieldsUrl, {
         method: 'GET',
         headers: getHeaders(),
@@ -105,10 +126,22 @@ export function useSmartFieldRecords({
 
       const fieldsData = await fieldsResponse.json()
 
+      // Build a map of field labels from the SmartFieldSelector response
+      const fieldLabelMap: Record<string, string> = {}
+
       if (fieldsResponse.ok && fieldsData.success) {
         // Extract columns from fields data - response structure: { success: true, data: { fields: [...] } }
         const fieldList = fieldsData.data?.fields || []
-        
+
+        // Build label map from configured fields
+        fieldList.forEach((f: any) => {
+          const fieldName = f.name || f.field_name
+          const fieldLabel = f.label || f.field_label
+          if (fieldName && fieldLabel) {
+            fieldLabelMap[fieldName] = fieldLabel
+          }
+        })
+
         // Ensure 'id' field is always included in fields
         const hasIdField = fieldList.some((f: any) => (f.name || f.field_name) === 'id')
         if (!hasIdField) {
@@ -119,11 +152,70 @@ export function useSmartFieldRecords({
             show_in_list: true,
           })
         }
-        
+
         setFields(fieldList)
-        
+      } else {
+        setFields([])
+      }
+
+      // Extract ALL columns from actual record data
+      // This ensures we capture fields that may not be in SmartFieldSelector config
+      if (extractColumnsFromData && fetchedRecords.length > 0) {
+        const fieldSet = new Set<string>()
+
+        // Collect all unique field names from all records
+        fetchedRecords.forEach((record: any) => {
+          Object.keys(record).forEach(key => {
+            // Skip internal/technical fields
+            if (!key.startsWith('__') && key !== 'display_name') {
+              fieldSet.add(key)
+            }
+          })
+        })
+
+        // Convert to columns array with proper labels
+        const extractedColumns: Array<{ id: string; label: string }> = []
+
+        // Add 'id' first if it exists
+        if (fieldSet.has('id')) {
+          extractedColumns.push({ id: 'id', label: 'ID' })
+          fieldSet.delete('id')
+        }
+
+        // Add 'name' second if it exists
+        if (fieldSet.has('name')) {
+          extractedColumns.push({ id: 'name', label: fieldLabelMap['name'] || 'Name' })
+          fieldSet.delete('name')
+        }
+
+        // Add remaining fields sorted alphabetically
+        const sortedFields = Array.from(fieldSet).sort((a, b) => {
+          // Prioritize certain fields
+          const priority: Record<string, number> = {
+            'location_id': 1,
+            'product_id': 2,
+            'x_rfid': 3,
+            'product_qty': 4,
+          }
+          const aPriority = priority[a] || (a.startsWith('x_') ? 10 : 100)
+          const bPriority = priority[b] || (b.startsWith('x_') ? 10 : 100)
+          if (aPriority !== bPriority) return aPriority - bPriority
+          return a.localeCompare(b)
+        })
+
+        sortedFields.forEach(fieldName => {
+          extractedColumns.push({
+            id: fieldName,
+            label: fieldLabelMap[fieldName] || fieldNameToLabel(fieldName),
+          })
+        })
+
+        setColumns(extractedColumns)
+      } else if (fieldsResponse.ok && fieldsData.success) {
+        // Use SmartFieldSelector columns only
+        const fieldList = fieldsData.data?.fields || []
         const availableColumns = fieldList
-          .filter((field: any) => field.show_in_list !== false) // Only fields that should be shown in list
+          .filter((field: any) => field.show_in_list !== false)
           .map((field: any) => ({
             id: field.name || field.field_name,
             label: field.label || field.field_label || field.name || field.field_name,
@@ -134,7 +226,6 @@ export function useSmartFieldRecords({
         if (!hasIdColumn) {
           availableColumns.unshift({ id: 'id', label: 'ID' })
         } else {
-          // Move id to first position if it exists but isn't first
           const idIndex = availableColumns.findIndex((col: any) => col.id === 'id')
           if (idIndex > 0) {
             const [idCol] = availableColumns.splice(idIndex, 1)
@@ -145,7 +236,6 @@ export function useSmartFieldRecords({
         setColumns(availableColumns)
       } else {
         // Fallback: use default columns if field fetch fails
-        setFields([])
         setColumns([
           { id: 'id', label: 'ID' },
           { id: 'name', label: 'Name' },

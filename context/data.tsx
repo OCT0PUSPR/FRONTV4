@@ -320,7 +320,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         const errorText = await response.text()
         console.error(`HTTP error for ${dataType}:`, response.status, errorText)
-        
+
+        // Handle session expiration (401 Unauthorized)
+        if (response.status === 401) {
+          console.warn('[DATA_PROVIDER] Session expired (401), clearing session and redirecting to signin...')
+          // Clear all session data from localStorage
+          localStorage.removeItem('sessionId')
+          localStorage.removeItem('uid')
+          localStorage.removeItem('partnerId')
+          localStorage.removeItem('name')
+          // Redirect to signin page
+          window.location.href = '/signin'
+          throw new Error('Session expired. Please sign in again.')
+        }
+
         if (response.status === 404) {
           throw new Error(`Endpoint not found: ${endpoint}. Please check if the backend server is running and the route is configured correctly.`)
         } else if (response.status === 500) {
@@ -329,9 +342,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
           throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
         }
       }
-      
+
+      // Also check response body for session-related errors
       const data = await response.json()
-      
+
+      // Some APIs return success: false with session error messages
+      if (!data.success) {
+        const errorMsg = (data.message || '').toLowerCase()
+        if (
+          errorMsg.includes('session') && (errorMsg.includes('expired') || errorMsg.includes('invalid')) ||
+          errorMsg.includes('not authenticated') ||
+          errorMsg.includes('unauthorized')
+        ) {
+          console.warn('[DATA_PROVIDER] Session error detected in response, clearing session and redirecting to signin...')
+          localStorage.removeItem('sessionId')
+          localStorage.removeItem('uid')
+          localStorage.removeItem('partnerId')
+          localStorage.removeItem('name')
+          window.location.href = '/signin'
+          throw new Error('Session expired. Please sign in again.')
+        }
+        throw new Error(data.message || `Failed to fetch ${dataType}`)
+      }
+
       if (data.success) {
         const setter = getSetter(dataType)
         let payload = data[dataType] || []

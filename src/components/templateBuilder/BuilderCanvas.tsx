@@ -7,9 +7,7 @@ import React, { useState } from 'react';
 import {
   Plus,
   Trash2,
-  GripVertical,
-  Image as ImageIcon,
-  LucideIcon
+  Image as ImageIcon
 } from 'lucide-react';
 import { useTheme } from '../../../context/theme';
 import {
@@ -105,8 +103,10 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
   onSelectSection,
   onAddComponent,
   onRemoveComponent,
-  onMoveComponent,
-  onReorderComponent
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onMoveComponent: _onMoveComponent,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onReorderComponent: _onReorderComponent
 }) => {
   const { colors } = useTheme();
   const [dragOverSection, setDragOverSection] = useState<SectionType | null>(null);
@@ -194,7 +194,7 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
             </div>
           );
 
-        case 'title':
+        case 'title': {
           const titleText = props.text as { en?: string; ar?: string } | undefined;
           const titleStyle = props.style as { fontSize?: number; fontWeight?: string; color?: string } | undefined;
           return (
@@ -210,6 +210,7 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
               {titleText?.[previewLanguage] || titleText?.en || 'Document Title'}
             </h1>
           );
+        }
 
         case 'documentNumber':
           return (
@@ -219,7 +220,7 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
             </div>
           );
 
-        case 'date':
+        case 'date': {
           const dateLabel = (props.label as { en?: string; ar?: string }) || {};
           return (
             <div className="text-sm" style={{ textAlign: isRtl ? 'right' : 'left' }}>
@@ -227,6 +228,7 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
               <span className="font-semibold ml-2">{mockData.document.date}</span>
             </div>
           );
+        }
 
         case 'companyInfo':
           return (
@@ -249,7 +251,7 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
           );
 
         case 'textBlock':
-        case 'staticText':
+        case 'staticText': {
           const textContent = props.text as { en?: string; ar?: string } | undefined;
           const textStyle = props.style as { fontSize?: number; color?: string } | undefined;
           return (
@@ -264,8 +266,9 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
               {textContent?.[previewLanguage] || textContent?.en || 'Sample text content goes here...'}
             </p>
           );
+        }
 
-        case 'field':
+        case 'field': {
           const fieldPath = (props.path as string) || 'field_name';
           return (
             <div className="text-sm" style={{ textAlign: isRtl ? 'right' : 'left' }}>
@@ -274,8 +277,9 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
               </span>
             </div>
           );
+        }
 
-        case 'table':
+        case 'table': {
           const columns = (props.columns as Array<{ key: string; label: { en: string; ar: string }; width?: number }>) || [
             { key: 'name', label: { en: 'Item', ar: 'الصنف' }, width: 200 },
             { key: 'qty', label: { en: 'Qty', ar: 'الكمية' }, width: 80 },
@@ -311,7 +315,9 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
                         style={{ textAlign: isRtl ? 'right' : 'left' }}
                       >
                         {col.key === 'price' || col.key === 'total'
-                          ? `${(item as any)[col.key]?.toFixed(2)} SAR`
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          ? `${((item as any)[col.key] as number)?.toFixed(2)} SAR`
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
                           : (item as any)[col.key]}
                       </td>
                     ))}
@@ -320,8 +326,9 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
               </tbody>
             </table>
           );
+        }
 
-        case 'line':
+        case 'line': {
           const lineStyle = props.style as { thickness?: number; color?: string; style?: string } | undefined;
           return (
             <hr
@@ -331,11 +338,13 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
               }}
             />
           );
+        }
 
-        case 'spacer':
+        case 'spacer': {
           const spacerSize = props.size as string || 'medium';
           const spacerHeight = spacerSize === 'small' ? 8 : spacerSize === 'large' ? 32 : 16;
           return <div style={{ height: spacerHeight }} />;
+        }
 
         case 'qrcode':
           return (
@@ -357,7 +366,7 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
             </div>
           );
 
-        case 'signatureBox':
+        case 'signatureBox': {
           const sigLabel = props.label as { en?: string; ar?: string } | undefined;
           return (
             <div className="border-t-2 border-gray-400 pt-2 mt-8" style={{ width: 200 }}>
@@ -366,14 +375,16 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
               </div>
             </div>
           );
+        }
 
-        case 'pageNumber':
+        case 'pageNumber': {
           const format = (props.format as string) || 'Page {current} of {total}';
           return (
             <div className="text-xs text-gray-500 text-center">
               {format.replace('{current}', '1').replace('{total}', '1')}
             </div>
           );
+        }
 
         case 'generatedDate':
           return (
@@ -394,7 +405,7 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
             </div>
           );
 
-        case 'infoBox':
+        case 'infoBox': {
           const boxTitle = props.title as { en?: string; ar?: string } | undefined;
           return (
             <div className="border rounded p-3 bg-blue-50 border-blue-200">
@@ -406,6 +417,7 @@ export const BuilderCanvas: React.FC<BuilderCanvasProps> = ({
               </div>
             </div>
           );
+        }
 
         case 'image':
           return (

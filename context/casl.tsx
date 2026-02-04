@@ -150,8 +150,23 @@ export const CaslProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setPageExportPermissions({});
         setPageDeletePermissions({});
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading page permissions:', error);
+
+      // Check if this is a connection error (backend unreachable)
+      const isConnectionError =
+        error?.name === 'TypeError' && error?.message?.includes('fetch') ||
+        error?.name === 'AbortError' ||
+        error?.message?.toLowerCase()?.includes('network') ||
+        error?.message?.toLowerCase()?.includes('failed to fetch');
+
+      if (isConnectionError) {
+        console.warn('[CASL_PROVIDER] Backend connection error, redirecting to error500...');
+        // Redirect to error500 page
+        window.location.href = '/error500';
+        return;
+      }
+
       // Default to denying all on error (strict security)
       setPagePermissions({});
       setPageCreatePermissions({});
@@ -444,8 +459,33 @@ export const CaslProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         hasLoadedPermissions.current = true;
-      } catch (error) {
+      } catch (error: any) {
         console.error('[CASL_PROVIDER] Error loading permissions:', error);
+
+        // Check if this is a connection error (backend unreachable)
+        const isConnectionError =
+          error?.name === 'TypeError' && error?.message?.includes('fetch') ||
+          error?.name === 'AbortError' ||
+          error?.message?.toLowerCase()?.includes('network') ||
+          error?.message?.toLowerCase()?.includes('failed to fetch');
+
+        if (isConnectionError) {
+          console.warn('[CASL_PROVIDER] Backend connection error during initial load, redirecting to error500...');
+          window.location.href = '/error500';
+          return;
+        }
+
+        // Check for session expiration (401)
+        if (error?.message?.includes('401') || error?.message?.toLowerCase()?.includes('unauthorized')) {
+          console.warn('[CASL_PROVIDER] Session expired, clearing session and redirecting to signin...');
+          localStorage.removeItem('sessionId');
+          localStorage.removeItem('uid');
+          localStorage.removeItem('partnerId');
+          localStorage.removeItem('name');
+          window.location.href = '/signin';
+          return;
+        }
+
         setPagePermissions({});
         setPageCreatePermissions({});
         setPageEditPermissions({});

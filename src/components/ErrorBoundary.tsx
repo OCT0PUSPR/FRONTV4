@@ -1,7 +1,7 @@
 "use client"
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { RefreshCcw, Home } from 'lucide-react'
+import { RefreshCcw, Home, AlertTriangle } from 'lucide-react'
 
 interface Props {
   children: ReactNode
@@ -11,12 +11,52 @@ interface Props {
 interface State {
   hasError: boolean
   error: Error | null
+  isDark: boolean
+  isLoaded: boolean
 }
+
+// Theme colors based on mode (same as error500.tsx for consistency)
+const getColors = (isDark: boolean) =>
+  isDark
+    ? {
+        background: '#09090b',
+        textPrimary: '#fafafa',
+        textSecondary: '#a1a1aa',
+        card: '#18181b',
+        border: '#27272a',
+        action: '#3b82f6',
+        actionHover: '#2563eb',
+        muted: '#27272a',
+        errorBg: 'rgba(239, 68, 68, 0.15)',
+        errorNumber: 'rgba(255, 255, 255, 0.08)',
+      }
+    : {
+        background: '#ffffff',
+        textPrimary: '#09090b',
+        textSecondary: '#71717a',
+        card: '#f4f4f5',
+        border: '#e4e4e7',
+        action: '#3b82f6',
+        actionHover: '#2563eb',
+        muted: '#f4f4f5',
+        errorBg: 'rgba(239, 68, 68, 0.1)',
+        errorNumber: 'rgba(0, 0, 0, 0.06)',
+      }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
-    this.state = { hasError: false, error: null }
+    // Get theme from localStorage (can't use context on error page as providers may have failed)
+    let isDark = false
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme_mode')
+      isDark = savedTheme === 'dark'
+    }
+    this.state = { hasError: false, error: null, isDark, isLoaded: false }
+  }
+
+  componentDidMount() {
+    this.setState({ isLoaded: true })
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
@@ -41,6 +81,9 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback
       }
 
+      const { isDark, isLoaded } = this.state
+      const colors = getColors(isDark)
+
       return (
         <div
           style={{
@@ -49,8 +92,8 @@ export class ErrorBoundary extends Component<Props, State> {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '1.5rem',
-            background: '#f9fafb',
+            padding: '24px',
+            background: colors.background,
           }}
         >
           <style>{`
@@ -58,34 +101,56 @@ export class ErrorBoundary extends Component<Props, State> {
               from { opacity: 0; transform: translateY(20px); }
               to { opacity: 1; transform: translateY(0); }
             }
+
             @keyframes pulse-slow {
-              0%, 100% { opacity: 0.06; }
-              50% { opacity: 0.1; }
+              0%, 100% { opacity: 0.08; }
+              50% { opacity: 0.15; }
             }
-            .animate-fade-in { animation: fade-in 0.6s ease-out forwards; }
-            .animate-pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+
+            .animate-fade-in {
+              animation: fade-in 0.6s ease-out forwards;
+            }
+
+            .animate-pulse-slow {
+              animation: pulse-slow 3s ease-in-out infinite;
+            }
+
             .delay-1 { animation-delay: 0.1s; opacity: 0; }
             .delay-2 { animation-delay: 0.2s; opacity: 0; }
             .delay-3 { animation-delay: 0.3s; opacity: 0; }
-            @media (prefers-color-scheme: dark) {
-              .error-bg { background: #111827 !important; }
-              .error-title { color: #fff !important; }
-              .error-desc { color: #9ca3af !important; }
-              .error-number { color: rgba(255,255,255,0.1) !important; }
-              .error-btn-secondary { background: #1f2937 !important; color: #fff !important; }
-            }
+            .delay-4 { animation-delay: 0.4s; opacity: 0; }
           `}</style>
+
+          {/* Error Icon */}
+          <div
+            className={isLoaded ? 'animate-fade-in' : ''}
+            style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '20px',
+              background: colors.errorBg,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '24px',
+              opacity: isLoaded ? 1 : 0,
+            }}
+          >
+            <AlertTriangle size={40} color="#ef4444" strokeWidth={1.5} />
+          </div>
 
           {/* Error Number */}
           <h1
-            className="animate-fade-in animate-pulse-slow error-number"
+            className={isLoaded ? 'animate-fade-in animate-pulse-slow delay-1' : ''}
             style={{
-              fontSize: 'clamp(120px, 25vw, 240px)',
+              fontSize: 'clamp(120px, 25vw, 200px)',
               fontWeight: 900,
               lineHeight: 1,
               letterSpacing: '-0.05em',
-              color: 'rgba(0,0,0,0.06)',
+              color: colors.errorNumber,
               fontFamily: 'system-ui, -apple-system, sans-serif',
+              margin: '-20px 0 0 0',
+              animationFillMode: 'forwards',
             }}
           >
             500
@@ -93,13 +158,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
           {/* Title */}
           <h2
-            className="animate-fade-in delay-1 error-title"
+            className={isLoaded ? 'animate-fade-in delay-2' : ''}
             style={{
-              fontSize: '1.75rem',
+              fontSize: 'clamp(1.25rem, 4vw, 1.75rem)',
               fontWeight: 600,
-              marginTop: '-2rem',
-              marginBottom: '0.75rem',
-              color: '#111827',
+              marginTop: '-10px',
+              marginBottom: '12px',
+              color: colors.textPrimary,
               animationFillMode: 'forwards',
             }}
           >
@@ -108,26 +173,27 @@ export class ErrorBoundary extends Component<Props, State> {
 
           {/* Description */}
           <p
-            className="animate-fade-in delay-2 error-desc"
+            className={isLoaded ? 'animate-fade-in delay-3' : ''}
             style={{
               fontSize: '1rem',
               textAlign: 'center',
               maxWidth: '400px',
-              marginBottom: '2rem',
-              color: '#6b7280',
+              marginBottom: '32px',
+              color: colors.textSecondary,
+              lineHeight: 1.6,
               animationFillMode: 'forwards',
             }}
           >
-            An unexpected error occurred. Please reload the page.
+            An unexpected error occurred in the application. Please try reloading the page or go back to the home page.
           </p>
 
           {/* Buttons */}
           <div
-            className="animate-fade-in delay-3"
+            className={isLoaded ? 'animate-fade-in delay-4' : ''}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '1rem',
+              gap: '16px',
               animationFillMode: 'forwards',
             }}
           >
@@ -136,45 +202,52 @@ export class ErrorBoundary extends Component<Props, State> {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.625rem 1.25rem',
-                borderRadius: '0.5rem',
-                fontWeight: 500,
-                fontSize: '0.875rem',
-                color: '#fff',
-                background: '#2563eb',
+                gap: '8px',
+                padding: '12px 24px',
+                borderRadius: '12px',
+                fontWeight: 600,
+                fontSize: '0.9375rem',
+                color: '#ffffff',
+                background: colors.action,
                 border: 'none',
                 cursor: 'pointer',
-                transition: 'opacity 0.2s',
+                transition: 'all 0.2s ease',
               }}
-              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = colors.actionHover
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = colors.action
+              }}
             >
-              <RefreshCcw size={16} />
+              <RefreshCcw size={18} />
               Reload
             </button>
 
             <button
               onClick={this.handleGoHome}
-              className="error-btn-secondary"
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.625rem 1.25rem',
-                borderRadius: '0.5rem',
-                fontWeight: 500,
-                fontSize: '0.875rem',
-                color: '#111827',
-                background: '#f3f4f6',
-                border: 'none',
+                gap: '8px',
+                padding: '12px 24px',
+                borderRadius: '12px',
+                fontWeight: 600,
+                fontSize: '0.9375rem',
+                color: colors.textPrimary,
+                background: colors.muted,
+                border: `1px solid ${colors.border}`,
                 cursor: 'pointer',
-                transition: 'opacity 0.2s',
+                transition: 'all 0.2s ease',
               }}
-              onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
-              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.opacity = '0.8'
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.opacity = '1'
+              }}
             >
-              <Home size={16} />
+              <Home size={18} />
               Home
             </button>
           </div>

@@ -7,18 +7,11 @@ import React, { useState, useEffect } from 'react';
 import {
   X,
   Settings,
-  Type,
-  Palette,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
   Bold,
   Italic,
   Underline,
   Plus,
-  Trash2,
-  ChevronDown,
-  Search
+  Trash2
 } from 'lucide-react';
 import { useTheme } from '../../../context/theme';
 import {

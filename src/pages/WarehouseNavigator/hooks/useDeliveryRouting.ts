@@ -11,7 +11,7 @@ import {
   calculatePickRoute,
   findBestRoute,
 } from '../utils/routingAlgorithm';
-import { parseLocationCode, calculatePosition, getLevelIndex, LAYOUT } from '../utils/positionCalculator';
+import { parseLocationCode, calculatePosition, getLevelIndex } from '../utils/positionCalculator';
 import { buildLocationCode, parseLocationPath } from '../utils/hierarchyBuilder';
 
 export interface DeliveryOrder {
