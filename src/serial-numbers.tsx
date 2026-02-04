@@ -8,7 +8,7 @@ import {
   RefreshCcw, Edit, X, Save, Loader2, Search, Grid3X3,
   List, ChevronDown, FileText, Tag, Barcode, AlertCircle,
   CheckCircle, Clock, Archive, Trash2, Eye, Factory, Cpu,
-  User, FileWarning, CalendarX, StickyNote, QrCode
+  User, FileWarning, CalendarX, StickyNote, QrCode, Upload
 } from "lucide-react"
 
 // Lookup option types
@@ -64,6 +64,7 @@ import ExportModal, { ExportOptions } from "./components/ExportModal"
 import { useExport } from "./hooks/useExport"
 import { useSerialNumbers, DEFAULT_VISIBLE_COLUMNS } from "./hooks/useSerialNumbers"
 import { API_CONFIG } from "./config/api"
+import { SerialImportModal } from "./components/SerialImportModal"
 
 // Sidebar component for Serial Number view/edit/create
 function SerialNumberSidebar({
@@ -1529,6 +1530,7 @@ export default function LotsSerialNumbersPage() {
   const [viewMode, setViewMode] = useState<"cards" | "table">("table")
   const [visibleColumns, setVisibleColumns] = useState<string[]>([])
   const [isExportModalOpen, setIsExportModalOpen] = useState(false)
+  const [isSerialImportModalOpen, setIsSerialImportModalOpen] = useState(false)
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(12)
@@ -1817,6 +1819,25 @@ export default function LotsSerialNumbersPage() {
                 <RefreshCcw className={`w-4 h-4 ${serialLoading ? "animate-spin" : ""}`} />
                 {serialLoading ? t("Loading...") : t("Refresh")}
               </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsSerialImportModalOpen(true)}
+                style={{
+                  background: colors.card,
+                  color: colors.textPrimary,
+                  borderColor: colors.border,
+                  borderRadius: "12px",
+                  padding: "10px 16px",
+                  fontWeight: "600",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <Upload size={18} />
+                {t("Import")}
+              </Button>
               {canCreatePage("lots-serial") && (
                 <Button
                   onClick={() => navigate('/lots-serial/create')}
@@ -2080,6 +2101,16 @@ export default function LotsSerialNumbersPage() {
               isSelectAll={Object.keys(rowSelection).length === serialRecords.length && serialRecords.length > 0}
             />
           )}
+
+          {/* Serial Import Modal */}
+          <SerialImportModal
+            isOpen={isSerialImportModalOpen}
+            onClose={() => setIsSerialImportModalOpen(false)}
+            onComplete={() => {
+              refetchSerials()
+              showToast(t("Import completed! Refreshing data..."), "success")
+            }}
+          />
 
           {/* Toast */}
           {toast && (

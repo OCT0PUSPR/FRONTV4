@@ -420,7 +420,7 @@ function EditModal({ isOpen, onClose, record, modelName, modelLabel, fields, all
               disabled={isDisabled || isLoadingField}
               className="w-full px-4 py-2.5 rounded-xl text-sm transition-colors appearance-none"
               style={{
-                backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                backgroundColor: mode === 'dark' ? '#27272a' : '#f4f4f5',
                 border: `1px solid ${colors.border}`,
                 color: isDisabled ? colors.textSecondary : colors.textPrimary,
                 opacity: isDisabled ? 0.6 : 1,
@@ -959,7 +959,7 @@ function AddModelModal({ isOpen, onClose, onSuccess, showToast, sessionId, tenan
                           onChange={e => updateField(index, { type: e.target.value, relation: undefined })}
                           className="w-full px-2 py-1.5 rounded-lg text-xs"
                           style={{
-                            backgroundColor: colors.card,
+                            backgroundColor: mode === 'dark' ? '#27272a' : '#f4f4f5',
                             border: `1px solid ${colors.border}`,
                             color: colors.textPrimary,
                           }}
@@ -980,7 +980,7 @@ function AddModelModal({ isOpen, onClose, onSuccess, showToast, sessionId, tenan
                               onChange={e => updateField(index, { relation: e.target.value })}
                               className="w-full px-2 py-1.5 rounded-lg text-xs"
                               style={{
-                                backgroundColor: colors.card,
+                                backgroundColor: mode === 'dark' ? '#27272a' : '#f4f4f5',
                                 border: `1px solid ${colors.border}`,
                                 color: colors.textPrimary,
                               }}

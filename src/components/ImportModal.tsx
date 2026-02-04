@@ -64,8 +64,7 @@ interface StepProgress {
 
 type ImportStep = "upload" | "preview" | "importing" | "complete"
 
-// Color palette - no purple
-const ACCENT_COLOR = "#dc2626" // Red for main accent
+// Color palette - using theme action color for accent
 const COLORS = {
   products: "#0891b2",      // Cyan
   categories: "#059669",    // Emerald
@@ -481,7 +480,7 @@ export function ImportModal({ isOpen, onClose, onComplete }: ImportModalProps) {
                 justifyContent: "center",
               }}
             >
-              <FileSpreadsheet size={24} color={ACCENT_COLOR} />
+              <FileSpreadsheet size={24} color={colors.action} />
             </div>
             <div>
               <h2 style={{
@@ -540,7 +539,7 @@ export function ImportModal({ isOpen, onClose, onComplete }: ImportModalProps) {
                       height: "24px",
                       borderRadius: "50%",
                       background: idx <= currentStepIndex
-                        ? (idx === currentStepIndex ? ACCENT_COLOR : COLORS.success)
+                        ? (idx === currentStepIndex ? colors.action : COLORS.success)
                         : (mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'),
                       display: "flex",
                       alignItems: "center",
@@ -612,7 +611,7 @@ export function ImportModal({ isOpen, onClose, onComplete }: ImportModalProps) {
               <div
                 onClick={() => !isLoading && fileInputRef.current?.click()}
                 style={{
-                  border: `2px dashed ${isLoading ? ACCENT_COLOR : colors.border}`,
+                  border: `2px dashed ${isLoading ? colors.action : colors.border}`,
                   borderRadius: "16px",
                   padding: "3rem 2rem",
                   textAlign: "center",
@@ -620,12 +619,12 @@ export function ImportModal({ isOpen, onClose, onComplete }: ImportModalProps) {
                   transition: "all 0.2s",
                   background: mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
                 }}
-                onMouseEnter={(e) => !isLoading && (e.currentTarget.style.borderColor = ACCENT_COLOR)}
+                onMouseEnter={(e) => !isLoading && (e.currentTarget.style.borderColor = colors.action)}
                 onMouseLeave={(e) => !isLoading && (e.currentTarget.style.borderColor = colors.border)}
               >
                 {isLoading ? (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
-                    <Loader2 size={48} color={ACCENT_COLOR} style={{ animation: "spin 1s linear infinite" }} />
+                    <Loader2 size={48} color={colors.action} style={{ animation: "spin 1s linear infinite" }} />
                     <p style={{ color: colors.textSecondary, margin: 0, fontWeight: "500" }}>{t("Analyzing file...")}</p>
                   </div>
                 ) : (
@@ -635,14 +634,14 @@ export function ImportModal({ isOpen, onClose, onComplete }: ImportModalProps) {
                         width: "72px",
                         height: "72px",
                         borderRadius: "18px",
-                        background: `${ACCENT_COLOR}10`,
+                        background: `${colors.action}10`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         margin: "0 auto 1.25rem",
                       }}
                     >
-                      <Upload size={32} color={ACCENT_COLOR} />
+                      <Upload size={32} color={colors.action} />
                     </div>
                     <p style={{
                       fontSize: "1.125rem",
@@ -918,7 +917,7 @@ export function ImportModal({ isOpen, onClose, onComplete }: ImportModalProps) {
                 onClick={handleImport}
                 disabled={isLoading}
                 style={{
-                  background: ACCENT_COLOR,
+                  background: colors.action,
                   color: "#fff",
                   borderRadius: "10px",
                   padding: "0.625rem 1.5rem",
