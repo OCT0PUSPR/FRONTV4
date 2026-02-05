@@ -1041,11 +1041,11 @@ export function TransferRecordPage({
             for (const move of moves) {
                 if (move.isNew && move.id < 0) {
                     // Create new stock.move using execute endpoint (bypasses smart fields filtering)
+                    // Note: 'name' field is computed in Odoo 17+ and cannot be set directly
                     const moveData: Record<string, any> = {
                         picking_id: recordId,
                         product_id: move.product_id[0],
                         product_uom_qty: move.product_uom_qty,
-                        name: move.product_id[1] || 'New Move',
                         location_id: transferData.location_id ? transferData.location_id[0] : false,
                         location_dest_id: transferData.location_dest_id ? transferData.location_dest_id[0] : false,
                     }
