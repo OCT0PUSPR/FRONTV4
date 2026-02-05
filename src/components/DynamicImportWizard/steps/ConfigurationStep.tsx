@@ -74,12 +74,33 @@ function ModelCard({ config, allConfigurations, allModelNames, existingModels, o
   const [loadingFields, setLoadingFields] = useState<string | null>(null)
 
   const handleModelNameChange = (value: string) => {
-    // Ensure x_ prefix
-    let name = value.toLowerCase().replace(/[^a-z0-9_]/g, '_')
-    if (!name.startsWith('x_')) {
-      name = `x_${name}`
+    // Only enforce x_ prefix for new custom models
+    if (config.useExistingModel) {
+      onUpdate({ modelName: value })
+    } else {
+      let name = value.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+      if (!name.startsWith('x_')) {
+        name = `x_${name}`
+      }
+      onUpdate({ modelName: name })
     }
-    onUpdate({ modelName: name })
+  }
+
+  const handleUseExistingModelChange = async (useExisting: boolean) => {
+    if (useExisting) {
+      // Switch to existing model mode - clear model name
+      onUpdate({ useExistingModel: true, modelName: '' })
+    } else {
+      // Switch to new model mode - generate x_ prefixed name
+      const suggestedName = config.sheetName.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+      onUpdate({ useExistingModel: false, modelName: `x_${suggestedName}` })
+    }
+  }
+
+  const handleExistingModelSelect = async (modelName: string) => {
+    onUpdate({ modelName })
+    // Fetch fields for the selected existing model
+    await fetchFieldsForModel(modelName)
   }
 
   const handleModelLabelChange = (value: string) => {
@@ -243,53 +264,128 @@ function ModelCard({ config, allConfigurations, allModelNames, existingModels, o
         <div style={{ padding: '1.25rem' }}>
           {/* Model Settings */}
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '1rem',
             marginBottom: '1.5rem',
             padding: '1rem',
             borderRadius: '10px',
             background: mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
           }}>
-            <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: '500', color: colors.textSecondary, display: 'block', marginBottom: '0.375rem' }}>
-                {t('Model Name')}
+            {/* Model Type Toggle */}
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: '500', color: colors.textSecondary, display: 'block', marginBottom: '0.5rem' }}>
+                {t('Import Target')}
               </label>
-              <input
-                type="text"
-                value={config.modelName}
-                onChange={(e) => handleModelNameChange(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: '8px',
-                  border: `1px solid ${colors.border}`,
-                  background: colors.card,
-                  color: colors.textPrimary,
-                  fontSize: '0.875rem',
-                  fontFamily: 'monospace',
-                }}
-              />
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  onClick={() => handleUseExistingModelChange(false)}
+                  style={{
+                    flex: 1,
+                    padding: '0.625rem 1rem',
+                    borderRadius: '8px',
+                    border: `1px solid ${!config.useExistingModel ? IMPORT_COLORS.primary : colors.border}`,
+                    background: !config.useExistingModel ? `${IMPORT_COLORS.primary}15` : 'transparent',
+                    color: !config.useExistingModel ? IMPORT_COLORS.primary : colors.textSecondary,
+                    fontSize: '0.8rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {t('Create New Model')}
+                </button>
+                <button
+                  onClick={() => handleUseExistingModelChange(true)}
+                  style={{
+                    flex: 1,
+                    padding: '0.625rem 1rem',
+                    borderRadius: '8px',
+                    border: `1px solid ${config.useExistingModel ? IMPORT_COLORS.success : colors.border}`,
+                    background: config.useExistingModel ? `${IMPORT_COLORS.success}15` : 'transparent',
+                    color: config.useExistingModel ? IMPORT_COLORS.success : colors.textSecondary,
+                    fontSize: '0.8rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {t('Use Existing Model')}
+                </button>
+              </div>
             </div>
-            <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: '500', color: colors.textSecondary, display: 'block', marginBottom: '0.375rem' }}>
-                {t('Display Label')}
-              </label>
-              <input
-                type="text"
-                value={config.modelLabel}
-                onChange={(e) => handleModelLabelChange(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: '8px',
-                  border: `1px solid ${colors.border}`,
-                  background: colors.card,
-                  color: colors.textPrimary,
-                  fontSize: '0.875rem',
-                }}
-              />
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '1rem',
+            }}>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: '500', color: colors.textSecondary, display: 'block', marginBottom: '0.375rem' }}>
+                  {config.useExistingModel ? t('Select Model') : t('Model Name')}
+                </label>
+                {config.useExistingModel ? (
+                  <SearchableDropdown
+                    options={existingModels.map(m => ({
+                      value: m.model,
+                      label: `${m.name} (${m.model})`,
+                    }))}
+                    value={config.modelName}
+                    onChange={(value) => handleExistingModelSelect(value)}
+                    placeholder={t('Select existing model...')}
+                    searchPlaceholder={t('Search models...')}
+                    emptyMessage={t('No models found')}
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={config.modelName}
+                    onChange={(e) => handleModelNameChange(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '8px',
+                      border: `1px solid ${colors.border}`,
+                      background: colors.card,
+                      color: colors.textPrimary,
+                      fontSize: '0.875rem',
+                      fontFamily: 'monospace',
+                    }}
+                  />
+                )}
+              </div>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: '500', color: colors.textSecondary, display: 'block', marginBottom: '0.375rem' }}>
+                  {t('Display Label')}
+                </label>
+                <input
+                  type="text"
+                  value={config.modelLabel}
+                  onChange={(e) => handleModelLabelChange(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '8px',
+                    border: `1px solid ${colors.border}`,
+                    background: colors.card,
+                    color: colors.textPrimary,
+                    fontSize: '0.875rem',
+                  }}
+                />
+              </div>
             </div>
+
+            {/* Show existing model field mapping hint */}
+            {config.useExistingModel && config.modelName && modelFields[config.modelName] && (
+              <div style={{
+                marginTop: '1rem',
+                padding: '0.75rem',
+                borderRadius: '8px',
+                background: `${IMPORT_COLORS.info}10`,
+                border: `1px solid ${IMPORT_COLORS.info}30`,
+              }}>
+                <p style={{ fontSize: '0.75rem', color: IMPORT_COLORS.info, margin: 0 }}>
+                  {t('Map your Excel columns to fields in')} <strong>{config.modelName}</strong>. {t('Available fields:')} {modelFields[config.modelName].length}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Fields Table */}
@@ -378,7 +474,19 @@ function ModelCard({ config, allConfigurations, allModelNames, existingModels, o
                   </div>
 
                   {/* Target Field Name */}
-                  {editingField === `${idx}` ? (
+                  {config.useExistingModel && modelFields[config.modelName] ? (
+                    <SearchableDropdown
+                      options={modelFields[config.modelName].map(f => ({
+                        value: f.name,
+                        label: `${f.string} (${f.name})`,
+                      }))}
+                      value={field.odooFieldName}
+                      onChange={(value) => handleFieldUpdate(idx, { odooFieldName: value })}
+                      placeholder={t('Select field...')}
+                      searchPlaceholder={t('Search fields...')}
+                      emptyMessage={t('No fields available')}
+                    />
+                  ) : editingField === `${idx}` ? (
                     <input
                       type="text"
                       value={field.odooFieldName}
@@ -417,16 +525,28 @@ function ModelCard({ config, allConfigurations, allModelNames, existingModels, o
                   )}
 
                   {/* Field Type */}
-                  <SearchableDropdown
-                    options={FIELD_TYPE_OPTIONS.map(opt => ({
-                      value: opt.value,
-                      label: opt.label,
-                    }))}
-                    value={field.fieldType}
-                    onChange={(value) => handleFieldTypeChange(idx, value as FieldType)}
-                    placeholder={t('Select type...')}
-                    searchPlaceholder={t('Search types...')}
-                  />
+                  {config.useExistingModel && modelFields[config.modelName] ? (
+                    <div style={{
+                      fontSize: '0.75rem',
+                      color: colors.textSecondary,
+                      padding: '0.375rem 0.5rem',
+                      borderRadius: '6px',
+                      background: mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                    }}>
+                      {modelFields[config.modelName].find(f => f.name === field.odooFieldName)?.type || '-'}
+                    </div>
+                  ) : (
+                    <SearchableDropdown
+                      options={FIELD_TYPE_OPTIONS.map(opt => ({
+                        value: opt.value,
+                        label: opt.label,
+                      }))}
+                      value={field.fieldType}
+                      onChange={(value) => handleFieldTypeChange(idx, value as FieldType)}
+                      placeholder={t('Select type...')}
+                      searchPlaceholder={t('Search types...')}
+                    />
+                  )}
 
                   {/* Required */}
                   <div style={{ display: 'flex', justifyContent: 'center' }}>

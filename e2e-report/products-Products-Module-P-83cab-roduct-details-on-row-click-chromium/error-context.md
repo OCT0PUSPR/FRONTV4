@@ -1,0 +1,55 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - paragraph [ref=e9]: WAREHOUSE MANAGEMENT SYSTEM
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - paragraph [ref=e12]: Inventory Management
+          - generic [ref=e13]:
+            - generic [ref=e14]:
+              - img [ref=e16]
+              - generic [ref=e20]: Stock Tracking
+            - generic [ref=e21]:
+              - img [ref=e23]
+              - generic [ref=e33]: Multi-Location Warehouses
+            - generic [ref=e34]:
+              - img [ref=e36]
+              - generic [ref=e39]: Real-Time Inventory Search
+            - generic [ref=e40]:
+              - img [ref=e42]
+              - generic [ref=e44]: Inventory Analytics
+        - generic [ref=e45]:
+          - paragraph [ref=e46]: Operations
+          - generic [ref=e47]:
+            - generic [ref=e48]:
+              - img [ref=e50]
+              - generic [ref=e55]: Receipts & Deliveries
+            - generic [ref=e56]:
+              - img [ref=e58]
+              - generic [ref=e61]: Route Management
+            - generic [ref=e62]:
+              - img [ref=e64]
+              - generic [ref=e68]: Putaway Rules
+            - generic [ref=e69]:
+              - img [ref=e71]
+              - generic [ref=e74]: Stock Movements
+        - generic [ref=e75]:
+          - paragraph [ref=e76]: System Features
+          - generic [ref=e77]:
+            - generic [ref=e78]:
+              - img [ref=e80]
+              - generic [ref=e85]: User Management
+            - generic [ref=e86]:
+              - img [ref=e88]
+              - generic [ref=e91]: Configuration
+            - generic [ref=e92]:
+              - img [ref=e94]
+              - generic [ref=e96]: Reports & Analytics
+    - button "Sign In to Platform" [ref=e98]:
+      - img [ref=e99]
+      - text: Sign In to Platform
+  - region "Notifications alt+T"
+```

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
+import type { LucideIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useTheme } from "../../context/theme"
 import { API_CONFIG, getTenantHeaders } from "../config/api"
@@ -65,7 +66,7 @@ const reportTypes = [
 ]
 
 // Report icons mapping (matching ReportTemplatesPage)
-const reportIcons: Record<string, any> = {
+const reportIcons: Record<string, LucideIcon> = {
   delivery_note: Truck,
   goods_receipt_note: Receipt,
   stock_internal_transfer: ArrowRightLeft,
@@ -91,7 +92,7 @@ const reportColors: Record<string, string> = {
 }
 
 // Status configuration
-const statusConfig: Record<string, { color: string, bg: string, icon: any, label: string }> = {
+const statusConfig: Record<string, { color: string, bg: string, icon: LucideIcon, label: string }> = {
   completed: { color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', icon: CheckCircle2, label: 'Completed' },
   pending: { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', icon: Clock, label: 'Pending' },
   generating: { color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', icon: Loader2, label: 'Generating' },
@@ -115,13 +116,14 @@ export default function GeneratedReportsPage() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
 
-  useEffect(() => {
-    loadReports()
-  }, [page, selectedStatus, selectedReportType, dateRange])
-
   const getHeaders = () => getTenantHeaders()
 
-  const loadReports = async () => {
+  const showToast = (text: string, state: "success" | "error") => {
+    setToast({ text, state })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  const loadReports = useCallback(async () => {
     setLoading(true)
     try {
       let url = `${API_CONFIG.BACKEND_BASE_URL}/reports/generated?limit=50&offset=${page * 50}`
@@ -141,7 +143,11 @@ export default function GeneratedReportsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, selectedStatus, selectedReportType, dateRange])
+
+  useEffect(() => {
+    loadReports()
+  }, [loadReports])
 
   const handleDownload = async (report: GeneratedReport) => {
     try {
@@ -211,10 +217,6 @@ export default function GeneratedReportsPage() {
     setDateRange(null)
     setSearchQuery("")
     setPage(0)
-  }
-
-  const showToast = (text: string, state: "success" | "error") => {
-    setToast({ text, state })
   }
 
   // Filter reports based on search query (client-side additional filter)
@@ -312,8 +314,8 @@ export default function GeneratedReportsPage() {
                 backgroundColor: colors.card,
                 border: `1px solid ${colors.border}`,
                 color: colors.textPrimary,
-                '--tw-ring-color': colors.action
-              } as any}
+                ['--tw-ring-color' as string]: colors.action
+              } as React.CSSProperties}
             />
           </div>
 

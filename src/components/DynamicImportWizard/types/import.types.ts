@@ -99,6 +99,8 @@ export interface ModelConfiguration {
   patternDetails?: PatternDetails;
   isDualColumnParent?: boolean;
   isDualColumnChild?: boolean;
+  // Existing model support
+  useExistingModel?: boolean; // If true, modelName is an existing system model
 }
 
 export interface FileAnalysis {
@@ -171,7 +173,7 @@ export interface DynamicImportModalProps {
 
 // Color palette for UI
 export const IMPORT_COLORS = {
-  primary: '#dc2626',
+  primary: '#3b82f6',  // Action color (blue) - not red
   success: '#16a34a',
   error: '#dc2626',
   warning: '#f59e0b',

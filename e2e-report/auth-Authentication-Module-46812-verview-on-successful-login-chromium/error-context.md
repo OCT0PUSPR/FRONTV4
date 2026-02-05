@@ -1,0 +1,100 @@
+# Page snapshot
+
+```yaml
+- generic [active]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - paragraph: WAREHOUSE MANAGEMENT SYSTEM
+            - generic:
+              - generic:
+                - paragraph: Inventory Management
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                    - generic: Stock Tracking
+                  - generic:
+                    - generic:
+                      - img
+                    - generic: Multi-Location Warehouses
+                  - generic:
+                    - generic:
+                      - img
+                    - generic: Real-Time Inventory Search
+                  - generic:
+                    - generic:
+                      - img
+                    - generic: Inventory Analytics
+              - generic:
+                - paragraph: Operations
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                    - generic: Receipts & Deliveries
+                  - generic:
+                    - generic:
+                      - img
+                    - generic: Route Management
+                  - generic:
+                    - generic:
+                      - img
+                    - generic: Putaway Rules
+                  - generic:
+                    - generic:
+                      - img
+                    - generic: Stock Movements
+              - generic:
+                - paragraph: System Features
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                    - generic: User Management
+                  - generic:
+                    - generic:
+                      - img
+                    - generic: Configuration
+                  - generic:
+                    - generic:
+                      - img
+                    - generic: Reports & Analytics
+          - generic:
+            - button:
+              - img
+              - text: Sign In to Platform
+    - region "Notifications alt+T"
+  - dialog "Sign In" [ref=e2]:
+    - generic [ref=e3]:
+      - heading "Sign In" [level=2] [ref=e4]
+      - paragraph [ref=e5]: Welcome back! Please enter your credentials
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - text: Email Address
+          - generic [ref=e9]:
+            - generic:
+              - img
+            - textbox "Email Address" [ref=e10]:
+              - /placeholder: Enter your email
+              - text: admin@test.com
+        - generic [ref=e11]:
+          - text: Password
+          - generic [ref=e12]:
+            - generic:
+              - img
+            - textbox "Password" [ref=e13]:
+              - /placeholder: Enter your password
+              - text: admin123
+            - button [ref=e14]:
+              - img [ref=e15]
+      - button "Forgot password?" [ref=e19]
+      - button "Log In" [ref=e20]
+    - button "Close" [ref=e21]:
+      - img [ref=e22]
+      - generic [ref=e25]: Close
+```

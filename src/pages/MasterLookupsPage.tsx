@@ -532,7 +532,7 @@ function EditModal({ isOpen, onClose, record, modelName, modelLabel, fields, all
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: MODEL_GRADIENTS[0] }}
+              style={{ background: colors.action }}
             >
               <Database size={20} color="#fff" />
             </div>
@@ -661,14 +661,14 @@ function EditModal({ isOpen, onClose, record, modelName, modelLabel, fields, all
               disabled={isLoading}
               className="flex-1 flex items-center justify-center gap-2"
               style={{
-                background: MODEL_GRADIENTS[0],
+                background: colors.action,
                 color: '#fff',
               }}
             >
               {isLoading ? (
                 <Loader2 size={18} className="animate-spin" />
               ) : (
-                <Save size={18} />
+                <Save size={18} color="#fff" />
               )}
               {t('Save')}
             </Button>
@@ -815,7 +815,7 @@ function AddModelModal({ isOpen, onClose, onSuccess, showToast, sessionId, tenan
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' }}
+              style={{ background: colors.action }}
             >
               <Plus size={20} color="#fff" />
             </div>
@@ -1042,14 +1042,14 @@ function AddModelModal({ isOpen, onClose, onSuccess, showToast, sessionId, tenan
               disabled={isLoading}
               className="flex-1 flex items-center justify-center gap-2"
               style={{
-                background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                background: colors.action,
                 color: '#fff',
               }}
             >
               {isLoading ? (
                 <Loader2 size={18} className="animate-spin" />
               ) : (
-                <Plus size={18} />
+                <Plus size={18} color="#fff" />
               )}
               {t('Create Model')}
             </Button>
@@ -1480,8 +1480,11 @@ export default function MasterLookupsPage() {
   const totalFields = modelFields.length
 
   return (
-    <div className="p-6 space-y-6">
-      {/* CSS for animations */}
+    <div
+      className="p-6 space-y-6 min-h-screen"
+      style={{ backgroundColor: colors.background }}
+    >
+      {/* CSS for animations and dark mode fixes */}
       <style>
         {`
           @keyframes fadeInUp {
@@ -1489,6 +1492,17 @@ export default function MasterLookupsPage() {
             to { opacity: 1; transform: translateY(0); }
           }
           .animate-fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+
+          /* Dark mode select/option styling */
+          ${mode === 'dark' ? `
+            select option {
+              background-color: #27272a !important;
+              color: #f4f4f5 !important;
+            }
+            select:focus {
+              outline-color: #3b82f6;
+            }
+          ` : ''}
         `}
       </style>
 
@@ -1532,9 +1546,9 @@ export default function MasterLookupsPage() {
           <Button
             onClick={() => setIsAddModelModalOpen(true)}
             className="flex items-center gap-2"
-            style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', color: '#fff' }}
+            style={{ background: colors.action, color: '#fff' }}
           >
-            <Plus size={18} />
+            <Plus size={18} color="#fff" />
             {t('Add Lookup Master')}
           </Button>
         </div>
@@ -1695,46 +1709,54 @@ export default function MasterLookupsPage() {
 
       {/* Search & Column Selector */}
       {selectedModel && (
-        <div className="flex items-center gap-4">
-          <div
-            className="flex-1 flex items-center gap-3 px-4 py-2.5 rounded-xl"
-            style={{
-              backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-              border: `1px solid ${colors.border}`,
-            }}
-          >
-            <Search size={18} color={colors.textSecondary} />
-            <input
-              type="text"
-              placeholder={t('Search records...')}
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-sm"
-              style={{ color: colors.textPrimary }}
+        <div
+          className="p-4 rounded-xl"
+          style={{
+            backgroundColor: colors.card,
+            border: `1px solid ${colors.border}`,
+          }}
+        >
+          <div className="flex items-center gap-4">
+            <div
+              className="flex-1 flex items-center gap-3 px-4 py-2.5 rounded-xl"
+              style={{
+                backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                border: `1px solid ${colors.border}`,
+              }}
+            >
+              <Search size={18} color={colors.textSecondary} />
+              <input
+                type="text"
+                placeholder={t('Search records...')}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="flex-1 bg-transparent outline-none text-sm"
+                style={{ color: colors.textPrimary }}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/5">
+                  <X size={16} color={colors.textSecondary} />
+                </button>
+              )}
+            </div>
+
+            {/* Column Selector */}
+            <ColumnsSelector
+              columns={availableColumns}
+              selectedColumns={visibleColumns}
+              onSelectionChange={setVisibleColumns}
+              label={t('Columns')}
             />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')}>
-                <X size={16} color={colors.textSecondary} />
-              </button>
-            )}
+
+            <Button
+              onClick={() => setEditModal({ open: true, record: null })}
+              className="flex items-center gap-2"
+              style={{ background: colors.action, color: '#fff' }}
+            >
+              <Plus size={18} color="#fff" />
+              {t('Add New')}
+            </Button>
           </div>
-
-          {/* Column Selector */}
-          <ColumnsSelector
-            columns={availableColumns}
-            selectedColumns={visibleColumns}
-            onSelectionChange={setVisibleColumns}
-            label={t('Columns')}
-          />
-
-          <Button
-            onClick={() => setEditModal({ open: true, record: null })}
-            className="flex items-center gap-2"
-            style={{ background: MODEL_GRADIENTS[0], color: '#fff' }}
-          >
-            <Plus size={18} />
-            {t('Add New')}
-          </Button>
         </div>
       )}
 
@@ -1817,9 +1839,9 @@ export default function MasterLookupsPage() {
               <Button
                 onClick={() => setIsAddModelModalOpen(true)}
                 className="flex items-center gap-2"
-                style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', color: '#fff' }}
+                style={{ background: colors.action, color: '#fff' }}
               >
-                <Plus size={18} />
+                <Plus size={18} color="#fff" />
                 {t('Add Lookup Master')}
               </Button>
               <Button

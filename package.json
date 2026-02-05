@@ -7,7 +7,24 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report e2e-report",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:mobile": "playwright test --project='Mobile Chrome' --project='Mobile Safari'",
+    "test:auth": "playwright test auth.spec.ts",
+    "test:nav": "playwright test navigation.spec.ts",
+    "test:products": "playwright test products.spec.ts",
+    "test:stock": "playwright test stock-operations.spec.ts",
+    "test:dashboard": "playwright test dashboard.spec.ts",
+    "test:users": "playwright test user-management.spec.ts",
+    "test:settings": "playwright test settings.spec.ts",
+    "test:generate-report": "npx ts-node scripts/generate-test-report.ts"
   },
   "dependencies": {
     "@casl/ability": "^6.7.3",
@@ -86,6 +103,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
+    "@playwright/test": "^1.58.1",
     "@types/node": "^24.6.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
