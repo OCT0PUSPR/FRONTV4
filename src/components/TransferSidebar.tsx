@@ -4,7 +4,7 @@ import { useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { useTheme } from "../../context/theme"
-import { X } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface TransferSidebarProps {
     isOpen: boolean
@@ -22,8 +22,10 @@ export function TransferSidebar({
     width = "42%"
 }: TransferSidebarProps) {
     const { colors, mode } = useTheme()
+    const { i18n } = useTranslation()
     const navigate = useNavigate()
     const isDark = mode === 'dark'
+    const isRTL = i18n.dir() === 'rtl'
 
     // Handle escape key
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -75,70 +77,29 @@ export function TransferSidebar({
 
                     {/* Sidebar */}
                     <motion.div
-                        initial={{ x: '100%' }}
+                        initial={{ x: isRTL ? '-100%' : '100%' }}
                         animate={{ x: 0 }}
-                        exit={{ x: '100%' }}
+                        exit={{ x: isRTL ? '-100%' : '100%' }}
                         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
                         style={{
                             position: 'fixed',
                             top: 0,
-                            right: 0,
+                            [isRTL ? 'left' : 'right']: 0,
                             bottom: 0,
                             width: width,
                             minWidth: '400px',
                             maxWidth: '700px',
                             background: colors.background,
                             boxShadow: isDark
-                                ? '-8px 0 40px rgba(0, 0, 0, 0.5)'
-                                : '-8px 0 40px rgba(0, 0, 0, 0.15)',
+                                ? `${isRTL ? '8px' : '-8px'} 0 40px rgba(0, 0, 0, 0.5)`
+                                : `${isRTL ? '8px' : '-8px'} 0 40px rgba(0, 0, 0, 0.15)`,
                             zIndex: 1001,
                             display: 'flex',
                             flexDirection: 'column',
                             overflow: 'hidden',
                         }}
                     >
-                        {/* Sidebar Header with Close Button */}
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                            padding: '8px 12px',
-                            background: colors.card,
-                            borderBottom: `1px solid ${colors.border}`,
-                            flexShrink: 0,
-                        }}>
-                            <button
-                                onClick={onClose}
-                                style={{
-                                    width: '32px',
-                                    height: '32px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    background: colors.background,
-                                    border: `1px solid ${colors.border}`,
-                                    borderRadius: '8px',
-                                    color: colors.textSecondary,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = colors.card
-                                    e.currentTarget.style.color = colors.textPrimary
-                                    e.currentTarget.style.borderColor = colors.textSecondary
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = colors.background
-                                    e.currentTarget.style.color = colors.textSecondary
-                                    e.currentTarget.style.borderColor = colors.border
-                                }}
-                                title="Close (Esc)"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-
-                        {/* Content */}
+                        {/* Content - header with close button should be provided by children */}
                         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                             {children}
                         </div>

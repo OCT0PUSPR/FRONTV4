@@ -77,7 +77,9 @@ function SerialNumberSidebar({
   children: React.ReactNode
 }) {
   const { colors, mode } = useTheme()
+  const { i18n } = useTranslation()
   const isDark = mode === 'dark'
+  const isRTL = i18n.dir() === 'rtl'
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape' && isOpen) onClose()
@@ -112,64 +114,28 @@ function SerialNumberSidebar({
             }}
           />
           <motion.div
-            initial={{ x: '100%' }}
+            initial={{ x: isRTL ? '-100%' : '100%' }}
             animate={{ x: 0 }}
-            exit={{ x: '100%' }}
+            exit={{ x: isRTL ? '-100%' : '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             style={{
               position: 'fixed',
               top: 0,
-              right: 0,
+              [isRTL ? 'left' : 'right']: 0,
               bottom: 0,
               width: '480px',
               maxWidth: '100vw',
               background: colors.background,
               boxShadow: isDark
-                ? '-12px 0 48px rgba(0, 0, 0, 0.5)'
-                : '-12px 0 48px rgba(0, 0, 0, 0.12)',
+                ? `${isRTL ? '12px' : '-12px'} 0 48px rgba(0, 0, 0, 0.5)`
+                : `${isRTL ? '12px' : '-12px'} 0 48px rgba(0, 0, 0, 0.12)`,
               zIndex: 1001,
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
             }}
           >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              padding: '12px 16px',
-              background: colors.card,
-              borderBottom: `1px solid ${colors.border}`,
-              flexShrink: 0,
-            }}>
-              <button
-                onClick={onClose}
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'transparent',
-                  border: 'none',
-                  borderRadius: '10px',
-                  color: colors.textSecondary,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = colors.mutedBg
-                  e.currentTarget.style.color = colors.textPrimary
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent'
-                  e.currentTarget.style.color = colors.textSecondary
-                }}
-                title="Close (Esc)"
-              >
-                <X size={20} />
-              </button>
-            </div>
+            {/* Content - header with close button should be provided by children */}
             <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
               {children}
             </div>
@@ -594,21 +560,28 @@ function SerialNumberRecordPanel({
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* Header - Clean and minimal */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', direction: isRTL ? 'rtl' : 'ltr' }}>
+        {/* Header with title and close button */}
         <div style={{
-          padding: '20px 24px',
+          padding: '16px 20px',
           borderBottom: `1px solid ${colors.border}`,
           background: colors.card,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
             <Hash size={24} color="#0ea5e9" strokeWidth={2} />
-            <div>
+            <div style={{ minWidth: 0, flex: 1 }}>
               <h2 style={{
                 fontSize: '1.125rem',
                 fontWeight: '600',
                 color: colors.textPrimary,
                 margin: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}>
                 {isCreating ? t('New Serial Number') : record?.name || t('Serial Number')}
               </h2>
@@ -623,6 +596,34 @@ function SerialNumberRecordPanel({
               )}
             </div>
           </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'transparent',
+              border: 'none',
+              borderRadius: '10px',
+              color: colors.textSecondary,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = colors.mutedBg
+              e.currentTarget.style.color = colors.textPrimary
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.color = colors.textSecondary
+            }}
+            title={t('Close (Esc)')}
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* Form Content */}

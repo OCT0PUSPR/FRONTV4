@@ -1,9 +1,9 @@
 
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation, matchPath } from "react-router-dom"
 import {
   Plus,
   Package,
@@ -23,14 +23,19 @@ import { Button } from "../@/components/ui/button"
 import { Badge } from "../@/components/ui/badge"
 import { useTheme } from "../context/theme"
 import { useData } from "../context/data"
+import { useAuth } from "../context/auth"
 import { useCasl } from "../context/casl"
+import { API_CONFIG } from "./config/api"
 import { StatCard } from "./components/StatCard"
 import { BatchCard } from "./components/BatchCard"
 import { TransferFiltersBar } from "./components/TransferFiltersBar"
+import { TransferSidebar } from "./components/TransferSidebar"
+import { BatchRecordPage } from "./pages/BatchRecordPage"
 import { Skeleton } from "@mui/material"
 import { DataTable, ColumnDef } from "./components/DataTable"
 import ExportModal, { ExportOptions } from "./components/ExportModal"
 import { useExport } from "./hooks/useExport"
+import Toast from "./components/Toast"
 
 function mapBatches(raw: any[]): any[] {
   return (raw || []).map((r: any, idx: number) => {
@@ -201,9 +206,24 @@ export default function BatchTransfersPage() {
   const { t, i18n } = useTranslation()
   const isRTL = i18n.dir() === "rtl"
   const navigate = useNavigate()
+  const location = useLocation()
   const { colors, mode } = useTheme()
-  const { pickingTransfers, fetchData, loading } = useData()
+  const { sessionId } = useAuth()
   const { canCreatePage, canEditPage, canExportPage } = useCasl()
+
+  // Detect if we're on a view/edit/create subroute for sidebar display
+  const viewMatch = matchPath('/batch/view/:id', location.pathname)
+  const editMatch = matchPath('/batch/edit/:id', location.pathname)
+  const createMatch = matchPath('/batch/create', location.pathname)
+  const sidebarRecordId = viewMatch?.params?.id || editMatch?.params?.id
+  const isCreating = !!createMatch
+  const isSidebarOpen = !!sidebarRecordId || isCreating
+
+  // Batch data state
+  const [batchRecords, setBatchRecords] = useState<any[]>([])
+  const [batchLoading, setBatchLoading] = useState(false)
+  const [toast, setToast] = useState<{ text: string; state: "success" | "error" } | null>(null)
+
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedBatch, setSelectedBatch] = useState<any | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -227,6 +247,53 @@ export default function BatchTransfersPage() {
     "status",
   ])
 
+  // Get headers for API calls
+  const getHeaders = useCallback((): Record<string, string> => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    const tenantId = localStorage.getItem('current_tenant_id')
+    if (tenantId) headers['X-Tenant-ID'] = tenantId
+    if (sessionId) headers['X-Odoo-Session'] = sessionId
+    const odooBase = localStorage.getItem('odooBase')
+    const odooDb = localStorage.getItem('odooDb')
+    if (odooBase) headers['x-odoo-base'] = odooBase
+    if (odooDb) headers['x-odoo-db'] = odooDb
+    return headers
+  }, [sessionId])
+
+  // Fetch batch data from stock.picking.batch
+  const fetchBatchData = useCallback(async () => {
+    if (!sessionId) return
+
+    setBatchLoading(true)
+    try {
+      const executeUrl = `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.picking.batch/execute`
+      const res = await fetch(executeUrl, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          method: 'search_read',
+          args: [[['is_wave', '=', false]]],
+          kwargs: {
+            fields: ['id', 'name', 'state', 'description', 'user_id', 'company_id', 'picking_type_id', 'scheduled_date', 'is_wave', 'picking_ids', 'vehicle_id', 'vehicle_category_id', 'dock_id'],
+            limit: 500,
+            order: 'id desc'
+          }
+        })
+      })
+      const data = await res.json()
+
+      if (data.success && data.result) {
+        setBatchRecords(data.result)
+      } else {
+        console.error('Error fetching batches:', data.error)
+      }
+    } catch (error) {
+      console.error('Error fetching batches:', error)
+    } finally {
+      setBatchLoading(false)
+    }
+  }, [sessionId, getHeaders])
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 640)
@@ -236,12 +303,18 @@ export default function BatchTransfersPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Fetch data on mount
+  // Fetch batch data on mount
   useEffect(() => {
-    fetchData("pickingTransfers")
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    fetchBatchData()
+  }, [fetchBatchData])
 
-  const batches = useMemo(() => mapBatches(pickingTransfers), [pickingTransfers])
+  // Close sidebar handler
+  const handleCloseSidebar = () => {
+    navigate('/batch')
+  }
+
+  const batches = useMemo(() => mapBatches(batchRecords), [batchRecords])
+  const loading = { pickingTransfers: batchLoading }
   
   const filteredBatches = useMemo(() => {
     return batches.filter((batch) => {
@@ -492,8 +565,8 @@ export default function BatchTransfersPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => fetchData("pickingTransfers")}
-                disabled={!!loading?.pickingTransfers}
+                onClick={() => fetchBatchData()}
+                disabled={batchLoading}
                 className="gap-2 font-semibold border"
                 style={{
                   background: colors.card,
@@ -504,8 +577,8 @@ export default function BatchTransfersPage() {
                   width: isMobile ? "100%" : "auto",
                 }}
               >
-                <RefreshCcw className={`w-4 h-4 ${loading?.pickingTransfers ? "animate-spin" : ""}`} />
-                {loading?.pickingTransfers ? t("Loading...") : t("Refresh")}
+                <RefreshCcw className={`w-4 h-4 ${batchLoading ? "animate-spin" : ""}`} />
+                {batchLoading ? t("Loading...") : t("Refresh")}
               </Button>
               {canCreatePage("batch") && (
                 <Button
@@ -1345,6 +1418,28 @@ export default function BatchTransfersPage() {
           isSelectAll={Object.keys(rowSelection).length === filteredBatches.length && filteredBatches.length > 0}
         />
       )}
+
+      {/* Batch Record Sidebar */}
+      <TransferSidebar
+        isOpen={isSidebarOpen}
+        onClose={handleCloseSidebar}
+        backRoute="/batch"
+      >
+        {(sidebarRecordId || isCreating) && (
+          <BatchRecordPage
+            pageTitle={isCreating ? t("New Batch") : t("Batch")}
+            backRoute="/batch"
+            recordId={sidebarRecordId ? parseInt(sidebarRecordId) : undefined}
+            isSidebar={true}
+            onClose={handleCloseSidebar}
+            onDataChange={fetchBatchData}
+            isWave={false}
+          />
+        )}
+      </TransferSidebar>
+
+      {/* Toast */}
+      {toast && <Toast {...toast} onClose={() => setToast(null)} />}
     </div>
   )
 }

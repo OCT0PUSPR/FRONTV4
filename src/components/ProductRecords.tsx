@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { Package, DollarSign, Layers, TrendingUp, RefreshCcw, Plus, Banknote, Upload } from "lucide-react"
+import { Package, DollarSign, Layers, TrendingUp, RefreshCcw, Plus, Banknote, Upload, LayoutGrid, Table2, Eye, Edit, Trash2 } from "lucide-react"
 import { DynamicImportModal } from "./DynamicImportWizard/DynamicImportModal"
 import { StatCard } from "./StatCard"
 import { ProductRecordCard } from "./ProductRecordCard"
@@ -10,8 +10,14 @@ import { Skeleton } from "@mui/material"
 import { useTheme } from "../../context/theme"
 import { useCasl } from "../../context/casl"
 import { TransferFiltersBar } from "./TransferFiltersBar"
+import { TransfersTable, ColumnDef } from "./TransfersTable"
 import { Button } from "../../@/components/ui/button"
 import { useAuth } from "../../context/auth"
+import { useSmartFieldRecords } from "../hooks/useSmartFieldRecords"
+import { generateColumnsFromFields } from "../utils/generateColumnsFromFields"
+import { API_CONFIG } from "../config/api"
+import Toast from "./Toast"
+import { BulkDeleteModal } from "./BulkDeleteModal"
 
 interface Product {
   id: number
@@ -26,24 +32,29 @@ interface Product {
   weight: number
   sale_ok: boolean
   barcode: string
+  type?: string
+  uom_id?: [number, string]
+  tracking?: string
 }
 
 interface ProductRecordsProps {
   products: Product[]
   onAddProduct?: () => void
   onEditProduct?: (productId: number) => void
+  onViewProduct?: (productId: number) => void
   onRefresh?: () => void
   isLoading?: boolean
   error?: string | null
   onImportComplete?: () => void
 }
 
-export function ProductRecords({ products, onAddProduct, onEditProduct, onRefresh, isLoading = false, error = null, onImportComplete }: ProductRecordsProps) {
+export function ProductRecords({ products, onAddProduct, onEditProduct, onViewProduct, onRefresh, isLoading = false, error = null, onImportComplete }: ProductRecordsProps) {
   const { t, i18n } = useTranslation()
   const isRTL = i18n.dir() === "rtl"
-  const { colors } = useTheme()
-  const { canCreatePage, canEditPage } = useCasl()
-  const { currencySymbol } = useAuth()
+  const { colors, mode } = useTheme()
+  const isDark = mode === "dark"
+  const { canCreatePage, canEditPage, canDeletePage } = useCasl()
+  const { currencySymbol, sessionId } = useAuth()
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [statusFilter, setStatusFilter] = useState<string[]>([])
@@ -53,6 +64,64 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
   const [isRowModalOpen, setIsRowModalOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards")
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([])
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
+  const [isSelectAll, setIsSelectAll] = useState<boolean | "indeterminate">(false)
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false)
+  const [toast, setToast] = useState<{ text: string; state: "success" | "error" } | null>(null)
+
+  // Fetch product data using SmartFieldRecords for table view
+  const {
+    records: smartFieldRecords,
+    fields: smartFields,
+    columns: availableColumns,
+    loading: smartFieldLoading,
+    refetch: refetchSmartFields
+  } = useSmartFieldRecords({
+    modelName: 'product.template',
+    enabled: !!sessionId && viewMode === 'table',
+  })
+
+  // Generate table columns from fields
+  const tableColumns = useMemo(() => {
+    if (!smartFields.length) return []
+    return generateColumnsFromFields(smartFields, colors, t)
+  }, [smartFields, colors, t, i18n?.language])
+
+  // Set default visible columns when available
+  useEffect(() => {
+    if (availableColumns.length > 0 && visibleColumns.length === 0) {
+      const productPriorityFields = [
+        'id',
+        'name',
+        'default_code',
+        'qty_available',
+        'list_price',
+        'categ_id',
+        'type',
+        'uom_id',
+      ]
+
+      const defaultCols: string[] = []
+
+      for (const field of productPriorityFields) {
+        if (availableColumns.some(col => col.id === field)) {
+          defaultCols.push(field)
+        }
+      }
+
+      if (defaultCols.length < 8) {
+        availableColumns.forEach(col => {
+          if (!defaultCols.includes(col.id) && defaultCols.length < 8) {
+            defaultCols.push(col.id)
+          }
+        })
+      }
+
+      setVisibleColumns(defaultCols)
+    }
+  }, [availableColumns, visibleColumns.length])
 
   const handleImportComplete = () => {
     setIsImportModalOpen(false)
@@ -64,6 +133,94 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
     }
   }
 
+  const showToast = (text: string, state: "success" | "error") => {
+    setToast({ text, state })
+  }
+
+  const getSmartFieldHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+    const tenantId = localStorage.getItem('current_tenant_id')
+    if (tenantId) headers['X-Tenant-ID'] = tenantId
+    if (sessionId) headers['X-Odoo-Session'] = sessionId
+    const odooBase = localStorage.getItem('odooBase')
+    const odooDb = localStorage.getItem('odooDb')
+    if (odooBase) headers['x-odoo-base'] = odooBase
+    if (odooDb) headers['x-odoo-db'] = odooDb
+    return headers
+  }
+
+  // Bulk delete selected records
+  const handleBulkDeleteSelected = async () => {
+    if (!sessionId) return
+    const selectedIds = Object.keys(rowSelection).map(id => parseInt(id))
+    if (selectedIds.length === 0) return
+
+    const headers = getSmartFieldHeaders()
+
+    try {
+      // Use bulk delete endpoint
+      const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/product.template`, {
+        method: "DELETE",
+        headers,
+        body: JSON.stringify({ ids: selectedIds }),
+      })
+      const data = await res.json().catch(() => ({}))
+
+      if (res.ok && data?.success) {
+        showToast(t("{{count}} records deleted successfully", { count: selectedIds.length }), "success")
+      } else {
+        throw new Error(data?.error || "Delete failed")
+      }
+    } catch (error) {
+      console.error("Bulk delete failed:", error)
+      showToast(t("Failed to delete records"), "error")
+    }
+
+    // Clear selection and refresh data
+    setRowSelection({})
+    setIsSelectAll(false)
+    setIsBulkDeleteModalOpen(false)
+    await refetchSmartFields()
+    if (onRefresh) onRefresh()
+  }
+
+  // Bulk delete all filtered records
+  const handleBulkDeleteAll = async () => {
+    if (!sessionId) return
+    const allFilteredIds = filteredSmartFieldRecords.map((r: any) => r.id)
+    if (allFilteredIds.length === 0) return
+
+    const headers = getSmartFieldHeaders()
+
+    try {
+      // Use bulk delete endpoint
+      const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/product.template`, {
+        method: "DELETE",
+        headers,
+        body: JSON.stringify({ ids: allFilteredIds }),
+      })
+      const data = await res.json().catch(() => ({}))
+
+      if (res.ok && data?.success) {
+        showToast(t("{{count}} records deleted successfully", { count: allFilteredIds.length }), "success")
+      } else {
+        throw new Error(data?.error || "Delete failed")
+      }
+    } catch (error) {
+      console.error("Bulk delete all failed:", error)
+      showToast(t("Failed to delete records"), "error")
+    }
+
+    // Clear selection and refresh data
+    setRowSelection({})
+    setIsSelectAll(false)
+    setIsBulkDeleteModalOpen(false)
+    await refetchSmartFields()
+    if (onRefresh) onRefresh()
+  }
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 640)
@@ -73,10 +230,10 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  const categories = Array.from(new Set(products.map((p) => p.categ_id[1])))
+  const categories = Array.from(new Set(products.map((p) => p.categ_id?.[1]).filter(Boolean)))
   const statusOptions = ["available", "out-of-stock", "for-sale"]
   const priceRangeOptions = ["0-50", "50-100", "100-500", "500+"]
-  
+
   // Format price range options for display
   const formattedPriceRangeOptions = priceRangeOptions.map((range) => {
     if (range === "0-50") return `${currencySymbol}0 - ${currencySymbol}50`
@@ -85,16 +242,16 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
     if (range === "500+") return `${currencySymbol}500+`
     return range
   })
-  
+
   // Helper function to convert formatted price range back to value format
   const getPriceRangeValue = (formatted: string): string => {
-    if (formatted === "$0 - $50") return "0-50"
-    if (formatted === "$50 - $100") return "50-100"
-    if (formatted === "$100 - $500") return "100-500"
-    if (formatted === "$500+") return "500+"
+    if (formatted.includes("0") && formatted.includes("50") && !formatted.includes("100")) return "0-50"
+    if (formatted.includes("50") && formatted.includes("100")) return "50-100"
+    if (formatted.includes("100") && formatted.includes("500")) return "100-500"
+    if (formatted.includes("500+") || formatted.endsWith("+")) return "500+"
     return formatted
   }
-  
+
   // Convert formatted price range filter back to values for filtering
   const priceRangeFilterValues = priceRangeFilter.map(getPriceRangeValue)
 
@@ -111,7 +268,7 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
     const matchesSearch = nameMatch || defaultCodeMatch || barcodeMatch
 
     const matchesCategory =
-      categoryFilter.length === 0 || categoryFilter.includes(product.categ_id[1])
+      categoryFilter.length === 0 || (product.categ_id && categoryFilter.includes(product.categ_id[1]))
 
     const matchesStatus =
       statusFilter.length === 0 ||
@@ -135,6 +292,52 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
     return matchesSearch && matchesCategory && matchesStatus && matchesPriceRange
   })
 
+  // Filter smartFieldRecords for table view
+  const filteredSmartFieldRecords = useMemo(() => {
+    if (viewMode !== 'table' || !smartFieldRecords.length) return []
+
+    return smartFieldRecords.filter((record: any) => {
+      const query = searchQuery.toLowerCase()
+      const nameMatch = (record.name || "").toLowerCase().includes(query)
+      const defaultCodeMatch = record.default_code
+        ? String(record.default_code).toLowerCase().includes(query)
+        : false
+      const barcodeMatch = record.barcode
+        ? String(record.barcode).toLowerCase().includes(query)
+        : false
+
+      const matchesSearch = !searchQuery || nameMatch || defaultCodeMatch || barcodeMatch
+
+      const categoryName = Array.isArray(record.categ_id) ? record.categ_id[1] : ''
+      const matchesCategory =
+        categoryFilter.length === 0 || categoryFilter.includes(categoryName)
+
+      const qtyAvailable = record.qty_available || 0
+      const saleOk = record.sale_ok
+      const matchesStatus =
+        statusFilter.length === 0 ||
+        statusFilter.some((status) => {
+          if (status === "available") return qtyAvailable > 0
+          if (status === "out-of-stock") return qtyAvailable === 0
+          if (status === "for-sale") return saleOk
+          return false
+        })
+
+      const listPrice = record.list_price || 0
+      const matchesPriceRange =
+        priceRangeFilterValues.length === 0 ||
+        priceRangeFilterValues.some((range) => {
+          if (range === "0-50") return listPrice < 50
+          if (range === "50-100") return listPrice >= 50 && listPrice < 100
+          if (range === "100-500") return listPrice >= 100 && listPrice < 500
+          if (range === "500+") return listPrice >= 500
+          return false
+        })
+
+      return matchesSearch && matchesCategory && matchesStatus && matchesPriceRange
+    })
+  }, [smartFieldRecords, searchQuery, categoryFilter, statusFilter, priceRangeFilterValues, viewMode])
+
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
@@ -145,13 +348,50 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
   }, [searchQuery, categoryFilter, statusFilter, priceRangeFilter])
 
   const totalProducts = products.length
-  const totalValue = products.reduce((sum, p) => sum + p.list_price * p.qty_available, 0)
-  const inStock = products.filter((p) => p.qty_available > 0).length
+  const totalValue = products.reduce((sum, p) => sum + (p.list_price || 0) * (p.qty_available || 0), 0)
+  const inStock = products.filter((p) => (p.qty_available || 0) > 0).length
   const forSale = products.filter((p) => p.sale_ok).length
 
   const handleProductClick = (product: Product) => {
-    if (onEditProduct && canEditPage("products")) {
+    if (onViewProduct) {
+      onViewProduct(product.id)
+    } else if (onEditProduct && canEditPage("products")) {
       onEditProduct(product.id)
+    }
+  }
+
+  // Table row actions
+  const getRowActions = (product: any) => {
+    const actions = []
+
+    if (onViewProduct) {
+      actions.push({
+        key: 'view',
+        label: t('View'),
+        icon: Eye,
+        onClick: () => onViewProduct(product.id),
+      })
+    }
+
+    if (onEditProduct && canEditPage("products")) {
+      actions.push({
+        key: 'edit',
+        label: t('Edit'),
+        icon: Edit,
+        onClick: () => onEditProduct(product.id),
+      })
+    }
+
+    return actions
+  }
+
+  // Handle refresh based on view mode
+  const handleRefresh = () => {
+    if (viewMode === 'table') {
+      refetchSmartFields()
+    }
+    if (onRefresh) {
+      onRefresh()
     }
   }
 
@@ -183,20 +423,20 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
         }}
       >
         <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-          <div style={{ 
-            display: "flex", 
+          <div style={{
+            display: "flex",
             flexDirection: isMobile ? "column" : "row",
-            justifyContent: "space-between", 
-            alignItems: isMobile ? "flex-start" : "center", 
+            justifyContent: "space-between",
+            alignItems: isMobile ? "flex-start" : "center",
             gap: isMobile ? "1rem" : "0",
-            marginBottom: "2rem" 
+            marginBottom: "2rem"
           }}>
             <div>
-              <h1 style={{ 
-                fontSize: isMobile ? "1.5rem" : "2rem", 
-                fontWeight: "700", 
-                marginBottom: "0.5rem", 
-                color: colors.textPrimary 
+              <h1 style={{
+                fontSize: isMobile ? "1.5rem" : "2rem",
+                fontWeight: "700",
+                marginBottom: "0.5rem",
+                color: colors.textPrimary
               }}>
                 {t("Product Catalog")}
               </h1>
@@ -204,13 +444,63 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
                 {t("Manage your product inventory and details")}
               </p>
             </div>
-            <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", width: isMobile ? "100%" : "auto" }}>
+            <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", width: isMobile ? "100%" : "auto", flexWrap: "wrap" }}>
+              {/* View Mode Toggle */}
+              <div style={{
+                display: "flex",
+                background: colors.mutedBg,
+                borderRadius: "8px",
+                padding: "4px",
+                border: `1px solid ${colors.border}`,
+              }}>
+                <button
+                  onClick={() => setViewMode("cards")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "6px",
+                    border: "none",
+                    background: viewMode === "cards" ? colors.action : "transparent",
+                    color: viewMode === "cards" ? "#FFFFFF" : colors.textSecondary,
+                    cursor: "pointer",
+                    fontSize: "0.8125rem",
+                    fontWeight: "500",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  <LayoutGrid size={16} />
+                  {!isMobile && t("Cards")}
+                </button>
+                <button
+                  onClick={() => setViewMode("table")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "6px",
+                    border: "none",
+                    background: viewMode === "table" ? colors.action : "transparent",
+                    color: viewMode === "table" ? "#FFFFFF" : colors.textSecondary,
+                    cursor: "pointer",
+                    fontSize: "0.8125rem",
+                    fontWeight: "500",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  <Table2 size={16} />
+                  {!isMobile && t("Table")}
+                </button>
+              </div>
+
               {onRefresh && (
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={onRefresh}
-                  disabled={isLoading}
+                  onClick={handleRefresh}
+                  disabled={isLoading || smartFieldLoading}
                   className="gap-2 font-semibold border"
                   style={{
                     background: colors.card,
@@ -221,8 +511,8 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
                     width: isMobile ? "100%" : "auto",
                   }}
                 >
-                  <RefreshCcw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-                  {isLoading ? t("Loading...") : t("Refresh")}
+                  <RefreshCcw className={`w-4 h-4 ${isLoading || smartFieldLoading ? "animate-spin" : ""}`} />
+                  {isLoading || smartFieldLoading ? t("Loading...") : t("Refresh")}
                 </Button>
               )}
               {canCreatePage("products") && (
@@ -328,7 +618,59 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
               isMobile={isMobile}
             />
 
-            {isLoading ? (
+            {/* Table View */}
+            {viewMode === "table" && (
+              smartFieldLoading ? (
+                <div style={{
+                  background: colors.card,
+                  borderRadius: "12px",
+                  border: `1px solid ${colors.border}`,
+                  padding: "24px",
+                }}>
+                  {Array.from({ length: 10 }).map((_, idx) => (
+                    <div key={idx} style={{ display: "flex", gap: "16px", marginBottom: "16px" }}>
+                      {Array.from({ length: 6 }).map((_, colIdx) => (
+                        <Skeleton
+                          key={colIdx}
+                          variant="rectangular"
+                          width={colIdx === 0 ? 60 : "100%"}
+                          height={24}
+                          sx={{ borderRadius: "6px", bgcolor: colors.mutedBg }}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <TransfersTable
+                  data={filteredSmartFieldRecords}
+                  rowSelection={rowSelection}
+                  onRowSelectionChange={setRowSelection}
+                  onSelectAllChange={setIsSelectAll}
+                  totalRecords={filteredSmartFieldRecords.length}
+                  isLoading={smartFieldLoading}
+                  visibleColumns={visibleColumns}
+                  onVisibleColumnsChange={setVisibleColumns}
+                  columns={tableColumns}
+                  actions={canEditPage("products") ? getRowActions : undefined}
+                  actionsLabel={t("Actions")}
+                  isRTL={isRTL}
+                  getRowIcon={(product: any) => ({
+                    icon: Package,
+                    gradient: (product.qty_available || 0) > 0
+                      ? "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
+                      : "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  })}
+                  showPagination={true}
+                  defaultItemsPerPage={10}
+                  onBulkDelete={canDeletePage("products") ? () => setIsBulkDeleteModalOpen(true) : undefined}
+                />
+              )
+            )}
+
+            {/* Cards View */}
+            {viewMode === "cards" && (
+              isLoading ? (
               <div
                 style={{
                   display: "grid",
@@ -564,6 +906,7 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
                   </div>
                 )}
               </>
+            )
             )}
           </div>
         </div>
@@ -575,6 +918,29 @@ export function ProductRecords({ products, onAddProduct, onEditProduct, onRefres
         onClose={() => setIsImportModalOpen(false)}
         onComplete={handleImportComplete}
       />
+
+      {/* Bulk Delete Modal */}
+      {canDeletePage("products") && (
+        <BulkDeleteModal
+          isOpen={isBulkDeleteModalOpen}
+          onClose={() => setIsBulkDeleteModalOpen(false)}
+          selectedCount={Object.keys(rowSelection).length}
+          totalCount={filteredSmartFieldRecords.length}
+          isSelectAll={isSelectAll === true}
+          onDeleteSelected={handleBulkDeleteSelected}
+          onDeleteAll={handleBulkDeleteAll}
+          modelLabel={t("products")}
+        />
+      )}
+
+      {/* Toast notifications */}
+      {toast && (
+        <Toast
+          text={toast.text}
+          state={toast.state}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   )
 }

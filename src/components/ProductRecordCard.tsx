@@ -73,23 +73,22 @@ export function ProductRecordCard({ product, onClick, index }: ProductRecordCard
         <div className="p-6">
           {/* Header Section */}
           <div className="flex items-start gap-4 mb-6">
-            <div
-              className="w-12 h-12 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300 rounded-xl"
-              style={{ 
-                background: '#ffffff',
-                border: `1px solid ${colors.border}`
-              }}
-            >
-              {product.image_512 ? (
+            {/* Only show image container if product has an image */}
+            {product.image_512 && (
+              <div
+                className="w-12 h-12 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300 rounded-xl overflow-hidden flex-shrink-0"
+                style={{
+                  background: '#ffffff',
+                  border: `1px solid ${colors.border}`
+                }}
+              >
                 <img
                   src={`data:image/webp;base64,${product.image_512}`}
                   alt={product.name}
-                  className="w-full h-full object-contain rounded-xl p-1"
+                  className="w-full h-full object-contain p-1"
                 />
-              ) : (
-                <Package className="w-6 h-6 text-white" />
-              )}
-            </div>
+              </div>
+            )}
 
             <div className="flex-1 pt-1">
               <div className="flex items-center gap-2 mb-1">

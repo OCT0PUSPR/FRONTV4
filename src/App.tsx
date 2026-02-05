@@ -469,8 +469,9 @@ function AppContent() {
                   <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
                     <Routes>
                       <Route path="/products" element={<ProtectedRoute pageId={getPageIdFromRoute('/products') || 'products'}><Products /></ProtectedRoute>} />
-                      <Route path="/products/edit/:id" element={<ProtectedRoute pageId="products"><DynamicRecordPage modelName="product.template" pageTitle="Product" backRoute="/products" /></ProtectedRoute>} />
-                      <Route path="/products/create" element={<ProtectedRoute pageId="products"><DynamicRecordPage modelName="product.template" pageTitle="Product" backRoute="/products" /></ProtectedRoute>} />
+                      <Route path="/products/view/:id" element={<ProtectedRoute pageId="products"><Products /></ProtectedRoute>} />
+                      <Route path="/products/edit/:id" element={<ProtectedRoute pageId="products"><Products /></ProtectedRoute>} />
+                      <Route path="/products/create" element={<ProtectedRoute pageId="products"><Products /></ProtectedRoute>} />
                       <Route path="/overview" element={<ProtectedRoute pageId={getPageIdFromRoute('/overview') || 'overview'}><LandingPage /></ProtectedRoute>} />
                       <Route path="/stocks" element={<ProtectedRoute pageId={getPageIdFromRoute('/stocks') || 'stocks'}><Stocks /></ProtectedRoute>} />
                       <Route path="/receipts" element={<ProtectedRoute pageId={getPageIdFromRoute('/receipts') || 'receipts'}><TransferReceiptsPage /></ProtectedRoute>} />
@@ -509,7 +510,9 @@ function AppContent() {
                       {/* Physical Inventory Routes */}
                       <Route path="/physical-inventory" element={<ProtectedRoute pageId={getPageIdFromRoute('/physical-inventory') || 'physical-inventory'}><PhysicalInventoryDashboard /></ProtectedRoute>} />
                       <Route path="/physical-inventory/orders" element={<ProtectedRoute pageId="physical-inventory-orders"><PIOrderListPage /></ProtectedRoute>} />
-                      <Route path="/physical-inventory/orders/create" element={<ProtectedRoute pageId="physical-inventory-orders-create"><PICreateOrderPage /></ProtectedRoute>} />
+                      <Route path="/physical-inventory/orders/create" element={<ProtectedRoute pageId="physical-inventory-orders"><PIOrderListPage /></ProtectedRoute>} />
+                      <Route path="/physical-inventory/orders/view/:id" element={<ProtectedRoute pageId="physical-inventory-orders"><PIOrderListPage /></ProtectedRoute>} />
+                      <Route path="/physical-inventory/orders/edit/:id" element={<ProtectedRoute pageId="physical-inventory-orders"><PIOrderListPage /></ProtectedRoute>} />
                       <Route path="/physical-inventory/orders/:id" element={<ProtectedRoute pageId="physical-inventory-orders-detail"><PIOrderDetailPage /></ProtectedRoute>} />
                       <Route path="/physical-inventory/orders/:id/review" element={<ProtectedRoute pageId="physical-inventory-orders-review"><DiscrepancyReviewPage /></ProtectedRoute>} />
                       <Route path="/warehouse" element={<ProtectedRoute pageId={getPageIdFromRoute('/warehouse') || 'warehouse'}><WarehousesPage /></ProtectedRoute>} />

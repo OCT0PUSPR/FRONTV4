@@ -121,6 +121,32 @@ interface MoveData {
     product_image?: string | false
     isNew?: boolean
     isModified?: boolean
+    has_tracking?: 'serial' | 'lot' | 'none'
+    move_line_ids?: number[]
+}
+
+interface MoveLineData {
+    id: number
+    move_id: [number, string] | number
+    product_id: [number, string]
+    product_uom_id: [number, string] | false
+    quantity: number
+    lot_id: [number, string] | false
+    lot_name: string | false
+    tracking: 'serial' | 'lot' | 'none'
+    location_id: [number, string] | false
+    location_dest_id: [number, string] | false
+    isNew?: boolean
+    isModified?: boolean
+}
+
+interface LotOption {
+    id: number
+    name: string
+    product_qty?: number
+    available_qty?: number
+    location_id?: number
+    location_name?: string
 }
 
 interface ProductOption {
@@ -168,10 +194,26 @@ export function TransferRecordPage({
     const [saving, setSaving] = useState(false)
     const [transferData, setTransferData] = useState<TransferData | null>(null)
     const [moves, setMoves] = useState<MoveData[]>([])
+    const [moveLines, setMoveLines] = useState<MoveLineData[]>([])
     const [toast, setToast] = useState<{ text: string; state: "success" | "error" } | null>(null)
     const [executingAction, setExecutingAction] = useState<string | null>(null)
     const [linesExpanded, setLinesExpanded] = useState(true)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+
+    // Lot/Serial tracking state
+    const [expandedMoveId, setExpandedMoveId] = useState<number | null>(null)
+    const [lotOptions, setLotOptions] = useState<Record<number, LotOption[]>>({}) // productId -> lots
+    const [lotSearchLoading, setLotSearchLoading] = useState(false)
+    const [newLotName, setNewLotName] = useState('')
+    const [selectedLotId, setSelectedLotId] = useState<number | null>(null)
+    const [selectedLotQty, setSelectedLotQty] = useState<number>(1)
+
+    // Generate Serials modal state
+    const [generateSerialsModalOpen, setGenerateSerialsModalOpen] = useState(false)
+    const [generateSerialsForMoveId, setGenerateSerialsForMoveId] = useState<number | null>(null)
+    const [firstSerialNumber, setFirstSerialNumber] = useState('')
+    const [numberOfSerials, setNumberOfSerials] = useState(1)
+    const [keepCurrentLines, setKeepCurrentLines] = useState(false)
 
     // Inline add line state
     const [isAddingLine, setIsAddingLine] = useState(false)
@@ -241,6 +283,13 @@ export function TransferRecordPage({
         // Can't add lines when creating - need to create the picking first
         if (isCreating) return false
         return ['draft', 'confirmed', 'waiting', 'assigned'].includes(state)
+    }
+
+    // Check if lot/serial assignment is allowed - for receipts in 'assigned' state
+    const canAssignLots = (state: string) => {
+        // Can assign lots when picking is in assigned (Ready) state
+        // This is when Odoo shows the "Detailed Operations" dialog
+        return state === 'assigned'
     }
 
     // Fetch product images from product.template with cascade fallback
@@ -344,7 +393,7 @@ export function TransferRecordPage({
             if (pickingData.success && pickingData.result && pickingData.result.length > 0) {
                 setTransferData(pickingData.result[0])
 
-                // Fetch moves using execute endpoint
+                // Fetch moves using execute endpoint (include has_tracking and move_line_ids)
                 const movesUrl = `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.move/execute`
                 const movesRes = await fetch(movesUrl, {
                     method: 'POST',
@@ -353,7 +402,7 @@ export function TransferRecordPage({
                         method: 'search_read',
                         args: [[['picking_id', '=', recordId]]],
                         kwargs: {
-                            fields: ['id', 'product_id', 'product_uom_qty', 'quantity', 'product_uom', 'state', 'picked'],
+                            fields: ['id', 'product_id', 'product_uom_qty', 'quantity', 'product_uom', 'state', 'picked', 'has_tracking', 'move_line_ids'],
                             limit: 1000
                         }
                     })
@@ -367,8 +416,33 @@ export function TransferRecordPage({
                     if (productIds.length > 0) {
                         fetchProductImages(productIds)
                     }
+
+                    // Fetch move lines for tracked products
+                    const allMoveLineIds = movesData.result.flatMap((m: any) => m.move_line_ids || [])
+                    if (allMoveLineIds.length > 0) {
+                        const moveLinesUrl = `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.move.line/execute`
+                        const moveLinesRes = await fetch(moveLinesUrl, {
+                            method: 'POST',
+                            headers: getHeaders(),
+                            body: JSON.stringify({
+                                method: 'search_read',
+                                args: [[['id', 'in', allMoveLineIds]]],
+                                kwargs: {
+                                    fields: ['id', 'move_id', 'product_id', 'product_uom_id', 'quantity', 'lot_id', 'lot_name', 'tracking', 'location_id', 'location_dest_id'],
+                                    limit: 1000
+                                }
+                            })
+                        })
+                        const moveLinesData = await moveLinesRes.json()
+                        if (moveLinesData.success && moveLinesData.result) {
+                            setMoveLines(moveLinesData.result)
+                        }
+                    } else {
+                        setMoveLines([])
+                    }
                 } else {
                     setMoves([])
+                    setMoveLines([])
                 }
             } else {
                 setToast({ text: t('Failed to load transfer data'), state: 'error' })
@@ -581,6 +655,217 @@ export function TransferRecordPage({
         }
     }, [sessionId, getHeaders, fetchProductImages])
 
+    // Search lots by product ID (for deliveries/outgoing - select existing lots with available qty)
+    // For outgoing/internal: queries stock.quant to get lots with available inventory in source location
+    // For incoming: queries stock.lot directly (any lot for the product)
+    const searchLotsByProduct = useCallback(async (productId: number, sourceLocationId?: number) => {
+        if (!sessionId || !productId) return
+
+        setLotSearchLoading(true)
+        try {
+            // For outgoing/internal transfers: query stock.quant to get available lots in source location
+            if (sourceLocationId && (transferType === 'outgoing' || transferType === 'internal')) {
+                const executeUrl = `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.quant/execute`
+                const res = await fetch(executeUrl, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        method: 'search_read',
+                        args: [[
+                            ['product_id', '=', productId],
+                            ['lot_id', '!=', false],
+                            ['quantity', '>', 0],
+                            // Filter by source location or child locations
+                            '|',
+                            ['location_id', '=', sourceLocationId],
+                            ['location_id', 'child_of', sourceLocationId]
+                        ]],
+                        kwargs: {
+                            fields: ['lot_id', 'quantity', 'reserved_quantity', 'available_quantity', 'location_id'],
+                            limit: 200
+                        }
+                    })
+                })
+                const data = await res.json()
+
+                if (data.success && data.result) {
+                    // Group by lot_id and sum available quantities
+                    const lotMap: Record<number, LotOption> = {}
+                    data.result.forEach((quant: any) => {
+                        if (!quant.lot_id) return
+                        const lotId = quant.lot_id[0]
+                        const lotName = quant.lot_id[1]
+                        const availableQty = quant.available_quantity || (quant.quantity - (quant.reserved_quantity || 0))
+
+                        if (availableQty <= 0) return // Skip if no available qty
+
+                        if (lotMap[lotId]) {
+                            // Add to existing lot's available qty
+                            lotMap[lotId].available_qty = (lotMap[lotId].available_qty || 0) + availableQty
+                        } else {
+                            lotMap[lotId] = {
+                                id: lotId,
+                                name: lotName,
+                                available_qty: availableQty,
+                                location_id: quant.location_id?.[0],
+                                location_name: quant.location_id?.[1]
+                            }
+                        }
+                    })
+
+                    // Convert to array and sort by name
+                    const lots = Object.values(lotMap).sort((a, b) => a.name.localeCompare(b.name))
+                    setLotOptions(prev => ({
+                        ...prev,
+                        [productId]: lots
+                    }))
+                }
+            } else {
+                // For incoming (receipts): query stock.lot directly
+                const executeUrl = `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.lot/execute`
+                const res = await fetch(executeUrl, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        method: 'search_read',
+                        args: [[['product_id', '=', productId]]],
+                        kwargs: {
+                            fields: ['id', 'name', 'product_qty'],
+                            limit: 100
+                        }
+                    })
+                })
+                const data = await res.json()
+
+                if (data.success && data.result) {
+                    setLotOptions(prev => ({
+                        ...prev,
+                        [productId]: data.result.map((lot: any) => ({
+                            id: lot.id,
+                            name: lot.name,
+                            product_qty: lot.product_qty
+                        }))
+                    }))
+                }
+            }
+        } catch (error) {
+            console.error('Error searching lots:', error)
+        } finally {
+            setLotSearchLoading(false)
+        }
+    }, [sessionId, getHeaders, transferType])
+
+    // Create new lot (for receipts/incoming)
+    const createNewLot = useCallback(async (productId: number, lotName: string): Promise<number | null> => {
+        if (!sessionId || !productId || !lotName.trim()) return null
+
+        try {
+            const executeUrl = `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.lot/execute`
+            const res = await fetch(executeUrl, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({
+                    method: 'create',
+                    args: [[{
+                        name: lotName.trim(),
+                        product_id: productId,
+                    }]],
+                    kwargs: {}
+                })
+            })
+            const data = await res.json()
+
+            if (data.success && data.result) {
+                const newLotId = Array.isArray(data.result) ? data.result[0] : data.result
+                // Add to lot options
+                setLotOptions(prev => ({
+                    ...prev,
+                    [productId]: [...(prev[productId] || []), { id: newLotId, name: lotName.trim() }]
+                }))
+                return newLotId
+            }
+            return null
+        } catch (error) {
+            console.error('Error creating lot:', error)
+            return null
+        }
+    }, [sessionId, getHeaders])
+
+    // Generate serial numbers automatically based on pattern
+    const handleGenerateSerials = useCallback(() => {
+        if (!generateSerialsForMoveId || !firstSerialNumber.trim()) return
+
+        const move = moves.find(m => m.id === generateSerialsForMoveId)
+        if (!move) return
+
+        // Parse the first serial number to extract prefix and number
+        const match = firstSerialNumber.match(/^(.*?)(\d+)$/)
+        let prefix = ''
+        let startNum = 1
+        let numDigits = 1
+
+        if (match) {
+            prefix = match[1]
+            startNum = parseInt(match[2], 10)
+            numDigits = match[2].length
+        } else {
+            // If no number pattern found, use the whole string as prefix
+            prefix = firstSerialNumber.trim()
+            startNum = 1
+            numDigits = 4
+        }
+
+        // Generate the serial numbers
+        const newLines: MoveLineData[] = []
+        const count = Math.min(numberOfSerials, Math.ceil(move.product_uom_qty)) // Don't generate more than demand
+
+        for (let i = 0; i < count; i++) {
+            const serialNum = (startNum + i).toString().padStart(numDigits, '0')
+            const lotName = `${prefix}${serialNum}`
+
+            newLines.push({
+                id: -(Date.now() + i),
+                move_id: move.id,
+                product_id: move.product_id,
+                product_uom_id: move.product_uom || false,
+                quantity: 1, // Each serial = 1 unit
+                lot_id: false,
+                lot_name: lotName,
+                tracking: move.has_tracking || 'serial',
+                location_id: transferData?.location_id || false,
+                location_dest_id: transferData?.location_dest_id || false,
+                isNew: true,
+            })
+        }
+
+        // Add or replace move lines
+        if (keepCurrentLines) {
+            setMoveLines(prev => [...prev, ...newLines])
+        } else {
+            // Remove existing lines for this move and add new ones
+            setMoveLines(prev => [
+                ...prev.filter(ml => {
+                    const mlMoveId = typeof ml.move_id === 'number' ? ml.move_id : ml.move_id[0]
+                    return mlMoveId !== generateSerialsForMoveId
+                }),
+                ...newLines
+            ])
+        }
+
+        setHasUnsavedChanges(true)
+        setGenerateSerialsModalOpen(false)
+        setFirstSerialNumber('')
+        setNumberOfSerials(1)
+        setKeepCurrentLines(false)
+        setGenerateSerialsForMoveId(null)
+    }, [generateSerialsForMoveId, firstSerialNumber, numberOfSerials, keepCurrentLines, moves, transferData])
+
+    // Reset lot selection state when expanding a different move
+    useEffect(() => {
+        setSelectedLotId(null)
+        setSelectedLotQty(1)
+    }, [expandedMoveId])
+
     // Debounced product search
     useEffect(() => {
         if (!showProductDropdown) return
@@ -749,7 +1034,8 @@ export function TransferRecordPage({
 
         try {
             let hasErrors = false
-            const executeUrl = `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.move/execute`
+            const moveExecuteUrl = `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.move/execute`
+            const moveLineExecuteUrl = `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.move.line/execute`
 
             // Process each move
             for (const move of moves) {
@@ -768,7 +1054,7 @@ export function TransferRecordPage({
                         moveData.product_uom = move.product_uom[0]
                     }
 
-                    const res = await fetch(executeUrl, {
+                    const res = await fetch(moveExecuteUrl, {
                         method: 'POST',
                         headers: getHeaders(),
                         body: JSON.stringify({
@@ -798,7 +1084,7 @@ export function TransferRecordPage({
                     }
 
                     if (Object.keys(updateData).length > 0) {
-                        const res = await fetch(executeUrl, {
+                        const res = await fetch(moveExecuteUrl, {
                             method: 'POST',
                             headers: getHeaders(),
                             body: JSON.stringify({
@@ -817,18 +1103,66 @@ export function TransferRecordPage({
                 }
             }
 
+            // Process new move lines (for lot/serial tracking)
+            const newMoveLines = moveLines.filter(ml => ml.isNew && ml.id < 0)
+            for (const moveLine of newMoveLines) {
+                const moveId = typeof moveLine.move_id === 'number' ? moveLine.move_id : moveLine.move_id[0]
+
+                // For incoming transfers with lot_name, the lot will be created automatically by Odoo
+                // when we set lot_name on the move line
+                const moveLineData: Record<string, any> = {
+                    move_id: moveId,
+                    picking_id: recordId,
+                    product_id: moveLine.product_id[0],
+                    quantity: moveLine.quantity,
+                    location_id: transferData.location_id ? transferData.location_id[0] : false,
+                    location_dest_id: transferData.location_dest_id ? transferData.location_dest_id[0] : false,
+                }
+
+                if (moveLine.product_uom_id && moveLine.product_uom_id[0]) {
+                    moveLineData.product_uom_id = moveLine.product_uom_id[0]
+                }
+
+                // If lot_id is set (for outgoing/selecting existing lot)
+                if (moveLine.lot_id && moveLine.lot_id[0]) {
+                    moveLineData.lot_id = moveLine.lot_id[0]
+                }
+
+                // If lot_name is set (for incoming/creating new lot)
+                if (moveLine.lot_name) {
+                    moveLineData.lot_name = moveLine.lot_name
+                }
+
+                const res = await fetch(moveLineExecuteUrl, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        method: 'create',
+                        args: [[moveLineData]],
+                        kwargs: {}
+                    })
+                })
+                const result = await res.json()
+
+                if (!result.success) {
+                    console.error('Failed to create move line:', result.error || result)
+                    hasErrors = true
+                }
+            }
+
             if (hasErrors) {
                 setToast({ text: t('Some items could not be saved'), state: 'error' })
             } else {
-                const newCount = moves.filter(m => m.isNew && m.id < 0).length
-                const modifiedCount = moves.filter(m => m.isModified && m.id > 0).length
+                const newMoveCount = moves.filter(m => m.isNew && m.id < 0).length
+                const modifiedMoveCount = moves.filter(m => m.isModified && m.id > 0).length
+                const newMoveLineCount = newMoveLines.length
                 let message = t('Items saved')
-                if (newCount > 0 && modifiedCount > 0) {
-                    message = t('{{new}} item(s) added, {{modified}} updated', { new: newCount, modified: modifiedCount })
-                } else if (newCount > 0) {
-                    message = t('{{count}} item(s) added to transfer', { count: newCount })
-                } else if (modifiedCount > 0) {
-                    message = t('{{count}} item(s) updated', { count: modifiedCount })
+                if (newMoveCount > 0 || modifiedMoveCount > 0 || newMoveLineCount > 0) {
+                    const parts = []
+                    if (newMoveCount > 0) parts.push(t('{{count}} item(s) added', { count: newMoveCount }))
+                    if (modifiedMoveCount > 0) parts.push(t('{{count}} updated', { count: modifiedMoveCount }))
+                    if (newMoveLineCount > 0) parts.push(t('{{count}} lot(s) assigned', { count: newMoveLineCount }))
+                    message = parts.join(', ')
                 }
                 setToast({ text: message, state: 'success' })
                 setHasUnsavedChanges(false)
@@ -1270,6 +1604,21 @@ export function TransferRecordPage({
                                     )}
                                 </button>
                             )}
+
+                            {/* Close button for sidebar mode */}
+                            {isSidebar && onClose && (
+                                <button
+                                    className="action-btn secondary"
+                                    onClick={onClose}
+                                    style={{
+                                        padding: '0.4rem',
+                                        marginInlineStart: '0.25rem',
+                                    }}
+                                    title={t('Close (Esc)')}
+                                >
+                                    <X size={18} />
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -1532,100 +1881,738 @@ export function TransferRecordPage({
                                             </div>
 
                                             {/* Existing lines */}
-                                            {moves.map((move) => (
-                                                <div key={move.id} className="line-row" style={{ borderColor: colors.border }}>
-                                                    <div className="col-product">
-                                                        <div className="product-with-image">
-                                                            {renderProductImage(move.product_id[0], 40)}
-                                                            <div className="product-info">
-                                                                <span className="product-name" style={{ color: colors.textPrimary }}>
-                                                                    {move.product_id[1]}
-                                                                </span>
-                                                                {move.product_uom && (
-                                                                    <span className="product-uom" style={{ color: colors.textSecondary }}>
-                                                                        {move.product_uom[1]}
+                                            {moves.map((move) => {
+                                                const hasTracking = move.has_tracking && move.has_tracking !== 'none'
+                                                const isExpanded = expandedMoveId === move.id
+                                                const relatedMoveLines = moveLines.filter(ml =>
+                                                    (typeof ml.move_id === 'number' ? ml.move_id : ml.move_id[0]) === move.id
+                                                )
+
+                                                return (
+                                                    <div key={move.id}>
+                                                        <div
+                                                            className="line-row"
+                                                            style={{
+                                                                borderColor: colors.border,
+                                                                cursor: hasTracking ? 'pointer' : 'default',
+                                                                background: isExpanded ? (isDark ? 'rgba(99,102,241,0.05)' : 'rgba(99,102,241,0.02)') : 'transparent',
+                                                            }}
+                                                            onClick={() => {
+                                                                if (hasTracking) {
+                                                                    if (isExpanded) {
+                                                                        setExpandedMoveId(null)
+                                                                    } else {
+                                                                        setExpandedMoveId(move.id)
+                                                                        // Load lots for this product if not already loaded
+                                                                        // Pass source location for outgoing/internal to filter by available stock
+                                                                        if (!lotOptions[move.product_id[0]]) {
+                                                                            const sourceLocationId = transferData?.location_id?.[0]
+                                                                            searchLotsByProduct(move.product_id[0], sourceLocationId)
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }}
+                                                        >
+                                                            <div className="col-product">
+                                                                <div className="product-with-image">
+                                                                    {renderProductImage(move.product_id[0], 40)}
+                                                                    <div className="product-info">
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                                                            <span className="product-name" style={{ color: colors.textPrimary }}>
+                                                                                {move.product_id[1]}
+                                                                            </span>
+                                                                            {/* Tracking Badge */}
+                                                                            {hasTracking && (
+                                                                                <span style={{
+                                                                                    fontSize: '0.65rem',
+                                                                                    fontWeight: 600,
+                                                                                    padding: '2px 6px',
+                                                                                    borderRadius: '4px',
+                                                                                    background: move.has_tracking === 'serial'
+                                                                                        ? 'rgba(168, 85, 247, 0.15)'
+                                                                                        : 'rgba(245, 158, 11, 0.15)',
+                                                                                    color: move.has_tracking === 'serial'
+                                                                                        ? '#a855f7'
+                                                                                        : '#f59e0b',
+                                                                                    textTransform: 'uppercase',
+                                                                                }}>
+                                                                                    {move.has_tracking === 'serial' ? t('Serial') : t('Lot')}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                            {move.product_uom && (
+                                                                                <span className="product-uom" style={{ color: colors.textSecondary }}>
+                                                                                    {move.product_uom[1]}
+                                                                                </span>
+                                                                            )}
+                                                                            {hasTracking && (
+                                                                                <span style={{
+                                                                                    fontSize: '0.7rem',
+                                                                                    color: colors.textSecondary,
+                                                                                    display: 'flex',
+                                                                                    alignItems: 'center',
+                                                                                    gap: '4px',
+                                                                                }}>
+                                                                                    {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                                                                    {relatedMoveLines.length > 0
+                                                                                        ? t('{{count}} assigned', { count: relatedMoveLines.length })
+                                                                                        : t('Click to assign')}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-expected" onClick={(e) => e.stopPropagation()}>
+                                                                {isViewMode || !canEditDemand(transferData?.state || '') ? (
+                                                                    <span className="qty-expected" style={{ color: colors.textSecondary }}>
+                                                                        {move.product_uom_qty.toFixed(2)}
                                                                     </span>
+                                                                ) : (
+                                                                    <input
+                                                                        type="number"
+                                                                        className="qty-inline-input"
+                                                                        value={move.product_uom_qty}
+                                                                        onChange={(e) => updateMoveQuantity(move.id, 'product_uom_qty', parseFloat(e.target.value) || 0)}
+                                                                        min={0}
+                                                                        step={1}
+                                                                        style={{
+                                                                            width: '70px',
+                                                                            padding: '0.375rem',
+                                                                            textAlign: 'center',
+                                                                            border: `1px solid ${colors.border}`,
+                                                                            borderRadius: '6px',
+                                                                            background: colors.background,
+                                                                            color: colors.textPrimary,
+                                                                            fontSize: '0.875rem',
+                                                                            fontWeight: 600,
+                                                                        }}
+                                                                    />
                                                                 )}
                                                             </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-expected">
-                                                        {isViewMode || !canEditDemand(transferData?.state || '') ? (
-                                                            <span className="qty-expected" style={{ color: colors.textSecondary }}>
-                                                                {move.product_uom_qty.toFixed(2)}
-                                                            </span>
-                                                        ) : (
-                                                            <input
-                                                                type="number"
-                                                                className="qty-inline-input"
-                                                                value={move.product_uom_qty}
-                                                                onChange={(e) => updateMoveQuantity(move.id, 'product_uom_qty', parseFloat(e.target.value) || 0)}
-                                                                min={0}
-                                                                step={1}
-                                                                style={{
-                                                                    width: '70px',
-                                                                    padding: '0.375rem',
-                                                                    textAlign: 'center',
-                                                                    border: `1px solid ${colors.border}`,
-                                                                    borderRadius: '6px',
-                                                                    background: colors.background,
-                                                                    color: colors.textPrimary,
-                                                                    fontSize: '0.875rem',
-                                                                    fontWeight: 600,
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </div>
-                                                    <div className="col-done">
-                                                        {isViewMode || !canEditQuantities(transferData?.state || '') ? (
-                                                            <span
-                                                                className="qty-done"
-                                                                style={{ color: move.quantity >= move.product_uom_qty ? '#16a34a' : colors.textPrimary }}
-                                                            >
-                                                                {move.quantity.toFixed(2)}
-                                                            </span>
-                                                        ) : (
-                                                            <div className="qty-input-group" style={{ background: colors.background, borderColor: colors.border }}>
-                                                                <button
-                                                                    className="qty-btn minus"
-                                                                    onClick={() => updateMoveQuantity(move.id, 'quantity', Math.max(0, move.quantity - 1))}
-                                                                    disabled={saving || move.quantity <= 0}
-                                                                    style={{ color: colors.textSecondary }}
-                                                                >
-                                                                    <Minus size={14} />
-                                                                </button>
-                                                                <input
-                                                                    type="number"
-                                                                    className="qty-input"
-                                                                    value={move.quantity}
-                                                                    onChange={(e) => updateMoveQuantity(move.id, 'quantity', parseFloat(e.target.value) || 0)}
-                                                                    min={0}
-                                                                    step={1}
-                                                                    style={{ color: colors.textPrimary }}
-                                                                />
-                                                                <button
-                                                                    className="qty-btn plus"
-                                                                    onClick={() => updateMoveQuantity(move.id, 'quantity', move.quantity + 1)}
-                                                                    disabled={saving}
-                                                                    style={{ color: colors.textSecondary }}
-                                                                >
-                                                                    <Plus size={14} />
-                                                                </button>
+                                                            <div className="col-done" onClick={(e) => e.stopPropagation()}>
+                                                                {isViewMode || !canEditQuantities(transferData?.state || '') ? (
+                                                                    <span
+                                                                        className="qty-done"
+                                                                        style={{ color: move.quantity >= move.product_uom_qty ? '#16a34a' : colors.textPrimary }}
+                                                                    >
+                                                                        {move.quantity.toFixed(2)}
+                                                                    </span>
+                                                                ) : (
+                                                                    <div className="qty-input-group" style={{ background: colors.background, borderColor: colors.border }}>
+                                                                        <button
+                                                                            className="qty-btn minus"
+                                                                            onClick={() => updateMoveQuantity(move.id, 'quantity', Math.max(0, move.quantity - 1))}
+                                                                            disabled={saving || move.quantity <= 0}
+                                                                            style={{ color: colors.textSecondary }}
+                                                                        >
+                                                                            <Minus size={14} />
+                                                                        </button>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="qty-input"
+                                                                            value={move.quantity}
+                                                                            onChange={(e) => updateMoveQuantity(move.id, 'quantity', parseFloat(e.target.value) || 0)}
+                                                                            min={0}
+                                                                            step={1}
+                                                                            style={{ color: colors.textPrimary }}
+                                                                        />
+                                                                        <button
+                                                                            className="qty-btn plus"
+                                                                            onClick={() => updateMoveQuantity(move.id, 'quantity', move.quantity + 1)}
+                                                                            disabled={saving}
+                                                                            style={{ color: colors.textSecondary }}
+                                                                        >
+                                                                            <Plus size={14} />
+                                                                        </button>
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                    {!isViewMode && canAddLines(transferData?.state || '') && (
-                                                        <div className="col-actions">
-                                                            <button
-                                                                className="line-delete-btn"
-                                                                onClick={() => handleDeleteLine(move.id)}
-                                                            >
-                                                                <Trash2 size={14} />
-                                                            </button>
+                                                            {!isViewMode && canAddLines(transferData?.state || '') && (
+                                                                <div className="col-actions" onClick={(e) => e.stopPropagation()}>
+                                                                    <button
+                                                                        className="line-delete-btn"
+                                                                        onClick={() => handleDeleteLine(move.id)}
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                    </button>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            ))}
+
+                                                        {/* Expanded Lot/Serial Assignment Section */}
+                                                        <AnimatePresence>
+                                                            {isExpanded && hasTracking && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    transition={{ duration: 0.2 }}
+                                                                    style={{
+                                                                        overflow: 'hidden',
+                                                                        background: isDark ? 'rgba(99,102,241,0.03)' : 'rgba(99,102,241,0.02)',
+                                                                        borderBottom: `1px solid ${colors.border}`,
+                                                                    }}
+                                                                >
+                                                                    <div style={{
+                                                                        padding: '12px 16px 16px',
+                                                                        marginInlineStart: '52px',
+                                                                    }}>
+                                                                        <div style={{
+                                                                            fontSize: '0.75rem',
+                                                                            fontWeight: 600,
+                                                                            color: colors.textSecondary,
+                                                                            marginBottom: '10px',
+                                                                            textTransform: 'uppercase',
+                                                                            letterSpacing: '0.5px',
+                                                                        }}>
+                                                                            {move.has_tracking === 'serial'
+                                                                                ? t('Serial Numbers')
+                                                                                : t('Lot Numbers')}
+                                                                        </div>
+
+                                                                        {/* Existing move lines with lots */}
+                                                                        {relatedMoveLines.length > 0 && (
+                                                                            <div style={{ marginBottom: '12px' }}>
+                                                                                {relatedMoveLines.map((ml) => (
+                                                                                    <div
+                                                                                        key={ml.id}
+                                                                                        style={{
+                                                                                            display: 'flex',
+                                                                                            alignItems: 'center',
+                                                                                            gap: '10px',
+                                                                                            padding: '8px 12px',
+                                                                                            background: colors.card,
+                                                                                            border: `1px solid ${colors.border}`,
+                                                                                            borderRadius: '8px',
+                                                                                            marginBottom: '6px',
+                                                                                        }}
+                                                                                    >
+                                                                                        <div style={{
+                                                                                            width: '24px',
+                                                                                            height: '24px',
+                                                                                            borderRadius: '6px',
+                                                                                            background: move.has_tracking === 'serial'
+                                                                                                ? 'rgba(168, 85, 247, 0.15)'
+                                                                                                : 'rgba(245, 158, 11, 0.15)',
+                                                                                            display: 'flex',
+                                                                                            alignItems: 'center',
+                                                                                            justifyContent: 'center',
+                                                                                        }}>
+                                                                                            <Package size={12} style={{
+                                                                                                color: move.has_tracking === 'serial' ? '#a855f7' : '#f59e0b'
+                                                                                            }} />
+                                                                                        </div>
+                                                                                        <div style={{ flex: 1 }}>
+                                                                                            <div style={{
+                                                                                                fontSize: '0.85rem',
+                                                                                                fontWeight: 600,
+                                                                                                color: colors.textPrimary,
+                                                                                                fontFamily: 'monospace',
+                                                                                            }}>
+                                                                                                {ml.lot_id ? ml.lot_id[1] : ml.lot_name || '-'}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div style={{
+                                                                                            fontSize: '0.8rem',
+                                                                                            color: colors.textSecondary,
+                                                                                            fontWeight: 500,
+                                                                                        }}>
+                                                                                            {t('Qty')}: {ml.quantity}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* Add new lot/serial - only in edit mode and when state allows */}
+                                                                        {!isViewMode && canAssignLots(transferData?.state || '') && (
+                                                                            <div style={{
+                                                                                display: 'flex',
+                                                                                alignItems: 'flex-end',
+                                                                                gap: '10px',
+                                                                                flexWrap: 'wrap',
+                                                                            }}>
+                                                                                {/* For outgoing (deliveries): Select existing lot */}
+                                                                                {transferType === 'outgoing' && (
+                                                                                    <>
+                                                                                        <div style={{ flex: '1 1 200px', minWidth: '150px' }}>
+                                                                                            <label style={{
+                                                                                                display: 'block',
+                                                                                                fontSize: '0.7rem',
+                                                                                                color: colors.textSecondary,
+                                                                                                marginBottom: '4px',
+                                                                                                fontWeight: 500,
+                                                                                            }}>
+                                                                                                {t('Select')} {move.has_tracking === 'serial' ? t('Serial') : t('Lot')}
+                                                                                            </label>
+                                                                                            <select
+                                                                                                style={{
+                                                                                                    width: '100%',
+                                                                                                    padding: '8px 10px',
+                                                                                                    borderRadius: '6px',
+                                                                                                    border: `1px solid ${colors.border}`,
+                                                                                                    background: colors.background,
+                                                                                                    color: colors.textPrimary,
+                                                                                                    fontSize: '0.85rem',
+                                                                                                }}
+                                                                                                value={expandedMoveId === move.id ? (selectedLotId || '') : ''}
+                                                                                                onChange={(e) => {
+                                                                                                    const lotId = parseInt(e.target.value)
+                                                                                                    if (!lotId) {
+                                                                                                        setSelectedLotId(null)
+                                                                                                        return
+                                                                                                    }
+                                                                                                    setSelectedLotId(lotId)
+                                                                                                    // For serial tracking, auto-add immediately
+                                                                                                    if (move.has_tracking === 'serial') {
+                                                                                                        const selectedLot = lotOptions[move.product_id[0]]?.find(l => l.id === lotId)
+                                                                                                        if (!selectedLot) return
+                                                                                                        const newMoveLine: MoveLineData = {
+                                                                                                            id: -Date.now(),
+                                                                                                            move_id: move.id,
+                                                                                                            product_id: move.product_id,
+                                                                                                            product_uom_id: move.product_uom || false,
+                                                                                                            quantity: 1,
+                                                                                                            lot_id: [lotId, selectedLot.name],
+                                                                                                            lot_name: false,
+                                                                                                            tracking: 'serial',
+                                                                                                            location_id: transferData?.location_id || false,
+                                                                                                            location_dest_id: transferData?.location_dest_id || false,
+                                                                                                            isNew: true,
+                                                                                                        }
+                                                                                                        setMoveLines(prev => [...prev, newMoveLine])
+                                                                                                        setHasUnsavedChanges(true)
+                                                                                                        setSelectedLotId(null)
+                                                                                                    } else {
+                                                                                                        // For lot tracking, set default qty to 1
+                                                                                                        setSelectedLotQty(1)
+                                                                                                    }
+                                                                                                }}
+                                                                                            >
+                                                                                                <option value="">{lotSearchLoading ? t('Loading...') : t('Select...')}</option>
+                                                                                                {(lotOptions[move.product_id[0]] || []).map((lot) => {
+                                                                                                    const availableQty = lot.available_qty ?? lot.product_qty
+                                                                                                    return (
+                                                                                                        <option key={lot.id} value={lot.id}>
+                                                                                                            {lot.name} {availableQty !== undefined ? `(${availableQty} ${t('available')})` : ''}
+                                                                                                        </option>
+                                                                                                    )
+                                                                                                })}
+                                                                                            </select>
+                                                                                            {/* No lots available warning */}
+                                                                                            {!lotSearchLoading && (lotOptions[move.product_id[0]] || []).length === 0 && (
+                                                                                                <div style={{
+                                                                                                    fontSize: '0.7rem',
+                                                                                                    color: '#f59e0b',
+                                                                                                    marginTop: '4px',
+                                                                                                    display: 'flex',
+                                                                                                    alignItems: 'center',
+                                                                                                    gap: '4px',
+                                                                                                }}>
+                                                                                                    <AlertTriangle size={12} />
+                                                                                                    {t('No lots available in source location')}
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                        {/* Quantity input for lot tracking (not serial) */}
+                                                                                        {move.has_tracking === 'lot' && selectedLotId && expandedMoveId === move.id && (
+                                                                                            <>
+                                                                                                <div style={{ width: '100px' }}>
+                                                                                                    <label style={{
+                                                                                                        display: 'block',
+                                                                                                        fontSize: '0.7rem',
+                                                                                                        color: colors.textSecondary,
+                                                                                                        marginBottom: '4px',
+                                                                                                        fontWeight: 500,
+                                                                                                    }}>
+                                                                                                        {t('Qty')}
+                                                                                                    </label>
+                                                                                                    <input
+                                                                                                        type="number"
+                                                                                                        min={1}
+                                                                                                        max={lotOptions[move.product_id[0]]?.find(l => l.id === selectedLotId)?.available_qty || 999}
+                                                                                                        value={selectedLotQty}
+                                                                                                        onChange={(e) => setSelectedLotQty(Math.max(1, parseInt(e.target.value) || 1))}
+                                                                                                        style={{
+                                                                                                            width: '100%',
+                                                                                                            padding: '8px 10px',
+                                                                                                            borderRadius: '6px',
+                                                                                                            border: `1px solid ${colors.border}`,
+                                                                                                            background: colors.background,
+                                                                                                            color: colors.textPrimary,
+                                                                                                            fontSize: '0.85rem',
+                                                                                                        }}
+                                                                                                    />
+                                                                                                </div>
+                                                                                                <button
+                                                                                                    onClick={() => {
+                                                                                                        const selectedLot = lotOptions[move.product_id[0]]?.find(l => l.id === selectedLotId)
+                                                                                                        if (!selectedLot) return
+                                                                                                        const maxQty = selectedLot.available_qty || 999
+                                                                                                        const qty = Math.min(selectedLotQty, maxQty)
+                                                                                                        const newMoveLine: MoveLineData = {
+                                                                                                            id: -Date.now(),
+                                                                                                            move_id: move.id,
+                                                                                                            product_id: move.product_id,
+                                                                                                            product_uom_id: move.product_uom || false,
+                                                                                                            quantity: qty,
+                                                                                                            lot_id: [selectedLotId, selectedLot.name],
+                                                                                                            lot_name: false,
+                                                                                                            tracking: 'lot',
+                                                                                                            location_id: transferData?.location_id || false,
+                                                                                                            location_dest_id: transferData?.location_dest_id || false,
+                                                                                                            isNew: true,
+                                                                                                        }
+                                                                                                        setMoveLines(prev => [...prev, newMoveLine])
+                                                                                                        setHasUnsavedChanges(true)
+                                                                                                        setSelectedLotId(null)
+                                                                                                        setSelectedLotQty(1)
+                                                                                                    }}
+                                                                                                    style={{
+                                                                                                        padding: '8px 14px',
+                                                                                                        borderRadius: '6px',
+                                                                                                        border: 'none',
+                                                                                                        background: colors.action,
+                                                                                                        color: '#fff',
+                                                                                                        fontSize: '0.85rem',
+                                                                                                        fontWeight: 500,
+                                                                                                        cursor: 'pointer',
+                                                                                                        display: 'flex',
+                                                                                                        alignItems: 'center',
+                                                                                                        gap: '6px',
+                                                                                                        alignSelf: 'flex-end',
+                                                                                                    }}
+                                                                                                >
+                                                                                                    <Plus size={14} />
+                                                                                                    {t('Add')}
+                                                                                                </button>
+                                                                                            </>
+                                                                                        )}
+                                                                                        {/* Refresh button */}
+                                                                                        <button
+                                                                                            onClick={() => {
+                                                                                                const sourceLocationId = transferData?.location_id?.[0]
+                                                                                                searchLotsByProduct(move.product_id[0], sourceLocationId)
+                                                                                            }}
+                                                                                            disabled={lotSearchLoading}
+                                                                                            title={t('Refresh available lots')}
+                                                                                            style={{
+                                                                                                padding: '8px',
+                                                                                                borderRadius: '6px',
+                                                                                                border: `1px solid ${colors.border}`,
+                                                                                                background: 'transparent',
+                                                                                                color: colors.textSecondary,
+                                                                                                cursor: lotSearchLoading ? 'not-allowed' : 'pointer',
+                                                                                                display: 'flex',
+                                                                                                alignItems: 'center',
+                                                                                                alignSelf: 'flex-end',
+                                                                                            }}
+                                                                                        >
+                                                                                            <RefreshCw size={14} className={lotSearchLoading ? 'animate-spin' : ''} />
+                                                                                        </button>
+                                                                                    </>
+                                                                                )}
+
+                                                                                {/* For incoming (receipts): Enter new lot name */}
+                                                                                {transferType === 'incoming' && (
+                                                                                    <>
+                                                                                        <div style={{ flex: '1 1 200px', minWidth: '150px' }}>
+                                                                                            <label style={{
+                                                                                                display: 'block',
+                                                                                                fontSize: '0.7rem',
+                                                                                                color: colors.textSecondary,
+                                                                                                marginBottom: '4px',
+                                                                                                fontWeight: 500,
+                                                                                            }}>
+                                                                                                {t('New')} {move.has_tracking === 'serial' ? t('Serial Number') : t('Lot Number')}
+                                                                                            </label>
+                                                                                            <input
+                                                                                                type="text"
+                                                                                                placeholder={move.has_tracking === 'serial' ? 'SN-001' : 'LOT-001'}
+                                                                                                value={newLotName}
+                                                                                                onChange={(e) => setNewLotName(e.target.value)}
+                                                                                                style={{
+                                                                                                    width: '100%',
+                                                                                                    padding: '8px 10px',
+                                                                                                    borderRadius: '6px',
+                                                                                                    border: `1px solid ${colors.border}`,
+                                                                                                    background: colors.background,
+                                                                                                    color: colors.textPrimary,
+                                                                                                    fontSize: '0.85rem',
+                                                                                                }}
+                                                                                            />
+                                                                                        </div>
+                                                                                        <button
+                                                                                            onClick={async () => {
+                                                                                                if (!newLotName.trim()) return
+                                                                                                // Create new move line with lot_name (will create lot on save)
+                                                                                                const newMoveLine: MoveLineData = {
+                                                                                                    id: -Date.now(),
+                                                                                                    move_id: move.id,
+                                                                                                    product_id: move.product_id,
+                                                                                                    product_uom_id: move.product_uom || false,
+                                                                                                    quantity: move.has_tracking === 'serial' ? 1 : 1,
+                                                                                                    lot_id: false,
+                                                                                                    lot_name: newLotName.trim(),
+                                                                                                    tracking: move.has_tracking || 'none',
+                                                                                                    location_id: transferData?.location_id || false,
+                                                                                                    location_dest_id: transferData?.location_dest_id || false,
+                                                                                                    isNew: true,
+                                                                                                }
+                                                                                                setMoveLines(prev => [...prev, newMoveLine])
+                                                                                                setHasUnsavedChanges(true)
+                                                                                                setNewLotName('')
+                                                                                            }}
+                                                                                            disabled={!newLotName.trim()}
+                                                                                            style={{
+                                                                                                padding: '8px 14px',
+                                                                                                borderRadius: '6px',
+                                                                                                border: 'none',
+                                                                                                background: newLotName.trim() ? colors.action : colors.border,
+                                                                                                color: newLotName.trim() ? '#fff' : colors.textSecondary,
+                                                                                                fontSize: '0.85rem',
+                                                                                                fontWeight: 500,
+                                                                                                cursor: newLotName.trim() ? 'pointer' : 'not-allowed',
+                                                                                                display: 'flex',
+                                                                                                alignItems: 'center',
+                                                                                                gap: '6px',
+                                                                                            }}
+                                                                                        >
+                                                                                            <Plus size={14} />
+                                                                                            {t('Add')}
+                                                                                        </button>
+                                                                                        {/* Generate Serials/Lots Button - for serial tracked products */}
+                                                                                        {move.has_tracking === 'serial' && (
+                                                                                            <button
+                                                                                                onClick={() => {
+                                                                                                    setGenerateSerialsForMoveId(move.id)
+                                                                                                    setNumberOfSerials(Math.ceil(move.product_uom_qty - relatedMoveLines.length))
+                                                                                                    setGenerateSerialsModalOpen(true)
+                                                                                                }}
+                                                                                                style={{
+                                                                                                    padding: '8px 14px',
+                                                                                                    borderRadius: '6px',
+                                                                                                    border: `1px solid ${colors.action}`,
+                                                                                                    background: 'transparent',
+                                                                                                    color: colors.action,
+                                                                                                    fontSize: '0.85rem',
+                                                                                                    fontWeight: 500,
+                                                                                                    cursor: 'pointer',
+                                                                                                    display: 'flex',
+                                                                                                    alignItems: 'center',
+                                                                                                    gap: '6px',
+                                                                                                }}
+                                                                                            >
+                                                                                                <Zap size={14} />
+                                                                                                {t('Generate Serials')}
+                                                                                            </button>
+                                                                                        )}
+                                                                                    </>
+                                                                                )}
+
+                                                                                {/* For internal: Select existing lot from source location */}
+                                                                                {transferType === 'internal' && (
+                                                                                    <>
+                                                                                        <div style={{ flex: '1 1 200px', minWidth: '150px' }}>
+                                                                                            <label style={{
+                                                                                                display: 'block',
+                                                                                                fontSize: '0.7rem',
+                                                                                                color: colors.textSecondary,
+                                                                                                marginBottom: '4px',
+                                                                                                fontWeight: 500,
+                                                                                            }}>
+                                                                                                {t('Select')} {move.has_tracking === 'serial' ? t('Serial') : t('Lot')}
+                                                                                            </label>
+                                                                                            <select
+                                                                                                style={{
+                                                                                                    width: '100%',
+                                                                                                    padding: '8px 10px',
+                                                                                                    borderRadius: '6px',
+                                                                                                    border: `1px solid ${colors.border}`,
+                                                                                                    background: colors.background,
+                                                                                                    color: colors.textPrimary,
+                                                                                                    fontSize: '0.85rem',
+                                                                                                }}
+                                                                                                value={expandedMoveId === move.id ? (selectedLotId || '') : ''}
+                                                                                                onChange={(e) => {
+                                                                                                    const lotId = parseInt(e.target.value)
+                                                                                                    if (!lotId) {
+                                                                                                        setSelectedLotId(null)
+                                                                                                        return
+                                                                                                    }
+                                                                                                    setSelectedLotId(lotId)
+                                                                                                    // For serial tracking, auto-add immediately
+                                                                                                    if (move.has_tracking === 'serial') {
+                                                                                                        const selectedLot = lotOptions[move.product_id[0]]?.find(l => l.id === lotId)
+                                                                                                        if (!selectedLot) return
+                                                                                                        const newMoveLine: MoveLineData = {
+                                                                                                            id: -Date.now(),
+                                                                                                            move_id: move.id,
+                                                                                                            product_id: move.product_id,
+                                                                                                            product_uom_id: move.product_uom || false,
+                                                                                                            quantity: 1,
+                                                                                                            lot_id: [lotId, selectedLot.name],
+                                                                                                            lot_name: false,
+                                                                                                            tracking: 'serial',
+                                                                                                            location_id: transferData?.location_id || false,
+                                                                                                            location_dest_id: transferData?.location_dest_id || false,
+                                                                                                            isNew: true,
+                                                                                                        }
+                                                                                                        setMoveLines(prev => [...prev, newMoveLine])
+                                                                                                        setHasUnsavedChanges(true)
+                                                                                                        setSelectedLotId(null)
+                                                                                                    } else {
+                                                                                                        setSelectedLotQty(1)
+                                                                                                    }
+                                                                                                }}
+                                                                                            >
+                                                                                                <option value="">{lotSearchLoading ? t('Loading...') : t('Select...')}</option>
+                                                                                                {(lotOptions[move.product_id[0]] || []).map((lot) => {
+                                                                                                    const availableQty = lot.available_qty ?? lot.product_qty
+                                                                                                    return (
+                                                                                                        <option key={lot.id} value={lot.id}>
+                                                                                                            {lot.name} {availableQty !== undefined ? `(${availableQty} ${t('available')})` : ''}
+                                                                                                        </option>
+                                                                                                    )
+                                                                                                })}
+                                                                                            </select>
+                                                                                            {/* No lots available warning */}
+                                                                                            {!lotSearchLoading && (lotOptions[move.product_id[0]] || []).length === 0 && (
+                                                                                                <div style={{
+                                                                                                    fontSize: '0.7rem',
+                                                                                                    color: '#f59e0b',
+                                                                                                    marginTop: '4px',
+                                                                                                    display: 'flex',
+                                                                                                    alignItems: 'center',
+                                                                                                    gap: '4px',
+                                                                                                }}>
+                                                                                                    <AlertTriangle size={12} />
+                                                                                                    {t('No lots available in source location')}
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                        {/* Quantity input for lot tracking */}
+                                                                                        {move.has_tracking === 'lot' && selectedLotId && expandedMoveId === move.id && (
+                                                                                            <>
+                                                                                                <div style={{ width: '100px' }}>
+                                                                                                    <label style={{
+                                                                                                        display: 'block',
+                                                                                                        fontSize: '0.7rem',
+                                                                                                        color: colors.textSecondary,
+                                                                                                        marginBottom: '4px',
+                                                                                                        fontWeight: 500,
+                                                                                                    }}>
+                                                                                                        {t('Qty')}
+                                                                                                    </label>
+                                                                                                    <input
+                                                                                                        type="number"
+                                                                                                        min={1}
+                                                                                                        max={lotOptions[move.product_id[0]]?.find(l => l.id === selectedLotId)?.available_qty || 999}
+                                                                                                        value={selectedLotQty}
+                                                                                                        onChange={(e) => setSelectedLotQty(Math.max(1, parseInt(e.target.value) || 1))}
+                                                                                                        style={{
+                                                                                                            width: '100%',
+                                                                                                            padding: '8px 10px',
+                                                                                                            borderRadius: '6px',
+                                                                                                            border: `1px solid ${colors.border}`,
+                                                                                                            background: colors.background,
+                                                                                                            color: colors.textPrimary,
+                                                                                                            fontSize: '0.85rem',
+                                                                                                        }}
+                                                                                                    />
+                                                                                                </div>
+                                                                                                <button
+                                                                                                    onClick={() => {
+                                                                                                        const selectedLot = lotOptions[move.product_id[0]]?.find(l => l.id === selectedLotId)
+                                                                                                        if (!selectedLot) return
+                                                                                                        const maxQty = selectedLot.available_qty || 999
+                                                                                                        const qty = Math.min(selectedLotQty, maxQty)
+                                                                                                        const newMoveLine: MoveLineData = {
+                                                                                                            id: -Date.now(),
+                                                                                                            move_id: move.id,
+                                                                                                            product_id: move.product_id,
+                                                                                                            product_uom_id: move.product_uom || false,
+                                                                                                            quantity: qty,
+                                                                                                            lot_id: [selectedLotId, selectedLot.name],
+                                                                                                            lot_name: false,
+                                                                                                            tracking: 'lot',
+                                                                                                            location_id: transferData?.location_id || false,
+                                                                                                            location_dest_id: transferData?.location_dest_id || false,
+                                                                                                            isNew: true,
+                                                                                                        }
+                                                                                                        setMoveLines(prev => [...prev, newMoveLine])
+                                                                                                        setHasUnsavedChanges(true)
+                                                                                                        setSelectedLotId(null)
+                                                                                                        setSelectedLotQty(1)
+                                                                                                    }}
+                                                                                                    style={{
+                                                                                                        padding: '8px 14px',
+                                                                                                        borderRadius: '6px',
+                                                                                                        border: 'none',
+                                                                                                        background: colors.action,
+                                                                                                        color: '#fff',
+                                                                                                        fontSize: '0.85rem',
+                                                                                                        fontWeight: 500,
+                                                                                                        cursor: 'pointer',
+                                                                                                        display: 'flex',
+                                                                                                        alignItems: 'center',
+                                                                                                        gap: '6px',
+                                                                                                        alignSelf: 'flex-end',
+                                                                                                    }}
+                                                                                                >
+                                                                                                    <Plus size={14} />
+                                                                                                    {t('Add')}
+                                                                                                </button>
+                                                                                            </>
+                                                                                        )}
+                                                                                        {/* Refresh button */}
+                                                                                        <button
+                                                                                            onClick={() => {
+                                                                                                const sourceLocationId = transferData?.location_id?.[0]
+                                                                                                searchLotsByProduct(move.product_id[0], sourceLocationId)
+                                                                                            }}
+                                                                                            disabled={lotSearchLoading}
+                                                                                            title={t('Refresh available lots')}
+                                                                                            style={{
+                                                                                                padding: '8px',
+                                                                                                borderRadius: '6px',
+                                                                                                border: `1px solid ${colors.border}`,
+                                                                                                background: 'transparent',
+                                                                                                color: colors.textSecondary,
+                                                                                                cursor: lotSearchLoading ? 'not-allowed' : 'pointer',
+                                                                                                display: 'flex',
+                                                                                                alignItems: 'center',
+                                                                                                alignSelf: 'flex-end',
+                                                                                            }}
+                                                                                        >
+                                                                                            <RefreshCw size={14} className={lotSearchLoading ? 'animate-spin' : ''} />
+                                                                                        </button>
+                                                                                    </>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* View mode - just show existing lots */}
+                                                                        {isViewMode && relatedMoveLines.length === 0 && (
+                                                                            <div style={{
+                                                                                padding: '12px',
+                                                                                textAlign: 'center',
+                                                                                color: colors.textSecondary,
+                                                                                fontSize: '0.8rem',
+                                                                                fontStyle: 'italic',
+                                                                            }}>
+                                                                                {t('No lot/serial numbers assigned')}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                )
+                                            })}
 
                                             {/* Enhanced Inline Add Line Row */}
                                             {isAddingLine && (
@@ -2072,6 +3059,317 @@ export function TransferRecordPage({
                     </div>
                 </div>
             </div>
+
+            {/* Generate Serials Modal */}
+            <AnimatePresence>
+                {generateSerialsModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 9999,
+                            padding: '20px',
+                        }}
+                        onClick={() => setGenerateSerialsModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                background: colors.card,
+                                borderRadius: '16px',
+                                padding: '24px',
+                                maxWidth: '450px',
+                                width: '100%',
+                                boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                            }}
+                        >
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                marginBottom: '20px',
+                            }}>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                }}>
+                                    <div style={{
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '10px',
+                                        background: 'rgba(168, 85, 247, 0.15)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        <Zap size={20} style={{ color: '#a855f7' }} />
+                                    </div>
+                                    <div>
+                                        <h3 style={{
+                                            fontSize: '1.1rem',
+                                            fontWeight: 600,
+                                            color: colors.textPrimary,
+                                            margin: 0,
+                                        }}>
+                                            {t('Generate Serial Numbers')}
+                                        </h3>
+                                        <p style={{
+                                            fontSize: '0.8rem',
+                                            color: colors.textSecondary,
+                                            margin: 0,
+                                        }}>
+                                            {t('Auto-generate based on pattern')}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setGenerateSerialsModalOpen(false)}
+                                    style={{
+                                        width: '32px',
+                                        height: '32px',
+                                        borderRadius: '8px',
+                                        border: 'none',
+                                        background: colors.background,
+                                        color: colors.textSecondary,
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                {/* First Serial Number */}
+                                <div>
+                                    <label style={{
+                                        display: 'block',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 500,
+                                        color: colors.textSecondary,
+                                        marginBottom: '6px',
+                                    }}>
+                                        {t('First Serial Number')}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="SN-0001"
+                                        value={firstSerialNumber}
+                                        onChange={(e) => setFirstSerialNumber(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '12px 14px',
+                                            borderRadius: '10px',
+                                            border: `1px solid ${colors.border}`,
+                                            background: colors.background,
+                                            color: colors.textPrimary,
+                                            fontSize: '0.9rem',
+                                            fontFamily: 'monospace',
+                                        }}
+                                    />
+                                    <p style={{
+                                        fontSize: '0.75rem',
+                                        color: colors.textSecondary,
+                                        margin: '6px 0 0',
+                                    }}>
+                                        {t('Pattern: prefix + number (e.g., SN-0001 generates SN-0001, SN-0002...)')}
+                                    </p>
+                                </div>
+
+                                {/* Number of Serials */}
+                                <div>
+                                    <label style={{
+                                        display: 'block',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 500,
+                                        color: colors.textSecondary,
+                                        marginBottom: '6px',
+                                    }}>
+                                        {t('Number of Serial Numbers')}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={numberOfSerials}
+                                        onChange={(e) => setNumberOfSerials(Math.max(1, parseInt(e.target.value) || 1))}
+                                        style={{
+                                            width: '100%',
+                                            padding: '12px 14px',
+                                            borderRadius: '10px',
+                                            border: `1px solid ${colors.border}`,
+                                            background: colors.background,
+                                            color: colors.textPrimary,
+                                            fontSize: '0.9rem',
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Keep Current Lines Checkbox */}
+                                <label style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    padding: '12px 14px',
+                                    borderRadius: '10px',
+                                    background: colors.background,
+                                    cursor: 'pointer',
+                                }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={keepCurrentLines}
+                                        onChange={(e) => setKeepCurrentLines(e.target.checked)}
+                                        style={{
+                                            width: '18px',
+                                            height: '18px',
+                                            accentColor: colors.action,
+                                        }}
+                                    />
+                                    <div>
+                                        <span style={{
+                                            fontSize: '0.85rem',
+                                            color: colors.textPrimary,
+                                            fontWeight: 500,
+                                        }}>
+                                            {t('Keep existing serial numbers')}
+                                        </span>
+                                        <p style={{
+                                            fontSize: '0.75rem',
+                                            color: colors.textSecondary,
+                                            margin: '2px 0 0',
+                                        }}>
+                                            {t('Add new serials without removing existing ones')}
+                                        </p>
+                                    </div>
+                                </label>
+
+                                {/* Preview */}
+                                {firstSerialNumber.trim() && (
+                                    <div style={{
+                                        padding: '12px 14px',
+                                        borderRadius: '10px',
+                                        background: isDark ? 'rgba(168, 85, 247, 0.1)' : 'rgba(168, 85, 247, 0.05)',
+                                        border: `1px solid rgba(168, 85, 247, 0.2)`,
+                                    }}>
+                                        <div style={{
+                                            fontSize: '0.75rem',
+                                            fontWeight: 600,
+                                            color: '#a855f7',
+                                            marginBottom: '8px',
+                                            textTransform: 'uppercase',
+                                        }}>
+                                            {t('Preview')}
+                                        </div>
+                                        <div style={{
+                                            display: 'flex',
+                                            flexWrap: 'wrap',
+                                            gap: '6px',
+                                        }}>
+                                            {(() => {
+                                                const match = firstSerialNumber.match(/^(.*?)(\d+)$/)
+                                                let prefix = ''
+                                                let startNum = 1
+                                                let numDigits = 4
+                                                if (match) {
+                                                    prefix = match[1]
+                                                    startNum = parseInt(match[2], 10)
+                                                    numDigits = match[2].length
+                                                } else {
+                                                    prefix = firstSerialNumber.trim()
+                                                }
+                                                const previews = []
+                                                for (let i = 0; i < Math.min(numberOfSerials, 5); i++) {
+                                                    const serialNum = (startNum + i).toString().padStart(numDigits, '0')
+                                                    previews.push(`${prefix}${match ? serialNum : (i + 1).toString().padStart(4, '0')}`)
+                                                }
+                                                if (numberOfSerials > 5) {
+                                                    previews.push('...')
+                                                }
+                                                return previews.map((sn, i) => (
+                                                    <span
+                                                        key={i}
+                                                        style={{
+                                                            padding: '4px 8px',
+                                                            borderRadius: '6px',
+                                                            background: colors.card,
+                                                            fontSize: '0.8rem',
+                                                            fontFamily: 'monospace',
+                                                            color: colors.textPrimary,
+                                                        }}
+                                                    >
+                                                        {sn}
+                                                    </span>
+                                                ))
+                                            })()}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Actions */}
+                            <div style={{
+                                display: 'flex',
+                                gap: '12px',
+                                marginTop: '24px',
+                            }}>
+                                <button
+                                    onClick={() => setGenerateSerialsModalOpen(false)}
+                                    style={{
+                                        flex: 1,
+                                        padding: '12px 20px',
+                                        borderRadius: '10px',
+                                        border: `1px solid ${colors.border}`,
+                                        background: 'transparent',
+                                        color: colors.textPrimary,
+                                        fontSize: '0.9rem',
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    {t('Cancel')}
+                                </button>
+                                <button
+                                    onClick={handleGenerateSerials}
+                                    disabled={!firstSerialNumber.trim()}
+                                    style={{
+                                        flex: 1,
+                                        padding: '12px 20px',
+                                        borderRadius: '10px',
+                                        border: 'none',
+                                        background: firstSerialNumber.trim() ? '#a855f7' : colors.border,
+                                        color: firstSerialNumber.trim() ? '#fff' : colors.textSecondary,
+                                        fontSize: '0.9rem',
+                                        fontWeight: 600,
+                                        cursor: firstSerialNumber.trim() ? 'pointer' : 'not-allowed',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                    }}
+                                >
+                                    <Zap size={16} />
+                                    {t('Generate')}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Toast */}
             {toast && <Toast {...toast} onClose={() => setToast(null)} />}

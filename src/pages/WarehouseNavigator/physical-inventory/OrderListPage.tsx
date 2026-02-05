@@ -2,9 +2,10 @@
 // Premium production-grade UI with refined aesthetics
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation, matchPath } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { OrderSidebar, OrderRecordPanel } from './OrderRecordSidebar';
 import {
   ClipboardList,
   Plus,
@@ -127,8 +128,17 @@ export function OrderListPage() {
   const { t, i18n } = useTranslation();
   const { colors, mode } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const isRTL = i18n?.dir() === 'rtl';
+
+  // Detect if we're on a view/edit/create subroute for sidebar display
+  const viewMatch = matchPath('/physical-inventory/orders/view/:id', location.pathname);
+  const editMatch = matchPath('/physical-inventory/orders/edit/:id', location.pathname);
+  const createMatch = matchPath('/physical-inventory/orders/create', location.pathname);
+  const sidebarRecordId = viewMatch?.params?.id || editMatch?.params?.id;
+  const isCreating = !!createMatch;
+  const isSidebarOpen = !!sidebarRecordId || isCreating;
 
   // State
   const [orders, setOrders] = useState<ScanOrder[]>([]);
@@ -1189,6 +1199,19 @@ export function OrderListPage() {
           />
         )}
       </div>
+
+      {/* Sidebar for Create/View/Edit */}
+      <OrderSidebar
+        isOpen={isSidebarOpen}
+        onClose={() => navigate('/physical-inventory/orders')}
+      >
+        <OrderRecordPanel
+          recordId={sidebarRecordId}
+          isCreating={isCreating}
+          onClose={() => navigate('/physical-inventory/orders')}
+          onSave={() => fetchOrders(true)}
+        />
+      </OrderSidebar>
     </>
   );
 }

@@ -344,6 +344,21 @@ export default function TransferReceiptsPage() {
     return headers
   }
 
+  // Get SmartFieldSelector headers (for delete operations)
+  const getSmartFieldHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+    const tenantId = localStorage.getItem('current_tenant_id')
+    if (tenantId) headers['X-Tenant-ID'] = tenantId
+    if (sessionId) headers['X-Odoo-Session'] = sessionId
+    const odooBase = localStorage.getItem('odooBase')
+    const odooDb = localStorage.getItem('odooDb')
+    if (odooBase) headers['x-odoo-base'] = odooBase
+    if (odooDb) headers['x-odoo-db'] = odooDb
+    return headers
+  }
+
   const validatePickingAction = async (pickingId: number) => {
     if (!sessionId) return
     try {
@@ -449,22 +464,18 @@ export default function TransferReceiptsPage() {
   const deletePickingAction = async () => {
     if (!sessionId || !pickingToDelete) return
     try {
-      const headers = {
-        "Content-Type": "application/json",
-        ...getOdooHeaders(),
-      }
-      const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/pickings/${pickingToDelete}`, {
+      const headers = getSmartFieldHeaders()
+      const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.picking/${pickingToDelete}`, {
         method: "DELETE",
         headers,
-        body: JSON.stringify({ sessionId }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok || !data?.success) throw new Error(data?.message || "Delete failed")
+      if (!res.ok || !data?.success) throw new Error(data?.error || data?.message || "Delete failed")
       showToast(t("Record deleted successfully"), "success")
       setDeleteAlertOpen(false)
       setPickingToDelete(null)
       // Refresh data to remove deleted record
-      await fetchData("pickings")
+      await refetchSmartFields()
     } catch (error) {
       console.error("Delete failed:", error)
       showToast(t("Failed to delete record"), "error")
@@ -479,43 +490,31 @@ export default function TransferReceiptsPage() {
     const selectedIds = Object.keys(rowSelection).map(id => parseInt(id))
     if (selectedIds.length === 0) return
 
-    const headers = {
-      "Content-Type": "application/json",
-      ...getOdooHeaders(),
-    }
+    const headers = getSmartFieldHeaders()
 
-    let successCount = 0
-    let failCount = 0
+    try {
+      // Use bulk delete endpoint
+      const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.picking`, {
+        method: "DELETE",
+        headers,
+        body: JSON.stringify({ ids: selectedIds }),
+      })
+      const data = await res.json().catch(() => ({}))
 
-    for (const pickingId of selectedIds) {
-      try {
-        const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/pickings/${pickingId}`, {
-          method: "DELETE",
-          headers,
-          body: JSON.stringify({ sessionId }),
-        })
-        const data = await res.json().catch(() => ({}))
-        if (res.ok && data?.success) {
-          successCount++
-        } else {
-          failCount++
-        }
-      } catch (error) {
-        console.error(`Failed to delete picking ${pickingId}:`, error)
-        failCount++
+      if (res.ok && data?.success) {
+        showToast(t("{{count}} records deleted successfully", { count: selectedIds.length }), "success")
+      } else {
+        throw new Error(data?.error || "Delete failed")
       }
+    } catch (error) {
+      console.error("Bulk delete failed:", error)
+      showToast(t("Failed to delete records"), "error")
     }
 
     // Clear selection and refresh data
     setRowSelection({})
     setIsSelectAll(false)
     await refetchSmartFields()
-
-    if (failCount === 0) {
-      showToast(t("{{count}} records deleted successfully", { count: successCount }), "success")
-    } else {
-      showToast(t("Deleted {{success}} records, {{fail}} failed", { success: successCount, fail: failCount }), "error")
-    }
   }
 
   // Bulk delete all filtered records
@@ -524,43 +523,31 @@ export default function TransferReceiptsPage() {
     const allFilteredIds = filteredSmartFieldRecords.map((r: any) => r.id)
     if (allFilteredIds.length === 0) return
 
-    const headers = {
-      "Content-Type": "application/json",
-      ...getOdooHeaders(),
-    }
+    const headers = getSmartFieldHeaders()
 
-    let successCount = 0
-    let failCount = 0
+    try {
+      // Use bulk delete endpoint
+      const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.picking`, {
+        method: "DELETE",
+        headers,
+        body: JSON.stringify({ ids: allFilteredIds }),
+      })
+      const data = await res.json().catch(() => ({}))
 
-    for (const pickingId of allFilteredIds) {
-      try {
-        const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/pickings/${pickingId}`, {
-          method: "DELETE",
-          headers,
-          body: JSON.stringify({ sessionId }),
-        })
-        const data = await res.json().catch(() => ({}))
-        if (res.ok && data?.success) {
-          successCount++
-        } else {
-          failCount++
-        }
-      } catch (error) {
-        console.error(`Failed to delete picking ${pickingId}:`, error)
-        failCount++
+      if (res.ok && data?.success) {
+        showToast(t("{{count}} records deleted successfully", { count: allFilteredIds.length }), "success")
+      } else {
+        throw new Error(data?.error || "Delete failed")
       }
+    } catch (error) {
+      console.error("Bulk delete all failed:", error)
+      showToast(t("Failed to delete records"), "error")
     }
 
     // Clear selection and refresh data
     setRowSelection({})
     setIsSelectAll(false)
     await refetchSmartFields()
-
-    if (failCount === 0) {
-      showToast(t("{{count}} records deleted successfully", { count: successCount }), "success")
-    } else {
-      showToast(t("Deleted {{success}} records, {{fail}} failed", { success: successCount, fail: failCount }), "error")
-    }
   }
 
 

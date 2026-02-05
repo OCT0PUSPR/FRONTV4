@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation, matchPath } from "react-router-dom"
 import {
   Plus,
   Layers,
@@ -20,16 +20,20 @@ import {
 } from "lucide-react"
 import { Button } from "../@/components/ui/button"
 import { useTheme } from "../context/theme"
-import { useData } from "../context/data"
+import { useAuth } from "../context/auth"
 import { useCasl } from "../context/casl"
+import { API_CONFIG } from "./config/api"
 import { StatCard } from "./components/StatCard"
 import { WaveCard } from "./components/WaveCard"
 import { TransferFiltersBar } from "./components/TransferFiltersBar"
+import { TransferSidebar } from "./components/TransferSidebar"
+import { BatchRecordPage } from "./pages/BatchRecordPage"
 import { Skeleton } from "@mui/material"
 
 import { DataTable, ColumnDef } from "./components/DataTable"
 import ExportModal, { ExportOptions } from "./components/ExportModal"
 import { useExport } from "./hooks/useExport"
+import Toast from "./components/Toast"
 
 // Use real data from DataContext (stock.picking.transfer)
 function mapTransfers(raw: any[]): any[] {
@@ -145,9 +149,24 @@ export default function WaveTransfersPage() {
   const { t, i18n } = useTranslation()
   const isRTL = i18n.dir() === "rtl"
   const navigate = useNavigate()
+  const location = useLocation()
   const { colors, mode } = useTheme()
-  const { waves, fetchData, loading } = useData()
+  const { sessionId } = useAuth()
   const { canCreatePage, canEditPage, canExportPage } = useCasl()
+
+  // Detect if we're on a view/edit/create subroute for sidebar display
+  const viewMatch = matchPath('/wave/view/:id', location.pathname)
+  const editMatch = matchPath('/wave/edit/:id', location.pathname)
+  const createMatch = matchPath('/wave/create', location.pathname)
+  const sidebarRecordId = viewMatch?.params?.id || editMatch?.params?.id
+  const isCreating = !!createMatch
+  const isSidebarOpen = !!sidebarRecordId || isCreating
+
+  // Wave data state
+  const [waveRecords, setWaveRecords] = useState<any[]>([])
+  const [waveLoading, setWaveLoading] = useState(false)
+  const [toast, setToast] = useState<{ text: string; state: "success" | "error" } | null>(null)
+
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedPickingId, setSelectedPickingId] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -171,6 +190,53 @@ export default function WaveTransfersPage() {
     "status",
   ])
 
+  // Get headers for API calls
+  const getHeaders = useCallback((): Record<string, string> => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    const tenantId = localStorage.getItem('current_tenant_id')
+    if (tenantId) headers['X-Tenant-ID'] = tenantId
+    if (sessionId) headers['X-Odoo-Session'] = sessionId
+    const odooBase = localStorage.getItem('odooBase')
+    const odooDb = localStorage.getItem('odooDb')
+    if (odooBase) headers['x-odoo-base'] = odooBase
+    if (odooDb) headers['x-odoo-db'] = odooDb
+    return headers
+  }, [sessionId])
+
+  // Fetch wave data from stock.picking.batch where is_wave=true
+  const fetchWaveData = useCallback(async () => {
+    if (!sessionId) return
+
+    setWaveLoading(true)
+    try {
+      const executeUrl = `${API_CONFIG.BACKEND_BASE_URL}/smart-fields/data/stock.picking.batch/execute`
+      const res = await fetch(executeUrl, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          method: 'search_read',
+          args: [[['is_wave', '=', true]]],
+          kwargs: {
+            fields: ['id', 'name', 'state', 'description', 'user_id', 'company_id', 'picking_type_id', 'scheduled_date', 'is_wave', 'picking_ids', 'vehicle_id', 'vehicle_category_id', 'dock_id'],
+            limit: 500,
+            order: 'id desc'
+          }
+        })
+      })
+      const data = await res.json()
+
+      if (data.success && data.result) {
+        setWaveRecords(data.result)
+      } else {
+        console.error('Error fetching waves:', data.error)
+      }
+    } catch (error) {
+      console.error('Error fetching waves:', error)
+    } finally {
+      setWaveLoading(false)
+    }
+  }, [sessionId, getHeaders])
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 640)
@@ -180,12 +246,18 @@ export default function WaveTransfersPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Fetch data on mount
+  // Fetch wave data on mount
   useEffect(() => {
-    fetchData("waves")
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    fetchWaveData()
+  }, [fetchWaveData])
 
-  const mappedWaves = useMemo(() => mapTransfers(waves), [waves])
+  // Close sidebar handler
+  const handleCloseSidebar = () => {
+    navigate('/wave')
+  }
+
+  const mappedWaves = useMemo(() => mapTransfers(waveRecords), [waveRecords])
+  const loading = { waves: waveLoading }
 
   const filteredWaves = useMemo(() => {
     return mappedWaves.filter((wave) => {
@@ -369,7 +441,7 @@ export default function WaveTransfersPage() {
   const closeModal = () => {
     setIsModalOpen(false)
     setSelectedPickingId(null)
-    fetchData("pickings")
+    fetchWaveData()
   }
 
 
@@ -426,8 +498,8 @@ export default function WaveTransfersPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => fetchData("waves")}
-                disabled={!!loading?.waves}
+                onClick={() => fetchWaveData()}
+                disabled={waveLoading}
                 className="gap-2 font-semibold border"
                 style={{
                   background: colors.card,
@@ -438,8 +510,8 @@ export default function WaveTransfersPage() {
                   width: isMobile ? "100%" : "auto",
                 }}
               >
-                <RefreshCcw className={`w-4 h-4 ${loading?.waves ? "animate-spin" : ""}`} />
-                {loading?.waves ? t("Loading...") : t("Refresh")}
+                <RefreshCcw className={`w-4 h-4 ${waveLoading ? "animate-spin" : ""}`} />
+                {waveLoading ? t("Loading...") : t("Refresh")}
               </Button>
               {canCreatePage("wave") && (
                 <Button
@@ -924,6 +996,28 @@ export default function WaveTransfersPage() {
           isSelectAll={Object.keys(rowSelection).length === filteredWaves.length && filteredWaves.length > 0}
         />
       )}
+
+      {/* Wave Record Sidebar */}
+      <TransferSidebar
+        isOpen={isSidebarOpen}
+        onClose={handleCloseSidebar}
+        backRoute="/wave"
+      >
+        {(sidebarRecordId || isCreating) && (
+          <BatchRecordPage
+            pageTitle={isCreating ? t("New Wave") : t("Wave Transfer")}
+            backRoute="/wave"
+            recordId={sidebarRecordId ? parseInt(sidebarRecordId) : undefined}
+            isSidebar={true}
+            onClose={handleCloseSidebar}
+            onDataChange={fetchWaveData}
+            isWave={true}
+          />
+        )}
+      </TransferSidebar>
+
+      {/* Toast */}
+      {toast && <Toast {...toast} onClose={() => setToast(null)} />}
     </div>
   )
 }
