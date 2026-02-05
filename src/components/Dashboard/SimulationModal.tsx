@@ -207,13 +207,13 @@ export default function SimulationModal({
 
     const itemStyle = {
       padding: '16px',
-      borderRadius: '12px',
-      backgroundColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : colors?.mutedBg || '#F6FAFD',
-      border: `1px solid ${colors?.border || '#E6E6E6'}`,
+      borderRadius: '14px',
+      backgroundColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : colors?.mutedBg || '#F6FAFD',
+      border: `1px solid ${mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : colors?.border || '#E6E6E6'}`,
       transition: 'all 0.2s ease',
       display: 'flex',
       flexDirection: 'column' as const,
-      gap: '12px'
+      gap: '14px'
     };
 
     const labelStyle = {
@@ -221,41 +221,43 @@ export default function SimulationModal({
       fontWeight: 700,
       textTransform: 'uppercase' as const,
       letterSpacing: '0.05em',
-      color: colors?.textSecondary || '#4F4F4F',
-      marginBottom: '6px'
+      color: mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : colors?.textSecondary || '#4F4F4F',
+      marginBottom: '8px',
+      display: 'block',
     };
 
     const inputStyle = {
       width: '100%',
-      backgroundColor: colors?.card || '#FFF',
-      border: `1px solid ${colors?.border || '#E6E6E6'}`,
-      borderRadius: '8px',
-      padding: '10px 12px',
-      color: colors?.textPrimary || '#0A0A0A',
-      fontSize: '13px',
+      backgroundColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : colors?.card || '#FFF',
+      border: `1px solid ${mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : colors?.border || '#E6E6E6'}`,
+      borderRadius: '10px',
+      padding: '12px 14px',
+      color: mode === 'dark' ? '#f4f4f5' : colors?.textPrimary || '#0A0A0A',
+      fontSize: '14px',
+      fontWeight: 500,
       fontFamily: "'Space Grotesk', sans-serif",
       outline: 'none',
-      transition: 'border-color 0.2s, box-shadow 0.2s',
+      transition: 'border-color 0.2s, box-shadow 0.2s, background-color 0.2s',
     };
 
     if (widget.type === 'scatter') {
       return (
         <div style={inputContainerStyle}>
           {simulatedData.map((item, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               style={itemStyle}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : colors?.mutedBg || '#F6FAFD';
-                e.currentTarget.style.borderColor = colors?.border || '#E6E6E6';
+                e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.07)' : colors?.mutedBg || '#F6FAFD';
+                e.currentTarget.style.borderColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : colors?.border || '#E6E6E6';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : colors?.mutedBg || '#F6FAFD';
-                e.currentTarget.style.borderColor = colors?.border || '#E6E6E6';
+                e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : colors?.mutedBg || '#F6FAFD';
+                e.currentTarget.style.borderColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : colors?.border || '#E6E6E6';
               }}
             >
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                 <span style={{ fontSize: '12px', fontWeight: 600, color: colors?.textPrimary || '#0A0A0A' }}>Point {index + 1}</span>
+                 <span style={{ fontSize: '13px', fontWeight: 600, color: mode === 'dark' ? '#f4f4f5' : colors?.textPrimary || '#0A0A0A' }}>Point {index + 1}</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
@@ -267,11 +269,13 @@ export default function SimulationModal({
                     style={inputStyle}
                     onFocus={(e) => {
                       e.currentTarget.style.borderColor = colors?.action || '#4facfe';
-                      e.currentTarget.style.boxShadow = `0 0 0 2px ${colors?.action || '#4facfe'}33`;
+                      e.currentTarget.style.boxShadow = `0 0 0 3px ${colors?.action || '#4facfe'}25`;
+                      e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : colors?.card || '#FFF';
                     }}
                     onBlur={(e) => {
-                      e.currentTarget.style.borderColor = colors?.border || '#E6E6E6';
+                      e.currentTarget.style.borderColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : colors?.border || '#E6E6E6';
                       e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : colors?.card || '#FFF';
                     }}
                   />
                 </div>
@@ -284,11 +288,13 @@ export default function SimulationModal({
                     style={inputStyle}
                     onFocus={(e) => {
                       e.currentTarget.style.borderColor = colors?.action || '#4facfe';
-                      e.currentTarget.style.boxShadow = `0 0 0 2px ${colors?.action || '#4facfe'}33`;
+                      e.currentTarget.style.boxShadow = `0 0 0 3px ${colors?.action || '#4facfe'}25`;
+                      e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : colors?.card || '#FFF';
                     }}
                     onBlur={(e) => {
-                      e.currentTarget.style.borderColor = colors?.border || '#E6E6E6';
+                      e.currentTarget.style.borderColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : colors?.border || '#E6E6E6';
                       e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : colors?.card || '#FFF';
                     }}
                   />
                 </div>
@@ -307,19 +313,19 @@ export default function SimulationModal({
           const value = item[yAxisKey] || item.value || 0;
           
           return (
-            <div 
-              key={index} 
+            <div
+              key={index}
               style={itemStyle}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : colors?.mutedBg || '#F6FAFD';
-                e.currentTarget.style.borderColor = colors?.border || '#E6E6E6';
+                e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.07)' : colors?.mutedBg || '#F6FAFD';
+                e.currentTarget.style.borderColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : colors?.border || '#E6E6E6';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : colors?.mutedBg || '#F6FAFD';
-                e.currentTarget.style.borderColor = colors?.border || '#E6E6E6';
+                e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : colors?.mutedBg || '#F6FAFD';
+                e.currentTarget.style.borderColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : colors?.border || '#E6E6E6';
               }}
             >
-              <div style={{ fontSize: '13px', fontWeight: 600, color: colors?.textPrimary || '#0A0A0A', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: mode === 'dark' ? '#f4f4f5' : colors?.textPrimary || '#0A0A0A', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {String(label)}
               </div>
               <div>
@@ -331,11 +337,13 @@ export default function SimulationModal({
                   style={inputStyle}
                   onFocus={(e) => {
                     e.currentTarget.style.borderColor = colors?.action || '#4facfe';
-                    e.currentTarget.style.boxShadow = `0 0 0 2px ${colors?.action || '#4facfe'}33`;
+                    e.currentTarget.style.boxShadow = `0 0 0 3px ${colors?.action || '#4facfe'}25`;
+                    e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : colors?.card || '#FFF';
                   }}
                   onBlur={(e) => {
-                    e.currentTarget.style.borderColor = colors?.border || '#E6E6E6';
+                    e.currentTarget.style.borderColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : colors?.border || '#E6E6E6';
                     e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.backgroundColor = mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : colors?.card || '#FFF';
                   }}
                 />
               </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight, Check } from 'lucide-react';
 import * as Icons from 'lucide-react';
@@ -29,15 +30,23 @@ interface Props {
 
 // --- Custom Modern Components ---
 
-const ModernInput = ({ label, value, onChange, placeholder, type = "text", colors, mode }: any) => (
+const ModernInput = ({ label, value, onChange, placeholder, type = "text", colors, mode, maxLength, showCount }: any) => (
   <div className="space-y-2">
-    <label className="text-xs font-bold uppercase tracking-wider ml-1 font-display" style={{ color: colors?.textSecondary }}>{label}</label>
+    <div className="flex items-center justify-between">
+      <label className="text-xs font-bold uppercase tracking-wider ml-1 font-display" style={{ color: colors?.textSecondary }}>{label}</label>
+      {showCount && maxLength && (
+        <span className="text-xs font-medium" style={{ color: value?.length >= maxLength ? '#ef4444' : colors?.textSecondary }}>
+          {value?.length || 0}/{maxLength}
+        </span>
+      )}
+    </div>
     <div className="relative group">
-       <input 
+       <input
          type={type}
          value={value}
          onChange={(e) => onChange(e.target.value)}
          placeholder={placeholder}
+         maxLength={maxLength}
          className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 transition-all placeholder:opacity-50 font-sans"
          style={{
            backgroundColor: colors?.card,
@@ -52,29 +61,46 @@ const ModernInput = ({ label, value, onChange, placeholder, type = "text", color
 const ModernDropdown = ({ label, value, options, onChange, multiple = false, placeholder = "Select option", colors, mode }: any) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const portalRef = useRef<HTMLDivElement>(null);
   const ChevronDown = (Icons as any).ChevronDown;
   const CheckIcon = (Icons as any).Check;
   const XIcon = (Icons as any).X;
   const SearchIcon = (Icons as any).Search;
-  
+
   // Filter options based on search term
-  const filteredOptions = options.filter((opt: string) => 
+  const filteredOptions = options.filter((opt: string) =>
     opt.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
-  // Close on click outside
+
+  // Update dropdown position when opening
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, [isOpen]);
+
+  // Close on click outside (check both dropdownRef and portalRef)
   useEffect(() => {
     const handleClickOutside = (event: any) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      const clickedInTrigger = dropdownRef.current && dropdownRef.current.contains(event.target);
+      const clickedInPortal = portalRef.current && portalRef.current.contains(event.target);
+      if (!clickedInTrigger && !clickedInPortal) {
         setIsOpen(false);
-        setSearchTerm(""); // Reset search when closing
+        setSearchTerm("");
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  
+
   // Reset search when dropdown closes
   useEffect(() => {
     if (!isOpen) {
@@ -101,10 +127,94 @@ const ModernDropdown = ({ label, value, options, onChange, multiple = false, pla
     onChange(currentValues.filter(v => v !== option));
   };
 
+  const dropdownMenu = isOpen && typeof window !== 'undefined' && document.body ? createPortal(
+    <AnimatePresence>
+      <motion.div
+        ref={portalRef}
+        initial={{ opacity: 0, y: 10, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 10, scale: 0.98 }}
+        className="rounded-xl shadow-2xl overflow-hidden"
+        style={{
+          position: 'fixed',
+          top: dropdownPosition.top,
+          left: dropdownPosition.left,
+          width: dropdownPosition.width,
+          backgroundColor: colors?.card,
+          border: `1px solid ${colors?.border}`,
+          zIndex: 99999,
+          maxHeight: '300px',
+        }}
+      >
+        {/* Search input for filtering */}
+        {options.length > 5 && (
+          <div className="p-2 border-b" style={{ borderColor: colors?.border }}>
+            <div className="relative">
+              <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2" style={{ color: colors?.textSecondary }} />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setSearchTerm(e.target.value);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                placeholder="Search..."
+                className="w-full rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none"
+                style={{
+                  backgroundColor: colors?.background,
+                  border: `1px solid ${colors?.border}`,
+                  color: colors?.textPrimary,
+                }}
+              />
+            </div>
+          </div>
+        )}
+        <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
+           {filteredOptions.length === 0 ? (
+             <div className="p-3 text-center text-xs" style={{ color: colors?.textSecondary }}>
+               {searchTerm ? `No options matching "${searchTerm}"` : 'No options available'}
+             </div>
+           ) : (
+             filteredOptions.map((opt: string) => {
+               const isSelected = multiple ? (Array.isArray(value) && value.includes(opt)) : value === opt;
+               return (
+                 <button
+                   key={opt}
+                   onClick={() => handleSelect(opt)}
+                   className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center justify-between group"
+                   style={{
+                     backgroundColor: isSelected ? `${colors?.action}33` : 'transparent',
+                     color: isSelected ? colors?.action : colors?.textPrimary,
+                   }}
+                   onMouseEnter={(e) => {
+                     if (!isSelected) {
+                       e.currentTarget.style.backgroundColor = colors?.mutedBg || 'rgba(255, 255, 255, 0.05)';
+                     }
+                   }}
+                   onMouseLeave={(e) => {
+                     if (!isSelected) {
+                       e.currentTarget.style.backgroundColor = 'transparent';
+                     }
+                   }}
+                 >
+                   <span className="truncate">{opt}</span>
+                   {isSelected && <CheckIcon size={14} style={{ color: colors?.action }} />}
+                 </button>
+               )
+             })
+           )}
+        </div>
+      </motion.div>
+    </AnimatePresence>,
+    document.body
+  ) : null;
+
   return (
     <div className="space-y-2 relative" ref={dropdownRef}>
        <label className="text-xs font-bold uppercase tracking-wider ml-1 font-display" style={{ color: colors?.textSecondary }}>{label}</label>
-       <div 
+       <div
+         ref={triggerRef}
          onClick={() => setIsOpen(!isOpen)}
          className="min-h-[48px] w-full rounded-xl px-3 py-2 text-sm cursor-pointer transition-all flex items-center justify-between"
          style={{
@@ -126,16 +236,16 @@ const ModernDropdown = ({ label, value, options, onChange, multiple = false, pla
           <div className="flex flex-wrap gap-2">
              {multiple && Array.isArray(value) && value.length > 0 ? (
                value.map(v => (
-                 <motion.span 
+                 <motion.span
                     layout
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    key={v} 
+                    key={v}
                     className="bg-primary/20 text-primary border border-primary/20 px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1.5"
                  >
                    {v}
-                   <button 
-                    onClick={(e) => removeTag(e, v)} 
+                   <button
+                    onClick={(e) => removeTag(e, v)}
                     className="hover:text-white hover:bg-primary/40 rounded-full p-0.5 transition-colors"
                    >
                      <XIcon size={12} />
@@ -148,82 +258,7 @@ const ModernDropdown = ({ label, value, options, onChange, multiple = false, pla
           </div>
           <ChevronDown size={16} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} style={{ color: colors?.textSecondary }} />
        </div>
-       
-       <AnimatePresence>
-         {isOpen && (
-           <motion.div 
-             initial={{ opacity: 0, y: 10, scale: 0.98 }}
-             animate={{ opacity: 1, y: 0, scale: 1 }}
-             exit={{ opacity: 0, y: 10, scale: 0.98 }}
-             className="absolute top-full left-0 right-0 mt-2 rounded-xl shadow-2xl overflow-hidden"
-             style={{
-               backgroundColor: colors?.card,
-               border: `1px solid ${colors?.border}`,
-               zIndex: 9999,
-             }}
-           >
-             {/* Search input for filtering */}
-             {options.length > 5 && (
-               <div className="p-2 border-b" style={{ borderColor: colors?.border }}>
-                 <div className="relative">
-                   <SearchIcon size={14} className="absolute left-2 top-1/2 -translate-y-1/2" style={{ color: colors?.textSecondary }} />
-                   <input
-                     type="text"
-                     value={searchTerm}
-                     onChange={(e) => {
-                       e.stopPropagation();
-                       setSearchTerm(e.target.value);
-                     }}
-                     onClick={(e) => e.stopPropagation()}
-                     placeholder="Search..."
-                     className="w-full rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none"
-                     style={{
-                       backgroundColor: colors?.background,
-                       border: `1px solid ${colors?.border}`,
-                       color: colors?.textPrimary,
-                     }}
-                   />
-                 </div>
-               </div>
-             )}
-             <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
-                {filteredOptions.length === 0 ? (
-                  <div className="p-3 text-center text-xs" style={{ color: colors?.textSecondary }}>
-                    {searchTerm ? `No options matching "${searchTerm}"` : 'No options available'}
-                  </div>
-                ) : (
-                  filteredOptions.map((opt: string) => {
-                    const isSelected = multiple ? (Array.isArray(value) && value.includes(opt)) : value === opt;
-                    return (
-                      <button
-                        key={opt}
-                        onClick={() => handleSelect(opt)}
-                        className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center justify-between group"
-                        style={{
-                          backgroundColor: isSelected ? `${colors?.action}33` : 'transparent',
-                          color: isSelected ? colors?.action : colors?.textPrimary,
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isSelected) {
-                            e.currentTarget.style.backgroundColor = colors?.card;
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isSelected) {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }
-                        }}
-                      >
-                        <span className="truncate">{opt}</span>
-                        {isSelected && <CheckIcon size={14} style={{ color: colors?.action }} />}
-                      </button>
-                    )
-                  })
-                )}
-             </div>
-           </motion.div>
-         )}
-       </AnimatePresence>
+       {dropdownMenu}
     </div>
   )
 };
@@ -711,13 +746,15 @@ export const WidgetModal: React.FC<Props> = ({ isOpen, onClose, onAdd, colors, m
                   </div>
 
                   <div className="col-span-full">
-                     <ModernInput 
+                     <ModernInput
                         label="Widget Title"
                         placeholder="e.g., Latest Transfers"
                         value={config.title || ''}
                         onChange={(val: string) => setConfig({...config, title: val})}
                         colors={colors}
                         mode={mode}
+                        maxLength={40}
+                        showCount={true}
                      />
                   </div>
                   
@@ -765,13 +802,15 @@ export const WidgetModal: React.FC<Props> = ({ isOpen, onClose, onAdd, colors, m
                 <div className="space-y-8">
                   {/* Widget Title - Moved to top */}
                   <div className="space-y-3">
-                     <ModernInput 
+                     <ModernInput
                         label="Widget Title"
                         placeholder="e.g., Q3 Revenue Overview"
                         value={config.title || ''}
                         onChange={(val: string) => setConfig({...config, title: val})}
                         colors={colors}
                         mode={mode}
+                        maxLength={40}
+                        showCount={true}
                      />
                   </div>
                   
