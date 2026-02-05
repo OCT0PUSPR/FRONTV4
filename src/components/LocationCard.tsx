@@ -35,7 +35,8 @@ export function LocationCard({ location, onClick, index }: LocationCardProps) {
   // Status theme - using blue gradient for location cards
   const statusTheme = {
     gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-    icon: <MapPin className="w-5 h-5 text-white" />,
+    icon: MapPin,
+    iconColor: "#4facfe",
     label: t("Location"),
     bg: "bg-blue-500/10",
     text: "text-blue-600 dark:text-blue-400",
@@ -84,12 +85,11 @@ export function LocationCard({ location, onClick, index }: LocationCardProps) {
         <div className="p-6">
           {/* Header Section */}
           <div className="flex items-start gap-4 mb-6">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300"
-              style={{ background: statusTheme.gradient }}
-            >
-              {statusTheme.icon}
-            </div>
+            <statusTheme.icon
+              className="w-10 h-10 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
+              style={{ color: statusTheme.iconColor }}
+              strokeWidth={1.5}
+            />
 
             <div className="flex-1 pt-1">
               <div className="flex items-center gap-2 mb-1">

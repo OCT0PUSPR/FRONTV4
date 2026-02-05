@@ -34,8 +34,8 @@ export function ProductVariantCard({ variant, onClick, index }: ProductVariantCa
     if (onHand === 0) {
       return {
         gradient: "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)",
-        iconComponent: XCircle,
-        iconSvg: '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>',
+        icon: XCircle,
+        iconColor: "#d97706",
         label: t("Out of Stock"),
         bg: "bg-rose-500/10",
         border: "border-rose-500/20",
@@ -45,8 +45,8 @@ export function ProductVariantCard({ variant, onClick, index }: ProductVariantCa
     if (onHand < 100) {
       return {
         gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
-        iconComponent: AlertCircle,
-        iconSvg: '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>',
+        icon: AlertCircle,
+        iconColor: "#dc2626",
         label: t("Low Stock"),
         bg: "bg-orange-500/10",
         border: "border-orange-500/20",
@@ -55,8 +55,8 @@ export function ProductVariantCard({ variant, onClick, index }: ProductVariantCa
     }
     return {
       gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-      iconComponent: CheckCircle2,
-      iconSvg: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>',
+      icon: CheckCircle2,
+      iconColor: "#43e97b",
       label: t("In Stock"),
       bg: "bg-emerald-500/10",
       border: "border-emerald-500/20",
@@ -125,40 +125,11 @@ export function ProductVariantCard({ variant, onClick, index }: ProductVariantCa
                 />
               </div>
             ) : (
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300 relative"
-                style={{
-                  background: colors.card,
-                  border: `1px solid ${colors.border}`,
-                }}
-              >
-                <div
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      background: statusTheme.gradient,
-                      maskImage: `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${statusTheme.iconSvg}</svg>`)}")`,
-                      WebkitMaskImage: `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${statusTheme.iconSvg}</svg>`)}")`,
-                      maskSize: 'contain',
-                      maskRepeat: 'no-repeat',
-                      maskPosition: 'center',
-                      WebkitMaskSize: 'contain',
-                      WebkitMaskRepeat: 'no-repeat',
-                      WebkitMaskPosition: 'center',
-                    }}
-                  />
-                </div>
-              </div>
+              <statusTheme.icon
+                className="w-10 h-10 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
+                style={{ color: statusTheme.iconColor }}
+                strokeWidth={1.5}
+              />
             )}
 
             <div className="flex-1 pt-1">

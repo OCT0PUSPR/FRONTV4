@@ -139,6 +139,7 @@ interface TransferRecordPageProps {
     recordId?: number | null
     isSidebar?: boolean
     onClose?: () => void
+    onDataChange?: () => void
 }
 
 export function TransferRecordPage({
@@ -147,7 +148,8 @@ export function TransferRecordPage({
     backRoute,
     recordId: propRecordId,
     isSidebar = false,
-    onClose
+    onClose,
+    onDataChange
 }: TransferRecordPageProps) {
     const { t, i18n } = useTranslation()
     const { colors, mode } = useTheme()
@@ -486,7 +488,7 @@ export function TransferRecordPage({
         try {
             const createData: Record<string, any> = {
                 picking_type_id: pickingTypeId,
-                scheduled_date: scheduledDate,
+                scheduled_date: scheduledDate ? scheduledDate.replace('T', ' ') : scheduledDate,
             }
 
             if (selectedLocationId) createData.location_id = selectedLocationId
@@ -519,6 +521,8 @@ export function TransferRecordPage({
             if (createResult.success && createResult.result) {
                 const newId = createResult.result
                 setToast({ text: t('Transfer created successfully'), state: 'success' })
+                // Notify parent to refresh data
+                if (onDataChange) onDataChange()
                 // Navigate to edit the new record
                 setTimeout(() => {
                     navigate(`${backRoute}/edit/${newId}`)
@@ -532,7 +536,7 @@ export function TransferRecordPage({
         } finally {
             setCreatingRecord(false)
         }
-    }, [sessionId, pickingTypeId, scheduledDate, selectedLocationId, selectedLocationDestId, selectedPartnerId, moves, getHeaders, t, navigate, backRoute])
+    }, [sessionId, pickingTypeId, scheduledDate, selectedLocationId, selectedLocationDestId, selectedPartnerId, moves, getHeaders, t, navigate, backRoute, onDataChange])
 
     // Search products using execute endpoint
     const searchProducts = useCallback(async (query: string) => {
@@ -828,6 +832,9 @@ export function TransferRecordPage({
                 }
                 setToast({ text: message, state: 'success' })
                 setHasUnsavedChanges(false)
+
+                // Notify parent to refresh data
+                if (onDataChange) onDataChange()
 
                 // If in confirmed/waiting/assigned state, call action_assign
                 if (['confirmed', 'waiting', 'assigned'].includes(transferData.state)) {

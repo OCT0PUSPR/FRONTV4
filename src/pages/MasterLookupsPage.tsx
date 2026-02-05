@@ -348,6 +348,10 @@ function EditModal({ isOpen, onClose, record, modelName, modelLabel, fields, all
         saveData[field.name] = parseInt(formData[field.name]) || 0
       } else if (field.type === 'float') {
         saveData[field.name] = parseFloat(formData[field.name]) || 0
+      } else if (field.type === 'datetime') {
+        // Convert datetime-local format (2026-02-05T06:21) to Odoo format (2026-02-05 06:21)
+        const val = formData[field.name]
+        saveData[field.name] = val ? String(val).replace('T', ' ') : val
       } else {
         saveData[field.name] = formData[field.name]
       }

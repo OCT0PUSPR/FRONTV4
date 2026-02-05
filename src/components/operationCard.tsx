@@ -28,6 +28,7 @@ export function OperationCard({ operation, onClick, index }: OperationCardProps)
   // Status gradient for operations
   const statusTheme = {
     gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+    iconColor: "#4facfe",
     bg: "bg-blue-500/10",
     text: "text-blue-600 dark:text-blue-400",
     label: operation.operationType || t("Operation"),
@@ -83,12 +84,11 @@ export function OperationCard({ operation, onClick, index }: OperationCardProps)
         <div className="p-6">
           {/* Header Section */}
           <div className="flex items-start gap-4 mb-6">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300"
-              style={{ background: statusTheme.gradient }}
-            >
-              <Package className="w-5 h-5 text-white" />
-            </div>
+            <Package
+              className="w-10 h-10 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
+              style={{ color: statusTheme.iconColor }}
+              strokeWidth={1.5}
+            />
 
             <div className="flex-1 pt-1">
               <div className="flex items-center gap-2 mb-1">

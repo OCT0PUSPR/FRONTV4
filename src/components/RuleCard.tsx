@@ -33,6 +33,7 @@ export function RuleCard({ rule, onClick, index }: RuleCardProps) {
       case "pull from":
         return {
           gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+          iconColor: "#43e97b",
           bg: "bg-emerald-500/10",
           text: "text-emerald-600 dark:text-emerald-400",
           label: action,
@@ -40,6 +41,7 @@ export function RuleCard({ rule, onClick, index }: RuleCardProps) {
       case "push to":
         return {
           gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+          iconColor: "#f59e0b",
           bg: "bg-rose-500/10",
           text: "text-rose-600 dark:text-rose-400",
           label: action,
@@ -47,6 +49,7 @@ export function RuleCard({ rule, onClick, index }: RuleCardProps) {
       case "buy":
         return {
           gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
+          iconColor: "#dc2626",
           bg: "bg-yellow-500/10",
           text: "text-yellow-600 dark:text-yellow-400",
           label: action,
@@ -54,6 +57,7 @@ export function RuleCard({ rule, onClick, index }: RuleCardProps) {
       case "manufacture":
         return {
           gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          iconColor: "#667eea",
           bg: "bg-purple-500/10",
           text: "text-purple-600 dark:text-purple-400",
           label: action,
@@ -61,6 +65,7 @@ export function RuleCard({ rule, onClick, index }: RuleCardProps) {
       default:
         return {
           gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+          iconColor: "#4facfe",
           bg: "bg-blue-500/10",
           text: "text-blue-600 dark:text-blue-400",
           label: action,
@@ -113,12 +118,11 @@ export function RuleCard({ rule, onClick, index }: RuleCardProps) {
         <div className="p-6" style={{ paddingTop: "2.25rem" }}>
           {/* Header Section */}
           <div className="flex items-start gap-4 mb-6">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300"
-              style={{ background: statusTheme.gradient }}
-            >
-              <Settings className="w-5 h-5 text-white" />
-            </div>
+            <Settings
+              className="w-10 h-10 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
+              style={{ color: statusTheme.iconColor }}
+              strokeWidth={1.5}
+            />
 
             <div className="flex-1 pt-1">
               <div className="flex items-center gap-2 mb-1">

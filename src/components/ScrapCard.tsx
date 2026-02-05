@@ -34,7 +34,8 @@ export function ScrapCard({ scrap, onClick, index }: ScrapCardProps) {
       case "done":
         return {
           gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-          icon: <CheckCircle2 className="w-5 h-5 text-white" />,
+          icon: CheckCircle2,
+          iconColor: "#43e97b",
           label: t("Done"),
           bg: "bg-emerald-500/10",
           border: "border-emerald-500/20",
@@ -43,7 +44,8 @@ export function ScrapCard({ scrap, onClick, index }: ScrapCardProps) {
       case "draft":
         return {
           gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
-          icon: <FileText className="w-5 h-5 text-white" />,
+          icon: FileText,
+          iconColor: "#dc2626",
           label: t("Draft"),
           bg: "bg-orange-500/10",
           border: "border-orange-500/20",
@@ -52,7 +54,8 @@ export function ScrapCard({ scrap, onClick, index }: ScrapCardProps) {
       default:
         return {
           gradient: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)",
-          icon: <AlertCircle className="w-5 h-5 text-white" />,
+          icon: AlertCircle,
+          iconColor: "#a18cd1",
           label: t(status.charAt(0).toUpperCase() + status.slice(1)),
           bg: "bg-purple-500/10",
           border: "border-purple-500/20",
@@ -106,12 +109,11 @@ export function ScrapCard({ scrap, onClick, index }: ScrapCardProps) {
         <div className="p-6">
           {/* Header Section */}
           <div className="flex items-start gap-4 mb-6">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300"
-              style={{ background: statusTheme.gradient }}
-            >
-              {statusTheme.icon}
-            </div>
+            <statusTheme.icon
+              className="w-10 h-10 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
+              style={{ color: statusTheme.iconColor }}
+              strokeWidth={1.5}
+            />
 
             <div className="flex-1 pt-1">
               <div className="flex items-center gap-2 mb-1">

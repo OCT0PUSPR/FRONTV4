@@ -6,7 +6,7 @@ import { useTheme } from "../../context/theme"
 import { useTranslation } from "react-i18next"
 import { ActionDropdown } from "./ActionDropdown"
 import { ColumnsSelector } from "./ColumnsSelector"
-import { LucideIcon, ArrowUpDown, Ellipsis, Download, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
+import { LucideIcon, ArrowUpDown, Ellipsis, Download, ChevronLeft, ChevronRight, ChevronDown, Trash2 } from "lucide-react"
 
 // Helper to extract the primary color from gradient string
 function extractPrimaryColor(gradient: string): string {
@@ -60,6 +60,8 @@ interface TransfersTableProps<T> {
   rowSelection?: Record<string, boolean>
   onRowSelectionChange?: (selection: Record<string, boolean>) => void
   onSelectAllChange?: (isSelectAll: boolean | "indeterminate") => void
+  onBulkDelete?: () => void // Callback when bulk delete button is clicked
+  totalRecords?: number // Total records count (for "delete all" option)
 }
 
 export function TransfersTable<T extends { id: string | number }>({
@@ -81,6 +83,8 @@ export function TransfersTable<T extends { id: string | number }>({
   rowSelection: controlledRowSelection,
   onRowSelectionChange,
   onSelectAllChange,
+  onBulkDelete,
+  totalRecords,
 }: TransfersTableProps<T>) {
   const { colors, mode } = useTheme()
   const { t, i18n } = useTranslation()
@@ -430,7 +434,7 @@ export function TransfersTable<T extends { id: string | number }>({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       {/* Toolbar */}
-      {(onVisibleColumnsChange || onExport) && (
+      {(onVisibleColumnsChange || onExport || onBulkDelete) && (
         <div style={{
           display: "flex",
           justifyContent: "space-between",
@@ -455,6 +459,30 @@ export function TransfersTable<T extends { id: string | number }>({
                 align={isRTL ? "left" : "right"}
                 placement="bottom"
               />
+            )}
+            {onBulkDelete && (
+              <button
+                onClick={() => selectedCount > 0 && onBulkDelete()}
+                disabled={selectedCount === 0}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "8px 14px",
+                  background: selectedCount > 0 ? "#ef4444" : colors.mutedBg,
+                  color: selectedCount > 0 ? "#fff" : colors.textSecondary,
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: selectedCount > 0 ? "pointer" : "not-allowed",
+                  transition: "all 0.2s ease",
+                  opacity: selectedCount > 0 ? 1 : 0.6,
+                }}
+              >
+                <Trash2 size={15} />
+                {t("Delete")}
+              </button>
             )}
             {onExport && (
               <button

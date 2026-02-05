@@ -25,9 +25,9 @@ export function AttributeCard({ attribute, onClick, index }: AttributeCardProps)
   const statusTheme = {
     gradient:"linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
     bg: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+    iconColor: "#4facfe",
     textColor: "#FFFFFF",
     label: attribute.filterVisibility === "Visible" ? t("Visible") : t("Hidden"),
-    icon: <FileText className="w-5 h-5 text-white" />,
   }
 
   return (
@@ -74,12 +74,11 @@ export function AttributeCard({ attribute, onClick, index }: AttributeCardProps)
         <div className="p-6">
           {/* Header Section */}
           <div className="flex items-start gap-4 mb-6">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300"
-              style={{ background: statusTheme.gradient }}
-            >
-              {statusTheme.icon}
-            </div>
+            <FileText
+              className="w-10 h-10 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
+              style={{ color: statusTheme.iconColor }}
+              strokeWidth={1.5}
+            />
 
             <div className="flex-1 pt-1">
               <div className="flex items-center gap-2 mb-1">

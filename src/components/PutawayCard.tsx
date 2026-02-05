@@ -68,20 +68,7 @@ export function PutawayCard({ rule, onClick, index, colors, t }: PutawayCardProp
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flex: 1 }}>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 2px 8px rgba(79, 172, 254, 0.3)",
-              }}
-            >
-              <MapPin size={16} color="#fff" />
-            </div>
+            <MapPin size={24} color="#4facfe" strokeWidth={1.5} />
             <div>
               <div
                 style={{
@@ -101,20 +88,7 @@ export function PutawayCard({ rule, onClick, index, colors, t }: PutawayCardProp
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flex: 1 }}>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 2px 8px rgba(245, 158, 11, 0.3)",
-              }}
-            >
-              <MapPin size={16} color="#fff" />
-            </div>
+            <MapPin size={24} color="#f59e0b" strokeWidth={1.5} />
             <div>
               <div
                 style={{

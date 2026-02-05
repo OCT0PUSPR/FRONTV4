@@ -46,7 +46,8 @@ export function StockCard({ stock, currency = 'LE', onClick, index }: StockCardP
     if (onHand === 0) {
       return {
         gradient: "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)",
-        icon: <XCircle className="w-5 h-5 text-white" />,
+        icon: XCircle,
+        iconColor: "#d97706",
         label: t("Out of Stock"),
         bg: "bg-rose-500/10",
         border: "border-rose-500/20",
@@ -56,7 +57,8 @@ export function StockCard({ stock, currency = 'LE', onClick, index }: StockCardP
     if (onHand < 100) {
       return {
         gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
-        icon: <AlertCircle className="w-5 h-5 text-white" />,
+        icon: AlertCircle,
+        iconColor: "#dc2626",
         label: t("Low Stock"),
         bg: "bg-orange-500/10",
         border: "border-orange-500/20",
@@ -65,7 +67,8 @@ export function StockCard({ stock, currency = 'LE', onClick, index }: StockCardP
     }
     return {
       gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-      icon: <CheckCircle2 className="w-5 h-5 text-white" />,
+      icon: CheckCircle2,
+      iconColor: "#43e97b",
       label: t("In Stock"),
       bg: "bg-emerald-500/10",
       border: "border-emerald-500/20",
@@ -118,14 +121,11 @@ export function StockCard({ stock, currency = 'LE', onClick, index }: StockCardP
         <div className="p-6">
           {/* Header Section */}
           <div className="flex items-start gap-4 mb-6">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300 overflow-hidden"
-              style={{ 
-                background: (stock.image && !imageError) ? 'transparent' : statusTheme.gradient,
-                border: (stock.image && !imageError) ? `1px solid ${colors.border}` : 'none'
-              }}
-            >
-              {stock.image && !imageError ? (
+            {stock.image && !imageError ? (
+              <div
+                className="w-12 h-12 rounded-2xl overflow-hidden group-hover:scale-110 transition-transform duration-300"
+                style={{ border: `1px solid ${colors.border}` }}
+              >
                 <img
                   src={
                     String(stock.image).startsWith("data:")
@@ -133,15 +133,17 @@ export function StockCard({ stock, currency = 'LE', onClick, index }: StockCardP
                       : `data:image/png;base64,${stock.image}`
                   }
                   alt={stock.name}
-                  className="w-full h-full object-cover rounded-2xl"
+                  className="w-full h-full object-cover"
                   onError={() => setImageError(true)}
                 />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  {statusTheme.icon}
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <statusTheme.icon
+                className="w-10 h-10 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
+                style={{ color: statusTheme.iconColor }}
+                strokeWidth={1.5}
+              />
+            )}
 
             <div className="flex-1 pt-1">
               <div className="flex items-center gap-2 mb-1">

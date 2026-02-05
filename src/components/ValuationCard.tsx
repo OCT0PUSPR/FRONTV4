@@ -42,7 +42,8 @@ export function ValuationCard({
   // Status theme - using orange/yellow gradient for valuation cards
   const statusTheme = {
     gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
-    icon: <DollarSign className="w-5 h-5 text-white" />,
+    icon: DollarSign,
+    iconColor: "#dc2626",
     label: t("Valuation"),
     bg: "bg-orange-500/10",
     text: "text-orange-600 dark:text-orange-400",
@@ -93,12 +94,11 @@ export function ValuationCard({
         <div className="p-6" style={{ paddingTop: "2.6rem" }}>
           {/* Header Section */}
           <div className="flex items-start gap-4 mb-6">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300"
-              style={{ background: statusTheme.gradient }}
-            >
-              {statusTheme.icon}
-            </div>
+            <statusTheme.icon
+              className="w-10 h-10 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
+              style={{ color: statusTheme.iconColor }}
+              strokeWidth={1.5}
+            />
 
             <div className="flex-1 pt-1">
               <div className="flex items-center gap-2 mb-1">

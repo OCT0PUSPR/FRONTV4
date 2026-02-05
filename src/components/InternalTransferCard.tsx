@@ -36,7 +36,8 @@ export function InternalTransferCard({ transfer, onClick, index = 0 }: InternalT
       case "done":
         return {
           gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-          icon: <CheckCircle2 className="w-5 h-5 text-white" />,
+          icon: CheckCircle2,
+          iconColor: "#43e97b",
           label: t("Completed"),
           bg: "bg-emerald-500/10",
           border: "border-emerald-500/20",
@@ -45,7 +46,8 @@ export function InternalTransferCard({ transfer, onClick, index = 0 }: InternalT
       case "ready":
         return {
           gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-          icon: <Clock className="w-5 h-5 text-white" />,
+          icon: Clock,
+          iconColor: "#4facfe",
           label: t("Ready"),
           bg: "bg-blue-500/10",
           border: "border-blue-500/20",
@@ -54,7 +56,8 @@ export function InternalTransferCard({ transfer, onClick, index = 0 }: InternalT
       case "waiting":
         return {
           gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-          icon: <Clock className="w-5 h-5 text-white" />,
+          icon: Clock,
+          iconColor: "#4facfe",
           label: t("Waiting"),
           bg: "bg-blue-500/10",
           border: "border-blue-500/20",
@@ -63,7 +66,8 @@ export function InternalTransferCard({ transfer, onClick, index = 0 }: InternalT
       case "cancelled":
         return {
           gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-          icon: <XCircle className="w-5 h-5 text-white" />,
+          icon: XCircle,
+          iconColor: "#f59e0b",
           label: t("Cancelled"),
           bg: "bg-rose-500/10",
           border: "border-rose-500/20",
@@ -72,7 +76,8 @@ export function InternalTransferCard({ transfer, onClick, index = 0 }: InternalT
       case "draft":
         return {
           gradient: "linear-gradient(135deg, #dc2626 0%, #ea580c 100%)",
-          icon: <FileTextIcon className="w-5 h-5 text-white" />,
+          icon: FileTextIcon,
+          iconColor: "#dc2626",
           label: t("Draft"),
           bg: "bg-orange-500/10",
           border: "border-orange-500/20",
@@ -81,7 +86,8 @@ export function InternalTransferCard({ transfer, onClick, index = 0 }: InternalT
       default:
         return {
           gradient: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)",
-          icon: <AlertCircle className="w-5 h-5 text-white" />,
+          icon: AlertCircle,
+          iconColor: "#a18cd1",
           label: t(status.charAt(0).toUpperCase() + status.slice(1)),
           bg: "bg-purple-500/10",
           border: "border-purple-500/20",
@@ -134,12 +140,11 @@ export function InternalTransferCard({ transfer, onClick, index = 0 }: InternalT
         <div className="p-6">
           {/* Header Section */}
           <div className="flex items-start gap-4 mb-6">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300"
-              style={{ background: statusTheme.gradient }}
-            >
-              {statusTheme.icon}
-            </div>
+            <statusTheme.icon
+              className="w-10 h-10 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
+              style={{ color: statusTheme.iconColor }}
+              strokeWidth={1.5}
+            />
 
             <div className="flex-1 pt-1">
               <div className="flex items-center gap-2 mb-1">

@@ -24,6 +24,7 @@ import Toast from "./components/Toast"
 import Alert from "./components/Alert"
 import { useSmartFieldRecords } from "./hooks/useSmartFieldRecords"
 import { generateColumnsFromFields } from "./utils/generateColumnsFromFields"
+import { BulkDeleteModal } from "./components/BulkDeleteModal"
 
 function mapPickingToDeliveryCard(p: any) {
   const stateMap: Record<string, string> = {
@@ -104,6 +105,7 @@ export default function TransferDeliveriesPage() {
   const [toast, setToast] = useState<{ text: string; state: "success" | "error" } | null>(null)
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false)
   const [pickingToDelete, setPickingToDelete] = useState<number | null>(null)
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState<string[]>([])
   
   // Update visible columns when available columns change
@@ -626,6 +628,96 @@ export default function TransferDeliveriesPage() {
     }
   }
 
+  // Bulk delete selected records (current page selection)
+  const handleBulkDeleteSelected = async () => {
+    if (!sessionId) return
+    const selectedIds = Object.keys(rowSelection).map(id => parseInt(id))
+    if (selectedIds.length === 0) return
+
+    const headers = {
+      "Content-Type": "application/json",
+      ...getOdooHeaders(),
+    }
+
+    let successCount = 0
+    let failCount = 0
+
+    for (const pickingId of selectedIds) {
+      try {
+        const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/pickings/${pickingId}`, {
+          method: "DELETE",
+          headers,
+          body: JSON.stringify({ sessionId }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (res.ok && data?.success) {
+          successCount++
+        } else {
+          failCount++
+        }
+      } catch (error) {
+        console.error(`Failed to delete picking ${pickingId}:`, error)
+        failCount++
+      }
+    }
+
+    // Clear selection and refresh data
+    setRowSelection({})
+    setIsSelectAll(false)
+    await refetchSmartFields()
+
+    if (failCount === 0) {
+      showToast(t("{{count}} records deleted successfully", { count: successCount }), "success")
+    } else {
+      showToast(t("Deleted {{success}} records, {{fail}} failed", { success: successCount, fail: failCount }), "error")
+    }
+  }
+
+  // Bulk delete all filtered records
+  const handleBulkDeleteAll = async () => {
+    if (!sessionId) return
+    const allFilteredIds = filteredSmartFieldRecords.map((r: any) => r.id)
+    if (allFilteredIds.length === 0) return
+
+    const headers = {
+      "Content-Type": "application/json",
+      ...getOdooHeaders(),
+    }
+
+    let successCount = 0
+    let failCount = 0
+
+    for (const pickingId of allFilteredIds) {
+      try {
+        const res = await fetch(`${API_CONFIG.BACKEND_BASE_URL}/pickings/${pickingId}`, {
+          method: "DELETE",
+          headers,
+          body: JSON.stringify({ sessionId }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (res.ok && data?.success) {
+          successCount++
+        } else {
+          failCount++
+        }
+      } catch (error) {
+        console.error(`Failed to delete picking ${pickingId}:`, error)
+        failCount++
+      }
+    }
+
+    // Clear selection and refresh data
+    setRowSelection({})
+    setIsSelectAll(false)
+    await refetchSmartFields()
+
+    if (failCount === 0) {
+      showToast(t("{{count}} records deleted successfully", { count: successCount }), "success")
+    } else {
+      showToast(t("Deleted {{success}} records, {{fail}} failed", { success: successCount, fail: failCount }), "error")
+    }
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: colors.background }}>
       <div
@@ -893,6 +985,8 @@ export default function TransferDeliveriesPage() {
               onRowSelectionChange={setRowSelection}
               onSelectAllChange={setIsSelectAll}
               onExport={canExportPage("deliveries") ? () => setIsExportModalOpen(true) : undefined}
+              onBulkDelete={canDeletePage("deliveries") ? () => setIsBulkDeleteModalOpen(true) : undefined}
+              totalRecords={filteredSmartFieldRecords.length}
               isLoading={smartFieldLoading}
               visibleColumns={visibleColumns}
               onVisibleColumnsChange={setVisibleColumns}
@@ -1080,6 +1174,20 @@ export default function TransferDeliveriesPage() {
         cancelLabel={t("Cancel")}
       />
 
+      {/* Bulk Delete Modal */}
+      {canDeletePage("deliveries") && (
+        <BulkDeleteModal
+          isOpen={isBulkDeleteModalOpen}
+          onClose={() => setIsBulkDeleteModalOpen(false)}
+          selectedCount={Object.keys(rowSelection).length}
+          totalCount={filteredSmartFieldRecords.length}
+          isSelectAll={isSelectAll === true}
+          onDeleteSelected={handleBulkDeleteSelected}
+          onDeleteAll={handleBulkDeleteAll}
+          modelLabel={t("deliveries")}
+        />
+      )}
+
       {/* Transfer Record Sidebar */}
       <TransferSidebar
         isOpen={isSidebarOpen}
@@ -1094,6 +1202,7 @@ export default function TransferDeliveriesPage() {
             recordId={sidebarRecordId ? parseInt(sidebarRecordId) : undefined}
             isSidebar={true}
             onClose={handleCloseSidebar}
+            onDataChange={refetchSmartFields}
           />
         )}
       </TransferSidebar>

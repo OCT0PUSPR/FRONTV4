@@ -29,9 +29,10 @@ export function DeliveryMethodCard({ method, onClick, index, currencySymbol }: D
   const isPublished = method.website_published || method.active !== false
 
   const statusTheme = {
-    gradient: isPublished 
+    gradient: isPublished
       ? "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)"
       : "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+    iconColor: isPublished ? "#43e97b" : "#4facfe",
     bg: isPublished ? "bg-emerald-500/10" : "bg-blue-500/10",
     text: isPublished ? "text-emerald-600 dark:text-emerald-400" : "text-blue-600 dark:text-blue-400",
     label: isPublished ? t("Published") : t("Draft"),
@@ -77,12 +78,11 @@ export function DeliveryMethodCard({ method, onClick, index, currencySymbol }: D
 
         <div className="p-6">
           <div className="flex items-start gap-4 mb-6">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300"
-              style={{ background: statusTheme.gradient }}
-            >
-              <Truck className="w-5 h-5 text-white" />
-            </div>
+            <Truck
+              className="w-10 h-10 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
+              style={{ color: statusTheme.iconColor }}
+              strokeWidth={1.5}
+            />
 
             <div className="flex-1 pt-1">
               <div className="flex items-center gap-2 mb-1">

@@ -39,7 +39,8 @@ export function PhysicalInventoryCard({ item, onClick, onCountChange, index }: P
     if (difference > 0) {
       return {
         gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-        icon: <TrendingUp className="w-5 h-5 text-white" />,
+        icon: TrendingUp,
+        iconColor: "#43e97b",
         label: t("Surplus"),
         bg: "bg-emerald-500/10",
         border: "border-emerald-500/20",
@@ -49,7 +50,8 @@ export function PhysicalInventoryCard({ item, onClick, onCountChange, index }: P
     if (difference < 0) {
       return {
         gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-        icon: <TrendingDown className="w-5 h-5 text-white" />,
+        icon: TrendingDown,
+        iconColor: "#4facfe",
         label: t("Shortage"),
         bg: "bg-blue-500/10",
         border: "border-blue-500/20",
@@ -58,7 +60,8 @@ export function PhysicalInventoryCard({ item, onClick, onCountChange, index }: P
     }
     return {
       gradient: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)",
-      icon: <CheckCircle2 className="w-5 h-5 text-white" />,
+      icon: CheckCircle2,
+      iconColor: "#a18cd1",
       label: t("Exact Match"),
       bg: "bg-purple-500/10",
       border: "border-purple-500/20",
@@ -125,12 +128,11 @@ export function PhysicalInventoryCard({ item, onClick, onCountChange, index }: P
                 />
               </div>
             ) : (
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300"
-                style={{ background: statusTheme.gradient }}
-              >
-                {statusTheme.icon}
-              </div>
+              <statusTheme.icon
+                className="w-10 h-10 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
+                style={{ color: statusTheme.iconColor }}
+                strokeWidth={1.5}
+              />
             )}
 
             <div className="flex-1 pt-1">
