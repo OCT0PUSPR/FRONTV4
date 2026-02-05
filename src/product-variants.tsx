@@ -9,38 +9,36 @@ import { useAuth } from "../context/auth"
 import { useCasl } from "../context/casl"
 import { StatCard } from "./components/StatCard"
 import { TransferFiltersBar } from "./components/TransferFiltersBar"
-import { TransfersTable } from "./components/TransfersTable"
+import { TransfersTable, ColumnDef } from "./components/TransfersTable"
 import { Button } from "../@/components/ui/button"
 import { useSmartFieldRecords } from "./hooks/useSmartFieldRecords"
-import { generateColumnsFromFields } from "./utils/generateColumnsFromFields"
 
 interface ProductVariant {
   id: number
   product_tmpl_id: number | [number, string] | null
-  internalReference: string
+  default_code: string
   name: string
-  salesPrice: number
-  cost: number
-  onHand: number
-  forecasted: number
-  unit: string
-  category: string
+  list_price: number
+  standard_price: number
+  qty_available: number
+  virtual_available: number
+  categ_id: [number, string] | null
   barcode: string
-  productType: string
-  trackInventory: boolean
-  productImage: string
+  type: string
+  tracking: string
+  image_512: string
 }
 
 export default function ProductVariantsPage() {
   const { t, i18n } = useTranslation()
   const isRTL = i18n.dir() === "rtl"
-  const { colors, mode } = useTheme()
+  const { colors } = useTheme()
   const { canCreatePage, canEditPage } = useCasl()
   const navigate = useNavigate()
   const { sessionId } = useAuth()
 
   // Fetch records using SmartFieldSelector
-  const { records: smartFieldRecords, fields: smartFields, columns: availableColumns, loading: smartFieldLoading, refetch: refetchSmartFields } = useSmartFieldRecords({
+  const { records: smartFieldRecords, loading: smartFieldLoading, refetch: refetchSmartFields } = useSmartFieldRecords({
     modelName: 'product.product',
     enabled: !!sessionId,
   })
@@ -53,45 +51,17 @@ export default function ProductVariantsPage() {
   const [isSelectAll, setIsSelectAll] = useState<boolean | "indeterminate">(false)
   const [isMobile, setIsMobile] = useState(false)
 
-  // Column visibility state - initialize with sensible defaults for product.product
-  const [visibleColumns, setVisibleColumns] = useState<string[]>([])
-
-  // Update visible columns when available columns change
-  useEffect(() => {
-    if (availableColumns.length > 0 && visibleColumns.length === 0) {
-      // Set sensible default columns for product.product
-      const productPriorityFields = [
-        'id',
-        'image_512',
-        'name',
-        'default_code',
-        'categ_id',
-        'list_price',
-        'qty_available',
-        'type'
-      ]
-
-      const defaultCols: string[] = []
-
-      // Add priority fields in order if they exist
-      for (const field of productPriorityFields) {
-        if (availableColumns.some(col => col.id === field)) {
-          defaultCols.push(field)
-        }
-      }
-
-      // If we have fewer than 6 columns, add more from available columns
-      if (defaultCols.length < 6) {
-        availableColumns.forEach(col => {
-          if (!defaultCols.includes(col.id) && defaultCols.length < 6) {
-            defaultCols.push(col.id)
-          }
-        })
-      }
-
-      setVisibleColumns(defaultCols)
-    }
-  }, [availableColumns, visibleColumns.length])
+  // Column visibility state
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([
+    "id",
+    "image_512",
+    "name",
+    "default_code",
+    "categ_id",
+    "list_price",
+    "qty_available",
+    "type"
+  ])
 
   useEffect(() => {
     const checkMobile = () => {
@@ -102,35 +72,30 @@ export default function ProductVariantsPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Map real product.product data into ProductVariant shape for filtering/stats
-  const variants: ProductVariant[] = useMemo(() => {
+  // Map records for filtering/stats
+  const variants = useMemo(() => {
     return (smartFieldRecords || []).map((p: any) => ({
-      id: p.id,
-      product_tmpl_id: p.product_tmpl_id,
-      internalReference: p.default_code || "",
-      name: p.name,
-      salesPrice: Number(p.list_price) || 0,
-      cost: Number(p.standard_price) || 0,
+      ...p,
+      categoryName: Array.isArray(p.categ_id) ? p.categ_id[1] : "",
+      productType: p.type === "service" ? "Service" : p.type === "consu" ? "Consumable" : "Storable",
       onHand: Number(p.qty_available) || 0,
-      forecasted: Number(p.virtual_available) || 0,
-      unit: "Units",
-      category: Array.isArray(p.categ_id) ? p.categ_id[1] : "",
-      barcode: p.barcode || "",
-      productType: p.type ? (p.type === "service" ? "Service" : "Goods") : "Goods",
-      trackInventory: (p.tracking && p.tracking !== "none") || false,
-      productImage: p.image_512 || "",
     }))
   }, [smartFieldRecords])
 
   const filteredVariants = useMemo(() => {
-    const filtered = variants.filter((variant) => {
-      const matchesSearch =
-        variant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        variant.internalReference.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        variant.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        variant.barcode.toLowerCase().includes(searchQuery.toLowerCase())
+    const filtered = variants.filter((variant: any) => {
+      const name = variant.name || ""
+      const defaultCode = variant.default_code || ""
+      const categoryName = variant.categoryName || ""
+      const barcode = variant.barcode || ""
 
-      const matchesCategory = categoryFilter.length === 0 || categoryFilter.includes(variant.category)
+      const matchesSearch =
+        name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        defaultCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        categoryName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        barcode.toLowerCase().includes(searchQuery.toLowerCase())
+
+      const matchesCategory = categoryFilter.length === 0 || categoryFilter.includes(categoryName)
       const matchesProductType = productTypeFilter.length === 0 || productTypeFilter.includes(variant.productType)
 
       let matchesStockStatus = true
@@ -146,55 +111,224 @@ export default function ProductVariantsPage() {
       return matchesSearch && matchesCategory && matchesProductType && matchesStockStatus
     })
 
-    // Sort: products with images first, then products without images
-    return filtered.sort((a, b) => {
-      const aHasImage = !!(a.productImage && a.productImage.trim())
-      const bHasImage = !!(b.productImage && b.productImage.trim())
+    // Sort: products with images first
+    return filtered.sort((a: any, b: any) => {
+      const aHasImage = !!(a.image_512 && a.image_512.trim())
+      const bHasImage = !!(b.image_512 && b.image_512.trim())
       if (aHasImage && !bHasImage) return -1
       if (!aHasImage && bHasImage) return 1
       return 0
     })
   }, [variants, searchQuery, categoryFilter, productTypeFilter, stockStatusFilter])
 
-  // Filter smartFieldRecords to match filteredVariants for TransfersTable
-  const filteredSmartFieldRecords = useMemo(() => {
-    const filteredIds = new Set(filteredVariants.map(v => v.id))
-    return smartFieldRecords.filter((r: any) => filteredIds.has(r.id))
-  }, [smartFieldRecords, filteredVariants])
-
-  // Generate columns from SmartFieldSelector fields
-  const tableColumns = useMemo(() => {
-    if (smartFields.length === 0) {
-      // Fallback columns if no fields available
-      return [
-        {
-          id: "id",
-          header: t("ID"),
-          cell: ({ row }: any) => (
-            <span style={{ color: colors.textPrimary, fontSize: "0.875rem", fontWeight: 600, fontFamily: "monospace" }}>
-              #{row.original.id}
-            </span>
-          ),
-        },
-        {
-          id: "name",
-          header: t("Name"),
-          cell: ({ row }: any) => (
-            <span style={{ color: colors.textPrimary, fontSize: "0.875rem" }}>
-              {(row.original as any).name || "—"}
-            </span>
-          ),
-        },
-      ]
-    }
-    return generateColumnsFromFields(smartFields, colors, t)
-  }, [smartFields, colors, t, i18n?.language || 'en'])
+  // Define columns manually based on Odoo product.product fields
+  const columns: ColumnDef<any>[] = useMemo(() => [
+    {
+      id: "id",
+      header: t("ID"),
+      cell: ({ row }: any) => (
+        <span style={{ color: colors.textPrimary, fontSize: "0.875rem", fontWeight: 600, fontFamily: "monospace" }}>
+          #{row.original.id}
+        </span>
+      ),
+    },
+    {
+      id: "image_512",
+      header: t("Image"),
+      cell: ({ row }: any) => {
+        const image = row.original.image_512
+        if (image) {
+          return (
+            <div style={{ width: "40px", height: "40px", borderRadius: "0.5rem", overflow: "hidden", border: `1px solid ${colors.border}` }}>
+              <img
+                src={image.startsWith('data:') ? image : `data:image/webp;base64,${image}`}
+                alt={row.original.name}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+              />
+            </div>
+          )
+        }
+        return (
+          <div style={{
+            width: "40px",
+            height: "40px",
+            borderRadius: "0.5rem",
+            background: colors.mutedBg,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            border: `1px solid ${colors.border}`
+          }}>
+            <Package size={16} style={{ color: colors.textSecondary }} />
+          </div>
+        )
+      },
+    },
+    {
+      id: "name",
+      header: t("Product Name"),
+      cell: ({ row }: any) => (
+        <div>
+          <span style={{ color: colors.textPrimary, fontSize: "0.875rem", fontWeight: 500 }}>
+            {row.original.name || "—"}
+          </span>
+          {row.original.barcode && (
+            <div style={{ color: colors.textSecondary, fontSize: "0.75rem", fontFamily: "monospace", marginTop: "2px" }}>
+              {row.original.barcode}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "default_code",
+      header: t("Internal Reference"),
+      cell: ({ row }: any) => (
+        <span style={{ color: colors.textPrimary, fontSize: "0.875rem", fontFamily: "monospace" }}>
+          {row.original.default_code || "—"}
+        </span>
+      ),
+    },
+    {
+      id: "categ_id",
+      header: t("Category"),
+      cell: ({ row }: any) => {
+        const categ = row.original.categ_id
+        const name = Array.isArray(categ) ? categ[1] : categ
+        return (
+          <span style={{ color: colors.textPrimary, fontSize: "0.875rem" }}>
+            {name || "—"}
+          </span>
+        )
+      },
+    },
+    {
+      id: "type",
+      header: t("Type"),
+      cell: ({ row }: any) => {
+        const type = row.original.type
+        const displayType = type === "service" ? t("Service") : type === "consu" ? t("Consumable") : t("Storable")
+        const isService = type === "service"
+        return (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "0.25rem 0.75rem",
+              borderRadius: "999px",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              background: isService ? colors.tableWaitingBg : colors.tableDoneBg,
+              color: isService ? colors.tableWaitingText : colors.tableDoneText,
+            }}
+          >
+            {displayType}
+          </span>
+        )
+      },
+    },
+    {
+      id: "list_price",
+      header: t("Sales Price"),
+      cell: ({ row }: any) => (
+        <span style={{ color: colors.textPrimary, fontSize: "0.875rem", fontWeight: 500 }}>
+          {Number(row.original.list_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>
+      ),
+    },
+    {
+      id: "standard_price",
+      header: t("Cost"),
+      cell: ({ row }: any) => (
+        <span style={{ color: colors.textSecondary, fontSize: "0.875rem" }}>
+          {Number(row.original.standard_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>
+      ),
+    },
+    {
+      id: "qty_available",
+      header: t("On Hand"),
+      cell: ({ row }: any) => {
+        const qty = Number(row.original.qty_available) || 0
+        const isLowStock = qty > 0 && qty < 100
+        const isOutOfStock = qty === 0
+        return (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "0.25rem 0.75rem",
+              borderRadius: "999px",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              background: isOutOfStock
+                ? colors.tableCancelledBg
+                : isLowStock
+                  ? colors.tableReadyBg
+                  : colors.tableDoneBg,
+              color: isOutOfStock
+                ? colors.tableCancelledText
+                : isLowStock
+                  ? colors.tableReadyText
+                  : colors.tableDoneText,
+            }}
+          >
+            {qty}
+          </span>
+        )
+      },
+    },
+    {
+      id: "virtual_available",
+      header: t("Forecasted"),
+      cell: ({ row }: any) => (
+        <span style={{ color: colors.textPrimary, fontSize: "0.875rem" }}>
+          {Number(row.original.virtual_available) || 0}
+        </span>
+      ),
+    },
+    {
+      id: "tracking",
+      header: t("Tracking"),
+      cell: ({ row }: any) => {
+        const tracking = row.original.tracking
+        const isTracked = tracking && tracking !== "none"
+        const displayText = tracking === "lot" ? t("By Lots") : tracking === "serial" ? t("By Serial") : t("No Tracking")
+        return (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "0.25rem 0.75rem",
+              borderRadius: "999px",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              background: isTracked ? colors.tableDoneBg : colors.tableDraftBg,
+              color: isTracked ? colors.tableDoneText : colors.tableDraftText,
+            }}
+          >
+            {displayText}
+          </span>
+        )
+      },
+    },
+    {
+      id: "barcode",
+      header: t("Barcode"),
+      cell: ({ row }: any) => (
+        <span style={{ color: colors.textPrimary, fontSize: "0.875rem", fontFamily: "monospace" }}>
+          {row.original.barcode || "—"}
+        </span>
+      ),
+    },
+  ], [colors, t])
 
   // Calculate statistics
   const totalVariants = variants.length
-  const inStockCount = variants.filter((v) => v.onHand > 0).length
-  const lowStockCount = variants.filter((v) => v.onHand > 0 && v.onHand < 100).length
-  const outOfStockCount = variants.filter((v) => v.onHand === 0).length
+  const inStockCount = variants.filter((v: any) => v.onHand > 0).length
+  const lowStockCount = variants.filter((v: any) => v.onHand > 0 && v.onHand < 100).length
+  const outOfStockCount = variants.filter((v: any) => v.onHand === 0).length
 
   // Get product_tmpl_id from variant
   const getTemplateId = (record: any): number | null => {
@@ -207,12 +341,11 @@ export default function ProductVariantsPage() {
 
   // Navigate to product.template create (via products page sidebar)
   const handleAddVariant = () => {
-    // Navigate to products page with create sidebar
     navigate('/products/create')
   }
 
-  const uniqueCategories = Array.from(new Set(variants.map((v) => v.category).filter(Boolean)))
-  const uniqueProductTypes = Array.from(new Set(variants.map((v) => v.productType).filter(Boolean)))
+  const uniqueCategories = Array.from(new Set(variants.map((v: any) => v.categoryName).filter(Boolean)))
+  const uniqueProductTypes = Array.from(new Set(variants.map((v: any) => v.productType).filter(Boolean)))
 
   const stockStatusOptions = ["in-stock", "low-stock", "out-of-stock"]
 
@@ -410,15 +543,15 @@ export default function ProductVariantsPage() {
           />
 
           <TransfersTable
-            data={filteredSmartFieldRecords}
+            data={filteredVariants}
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
             onSelectAllChange={setIsSelectAll}
-            totalRecords={filteredSmartFieldRecords.length}
+            totalRecords={filteredVariants.length}
             isLoading={smartFieldLoading}
             visibleColumns={visibleColumns}
             onVisibleColumnsChange={setVisibleColumns}
-            columns={tableColumns}
+            columns={columns}
             actions={canEditPage("product-variants") ? getRowActions : undefined}
             actionsLabel={t("Actions")}
             isRTL={isRTL}
