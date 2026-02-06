@@ -108,6 +108,7 @@ interface TransferData {
     return_id: [number, string] | false
     user_id: [number, string] | false
     printed: boolean
+    company_id: [number, string] | false
 }
 
 interface MoveData {
@@ -382,7 +383,7 @@ export function TransferRecordPage({
                             'location_id', 'location_dest_id', 'picking_type_id', 'origin',
                             'carrier_id', 'carrier_tracking_ref', 'weight', 'shipping_weight',
                             'note', 'move_ids', 'move_line_ids', 'backorder_id', 'return_id',
-                            'user_id', 'printed'
+                            'user_id', 'printed', 'company_id'
                         ],
                         limit: 1
                     }
@@ -1042,16 +1043,31 @@ export function TransferRecordPage({
                 if (move.isNew && move.id < 0) {
                     // Create new stock.move using execute endpoint (bypasses smart fields filtering)
                     // Note: 'name' field is computed in Odoo 17+ and cannot be set directly
+                    // Note: location_id and location_dest_id are inherited from the picking
+                    // We must pass them explicitly as they are required fields
+                    // Use the picking's picking_type_id to get proper company-specific locations
                     const moveData: Record<string, any> = {
                         picking_id: recordId,
                         product_id: move.product_id[0],
                         product_uom_qty: move.product_uom_qty,
-                        location_id: transferData.location_id ? transferData.location_id[0] : false,
-                        location_dest_id: transferData.location_dest_id ? transferData.location_dest_id[0] : false,
+                    }
+
+                    // Only set locations if they match the picking's company context
+                    // The picking already has the correct company-specific locations
+                    if (transferData.location_id) {
+                        moveData.location_id = transferData.location_id[0]
+                    }
+                    if (transferData.location_dest_id) {
+                        moveData.location_dest_id = transferData.location_dest_id[0]
                     }
 
                     if (move.product_uom && move.product_uom[0]) {
                         moveData.product_uom = move.product_uom[0]
+                    }
+
+                    // Also pass company_id from the picking to ensure company consistency
+                    if (transferData.company_id) {
+                        moveData.company_id = transferData.company_id[0]
                     }
 
                     const res = await fetch(moveExecuteUrl, {
